@@ -11,6 +11,8 @@ create table if not exists public.profiles (
   updated_at timestamptz not null default now()
 );
 alter table public.profiles enable row level security;
+-- Let signed-in users reach their own row through the app (row level security still limits them to their own data).
+grant select, insert, update, delete on public.profiles to authenticated;
 drop policy if exists "read own profile" on public.profiles;
 drop policy if exists "insert own profile" on public.profiles;
 drop policy if exists "update own profile" on public.profiles;
