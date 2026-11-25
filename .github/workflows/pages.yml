@@ -30,7 +30,9 @@ jobs:
       - name: Stamp file versions so phones always get matching files
         run: sed -i "s/__V__/${GITHUB_SHA::8}/g" index.html && sed -i "s/jom-v[0-9]*/jom-${GITHUB_SHA::8}/" sw.js
       - name: Shrink the app code for faster loading
-        run: (npx -y esbuild@0.24.0 js/app.js --minify --allow-overwrite --outfile=js/app.js && npx -y esbuild@0.24.0 css/style.css --minify --allow-overwrite --outfile=css/style.css) || echo "Minify skipped"
+        run: |
+          npx -y esbuild@0.24.0 js/app.js --minify --outfile=/tmp/app.min.js && node --check /tmp/app.min.js && grep -q "viewTeachings\|function" /tmp/app.min.js && cp /tmp/app.min.js js/app.js || echo "App code left unshrunk"
+          npx -y esbuild@0.24.0 css/style.css --minify --outfile=/tmp/style.min.css && cp /tmp/style.min.css css/style.css || echo "Styles left unshrunk"
       - name: Build share pages and sitemap
         run: node tools/build-pages.mjs
       - uses: actions/configure-pages@v5
