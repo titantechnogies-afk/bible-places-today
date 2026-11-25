@@ -7,5 +7,9 @@
 window.JOM_CONFIG = {
   giscus: { repo: 'titantechnogies-afk/bible-places-today', repoId: 'R_kgDOV7vntw', category: 'General', categoryId: 'DIC_kwDOV7vnt84DL-Au' },
   whatsappGroup: '',        // optional: an invite link to a WhatsApp community, e.g. https://chat.whatsapp.com/...
-  developer: 'Titan Technogies'
+  developer: 'Titan Technogies',
+  // Favourite teaching videos shown on the Teachings page. teacher: 'wommack' or 'mohler'. Paste any YouTube link.
+  teachings: [
+    // { teacher: 'wommack', title: 'Title of the teaching', youtube: 'https://www.youtube.com/watch?v=XXXXXXXXXXX', topic: 'Grace', verse: 'Ephesians 2:8' },
+  ]
 };

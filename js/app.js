@@ -1330,7 +1330,7 @@ async function viewFly(id) {
 function homeMore() {
   const host = $('#feat')?.closest('.band'); if (!host || $('.moretiles')) return;
   const T = [['read', 'Read the Bible', 'Every chapter, with its places on a map and the Hebrew & Greek behind each verse.'], ['timeline', 'Bible timeline', 'Empires, kings, prophets and events from Abraham to Revelation.'], ['family', 'Family tree', 'The line from Adam to Jesus, with the twelve tribes and more.'],
-    ['fly-' + (JOURNEYS.find(j => j.id === 'apostles') || JOURNEYS[0])?.id, '3D fly-overs', 'Fly over the real terrain of the journeys of Abraham, Moses, Jesus and Paul.'], ['kingdoms', 'Kingdom maps', 'See the borders change from David to the Romans.'], ['distance', 'How far was it?', 'Distances and walking days between Bible places.'], ['kids', 'Kids\' corner', 'Stories, a fun quiz and pictures to colour.'], ['plans', 'Reading plans', 'John in 21 days, Acts with Paul, Psalms of hope and journey plans.'], ['quiz', 'Quiz', 'Test yourself and challenge a friend.'], ['near', 'Near me', 'Find Bible places close to where you are.'], ['library', 'My library', 'Your saved places, verses, highlights and notes.'], ['prayer', 'Prayer', 'A private prayer journal and a shared prayer wall.'], ['community', 'Friends & community', 'Invite friends, read plans together and join the conversation.'], ['embed', 'For churches', 'Put any Bible place or journey on your church or school website.'], ['devnotes', 'Developer notes', 'What\'s new, what\'s next, and a place for your feedback.']];
+    ['fly-' + (JOURNEYS.find(j => j.id === 'apostles') || JOURNEYS[0])?.id, '3D fly-overs', 'Fly over the real terrain of the journeys of Abraham, Moses, Jesus and Paul.'], ['kingdoms', 'Kingdom maps', 'See the borders change from David to the Romans.'], ['distance', 'How far was it?', 'Distances and walking days between Bible places.'], ['kids', 'Kids\' corner', 'Stories, a fun quiz and pictures to colour.'], ['plans', 'Reading plans', 'John in 21 days, Acts with Paul, Psalms of hope and journey plans.'], ['quiz', 'Quiz', 'Test yourself and challenge a friend.'], ['near', 'Near me', 'Find Bible places close to where you are.'], ['library', 'My library', 'Your saved places, verses, highlights and notes.'], ['teachings', 'Teachings', 'Watch Andrew Wommack and Dan Mohler from their official channels.'], ['prayer', 'Prayer', 'A private prayer journal and a shared prayer wall.'], ['community', 'Friends & community', 'Invite friends, read plans together and join the conversation.'], ['embed', 'For churches', 'Put any Bible place or journey on your church or school website.'], ['devnotes', 'Developer notes', 'What\'s new, what\'s next, and a place for your feedback.']];
   host.insertAdjacentHTML('afterend', `<section class="band moretiles"><div class="wrap"><div class="sh"><div><h2>More ways to explore</h2><p>Tools for personal study, families, churches and travellers — free, and they work on your phone.</p></div></div>
     <div class="tiles">${T.map(([h, t, d]) => `<button class="tile" data-go="${h}"><b>${t}</b><span>${d}</span></button>`).join('')}</div></div></section>`);
 }
@@ -1787,6 +1787,32 @@ async function travelPack(j, btn) {
   btn.textContent = '✓ Saved for offline'; toast('Journey saved — photos, summaries and verses now work without signal');
 }
 
+/* ======================================================================================
+   TEACHINGS: trusted teachers, shown from their own official channels (nothing copied).
+   Add favourite videos in js/config.js → teachings: [{ teacher, title, youtube, topic, verse }]
+   ====================================================================================== */
+const TEACHERS = [
+  { id: 'wommack', n: 'Andrew Wommack', org: 'Andrew Wommack Ministries · Charis Bible College', about: 'Bible teacher known for teaching on grace, faith and the believer\'s identity in Christ, through the Gospel Truth broadcast and Charis Bible College.',
+    links: [['Official website', 'https://www.awmi.net'], ['YouTube channel', 'https://www.youtube.com/channel/UC8H3lzJU5Qm-s3WVroB87kw'], ['Podcast', 'https://podcasts.apple.com/podcast/id293048670']], uploads: 'UU8H3lzJU5Qm-s3WVroB87kw' },
+  { id: 'mohler', n: 'Dan Mohler', org: 'Neck Ministries · Harvest Chapel', about: 'Former firefighter and pastor who travels teaching on loving people, becoming who God made us to be, and praying for the sick. His talks are recorded by the churches he visits.',
+    links: [['Ministry page', 'https://sites.google.com/site/danmohlerbecominglove/dan-mohler'], ['Talks on YouTube', 'https://www.youtube.com/results?search_query=Dan+Mohler']] }
+];
+const ytId = u => (String(u || '').match(/(?:youtu\.be\/|v=|embed\/|shorts\/)([\w-]{11})/) || [])[1];
+function ytFrame(src, title) { return `<button class="ytbox" data-src="${esc(src)}" aria-label="Play: ${esc(title)}"><span class="ytplay">▶</span><span class="yttitle">${esc(title)}</span></button>`; }
+document.addEventListener('click', e => { const b = e.target.closest('.ytbox[data-src]'); if (!b) return; e.preventDefault();
+  b.outerHTML = `<div class="ytwrap"><iframe src="${esc(b.dataset.src)}${b.dataset.src.includes('?') ? '&' : '?'}autoplay=1&rel=0" title="${esc(b.querySelector('.yttitle')?.textContent || 'Video')}" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen loading="lazy"></iframe></div>`; });
+function viewTeachings(id) {
+  setNav(''); document.title = 'Teachings — Just One More Lord';
+  const extra = (CFG.teachings || []).filter(t => ytId(t.youtube)); const T = id ? TEACHERS.filter(t => t.id === id) : TEACHERS;
+  main.innerHTML = `<section class="band"><div class="wrap"><div class="sh"><div><p class="kicker">Grow in the Word</p><h1>Teachings</h1><p>Hand-picked teachers, played straight from their own official channels. Watch with your Bible open — and use the reader and concordance alongside.</p></div></div>
+    ${T.map(t => { const mine = extra.filter(x => x.teacher === t.id);
+      return `<article class="teacher"><div class="thead"><div class="tav">${esc(t.n.split(' ').map(w => w[0]).join(''))}</div><div><h2>${esc(t.n)}</h2><p class="kicker">${esc(t.org)}</p></div></div><p>${esc(t.about)}</p>
+        <div class="linkrow">${t.links.map(([l, u]) => `<a class="btn ghost sm" href="${esc(u)}" target="_blank" rel="noopener">${esc(l)} ↗</a>`).join('')}</div>
+        ${mine.length ? `<h3 class="libh" style="font-size:20px">Recommended</h3><div class="ytgrid">${mine.map(v => `<div>${ytFrame('https://www.youtube-nocookie.com/embed/' + ytId(v.youtube), v.title || t.n)}<p class="small">${v.topic ? esc(v.topic) + ' · ' : ''}${v.verse ? `<button class="vref sm" data-verse="${esc(v.verse)}">${esc(v.verse)}</button>` : ''}</p></div>`).join('')}</div>` : ''}
+        ${t.uploads ? `<h3 class="libh" style="font-size:20px">Latest from the official channel</h3><div class="ytgrid one">${ytFrame('https://www.youtube-nocookie.com/embed/videoseries?list=' + t.uploads, `Latest teachings — ${t.n}`)}</div>` : ''}</article>`; }).join('')}
+    <p class="small muted">All teachings belong to the speakers and their ministries and are shown from their own channels; videos only load when you tap play. Teachers are listed by the site owner; as always, test everything against Scripture (Acts 17:11).</p></div></section>`;
+}
+
 /* ---------------- router ---------------- */
 async function render() {
   const h = decodeURIComponent(location.hash.slice(1) || 'home');
@@ -1811,6 +1837,7 @@ async function render() {
     else if (h === 'timeline') viewTimeline();
     else if (h === 'community') viewCommunity();
     else if (h === 'prayer') viewPrayer();
+    else if (h === 'teachings' || h.startsWith('teachings-')) viewTeachings(h.slice(10));
     else if (h === 'kingdoms' || h.startsWith('kingdoms-')) viewKingdoms(h.slice(9));
     else if (h === 'distance' || h.startsWith('distance-')) viewDistance(h.slice(9));
     else if (h === 'kids' || h.startsWith('kids-')) viewKids(h.slice(5));
