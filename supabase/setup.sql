@@ -1,5 +1,5 @@
 -- Just One More Lord — database setup for profiles and sync.
--- Supabase → your project → SQL Editor → New query → paste all of this → Run.
+-- Supabase → your project → SQL Editor → New query → paste all of this → Run. Safe to run again.
 create table if not exists public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   name text,
@@ -11,17 +11,20 @@ create table if not exists public.profiles (
   updated_at timestamptz not null default now()
 );
 alter table public.profiles enable row level security;
--- Let signed-in users reach their own row through the app (row level security still limits them to their own data).
 grant select, insert, update, delete on public.profiles to authenticated;
 drop policy if exists "read own profile" on public.profiles;
 drop policy if exists "insert own profile" on public.profiles;
 drop policy if exists "update own profile" on public.profiles;
 drop policy if exists "delete own profile" on public.profiles;
-create policy "read own profile"   on public.profiles for select using (auth.uid() = id);
-create policy "insert own profile" on public.profiles for insert with check (auth.uid() = id);
-create policy "update own profile" on public.profiles for update using (auth.uid() = id);
-create policy "delete own profile" on public.profiles for delete using (auth.uid() = id);
--- Names of people who chose "Let friends find me" (no email, no library data).
-create or replace view public.public_profiles as
-  select id, name, church, country from public.profiles where is_public;
-grant select on public.public_profiles to anon, authenticated;
+create policy "read own profile"   on public.profiles for select to authenticated using ((select auth.uid()) = id);
+create policy "insert own profile" on public.profiles for insert to authenticated with check ((select auth.uid()) = id);
+create policy "update own profile" on public.profiles for update to authenticated using ((select auth.uid()) = id);
+create policy "delete own profile" on public.profiles for delete to authenticated using ((select auth.uid()) = id);
+-- (An earlier version created a public_profiles view; it is not needed yet.)
+drop view if exists public.public_profiles;
+-- Supabase's "enable RLS automatically" helper should not be callable from the website.
+do $$ begin
+  if exists (select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'public' and p.proname = 'rls_auto_enable') then
+    revoke execute on function public.rls_auto_enable() from public, anon, authenticated;
+  end if;
+end $$;
