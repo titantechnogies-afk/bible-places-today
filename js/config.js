@@ -9,7 +9,7 @@ window.JOM_CONFIG = {
   whatsappGroup: '',        // optional: an invite link to a WhatsApp community, e.g. https://chat.whatsapp.com/...
   developer: 'Titan Technogies',
   // ACCOUNTS (profiles + sync). Create a free project at supabase.com, run supabase/setup.sql, then paste the Project URL and the anon public key.
-  supabase: { url: '', anonKey: '', google: false },
+  supabase: { url: 'https://zjgfvyrbliygcldkbjkd.supabase.co', anonKey: 'sb_publishable_2kiddhtDDbO6_2-I2dK5Jw_gXSGXoYg', google: false },
   // VISITOR COUNTS: free Cloudflare Web Analytics token (no cookies). Leave '' to switch off.
   cloudflareToken: '',
   // Optional links shown in the footer: a WhatsApp channel and a donation page (e.g. PayFast, GitHub Sponsors).
