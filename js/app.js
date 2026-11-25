@@ -326,12 +326,14 @@ async function openVerse(ref, ctx) {
   const ck = chapterKey(ref);
   const others = PLACES.filter(p => (p.v || []).some(v => chapterKey(v[0]) === ck)).slice(0, 12);
   const b = openDlg(`<p class="kicker">World English Bible</p><h2>${esc(ref)}</h2>${ctx ? `<p class="muted">${esc(ctx)}</p>` : ''}<div class="vtext" id="vt"><span class="spin"></span>Loading verse text…</div>
-    <div class="linkrow"><a class="btn ghost sm" href="${gwLink(ref)}" target="_blank" rel="noopener">Read the chapter in context ↗</a></div>
+    ${verseTools(ref)}
     ${others.length ? `<h3 style="margin-top:20px">Places in ${esc(ck)}</h3><div class="chips">${others.map(p => `<button class="chip" data-go="place-${p.id}">${esc(p.n)}</button>`).join('')}</div>` : ''}`, 'Bible verse');
+  let vtxt = ''; wireVerseTools(b, ref, () => vtxt);
   b.insertAdjacentHTML('beforeend', '<div id="vil" style="margin-top:18px"><p class="muted small"><span class="spin"></span>Loading the Hebrew/Greek…</p></div>');
   interlinearHTML(ref).then(h => { const e = $('#vil', b); if (e) e.innerHTML = h || ''; }, () => { const e = $('#vil', b); if (e) e.innerHTML = ''; });
-  try { const v = await bibleText(ref); $('#vt', b).innerHTML = verseHTML(v); }
-  catch (e) { $('#vt', b).innerHTML = `<span class="small muted">${e.status === 429 ? 'The free Bible text service is busy (rate limit). Wait a few seconds and try again, or' : 'Verse text could not be loaded here.'} Use the link below to read ${esc(ref)} in the World English Bible.</span>`; }
+  try { const v = await bibleText(ref); vtxt = v.verses.map(x => x.t).join(' ') || v.text || ''; $('#vt', b).innerHTML = verseHTML(v); }
+  catch (e) { try { const g = await glossVerse(ref); if (g) { vtxt = g; $('#vt', b).innerHTML = `${esc(g)}<br><span class="small muted">Word-for-word English from the Hebrew/Greek (the World English Bible text needs a connection).</span>`; return; } } catch {}
+    $('#vt', b).innerHTML = `<span class="small muted">${e.status === 429 ? 'The free Bible text service is busy (rate limit). Wait a few seconds and try again, or' : 'Verse text could not be loaded here.'} Use the link below to read ${esc(ref)} in the World English Bible.</span>`; }
 }
 document.addEventListener('click', e => {
   const g = e.target.closest('[data-go]'); if (g) { e.preventDefault(); if (dlg.open) dlg.close(); go(g.dataset.go); return; }
@@ -860,8 +862,9 @@ async function interlinearHTML(ref, hl) {
 }
 async function openInterlinear(ref, hl) {
   const b = openDlg(`<p class="kicker">Interlinear · World English Bible</p><h2>${esc(ref)}</h2><div class="vtext" id="ivt"><span class="spin"></span>Loading verse text…</div><div id="iil" style="margin-top:16px"><p class="muted"><span class="spin"></span>Loading Hebrew/Greek…</p></div>
-    <div class="linkrow"><a class="btn ghost sm" href="${gwLink(ref)}" target="_blank" rel="noopener">Read the chapter in context ↗</a></div>`, 'Verse word by word');
-  bibleText(ref).then(v => { const e = $('#ivt', b); if (e) e.innerHTML = verseHTML(v); }, () => { const e = $('#ivt', b); if (e) e.innerHTML = '<span class="small muted">English text not available right now; the word-by-word translation is below.</span>'; });
+    ${verseTools(ref)}`, 'Verse word by word');
+  let vtxt = ''; wireVerseTools(b, ref, () => vtxt);
+  bibleText(ref).then(v => { vtxt = v.verses.map(x => x.t).join(' ') || v.text || ''; const e = $('#ivt', b); if (e) e.innerHTML = verseHTML(v); }, () => { const e = $('#ivt', b); if (e) e.innerHTML = '<span class="small muted">English text not available right now; the word-by-word translation is below.</span>'; });
   try { const h = await interlinearHTML(ref, hl); const e = $('#iil', b); if (e) e.innerHTML = h || '<p class="empty">No interlinear text for this reference.</p>'; } catch { const e = $('#iil', b); if (e) e.innerHTML = '<p class="empty">Interlinear data could not be loaded.</p>'; }
 }
 document.addEventListener('click', e => { const il = e.target.closest('[data-il]'); if (il) { e.preventDefault(); openInterlinear(il.dataset.il, il.dataset.k); } });
@@ -901,13 +904,268 @@ sugg.addEventListener('click', e => { const b = e.target.closest('[data-n]'); if
 $('#topSearch').addEventListener('submit', e => { e.preventDefault(); doSearch($('#q').value); });
 attachSuggest($('#q'));
 
+/* ======================================================================================
+   APP FEATURES: Bible reader, My Library (saved places, verses, highlights, notes, backup),
+   verse of the day, reading plans, quizzes, near me, sharing, display settings, install/offline.
+   Everything is stored on the device (localStorage); nothing needs an account or an API key.
+   ====================================================================================== */
+const SITE = 'https://titantechnogies-afk.github.io/bible-places-today/';
+const MY = (() => { let d = {}; try { d = JSON.parse(localStorage.getItem('jom:my') || '{}') || {}; } catch {}
+  for (const k of ['places', 'verses', 'notes', 'hl', 'plans', 'quiz']) if (!d[k] || typeof d[k] !== 'object') d[k] = {}; return d; })();
+const saveMy = () => { try { localStorage.setItem('jom:my', JSON.stringify(MY)); } catch {} };
+function toast(msg) { let t = $('#toast'); if (!t) { t = document.createElement('div'); t.id = 'toast'; t.className = 'toast'; t.setAttribute('role', 'status'); document.body.append(t); }
+  t.textContent = msg; t.classList.add('on'); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('on'), 2400); }
+async function shareIt({ title, text = '', hash = '' }) {
+  const pm = hash.match(/^place-(.+)$/), jm = hash.match(/^journey-(.+)$/);
+  const url = pm ? `${SITE}p/${pm[1]}.html` : jm ? `${SITE}p/journey-${jm[1]}.html` : SITE + (hash ? '#' + hash : '');
+  if (navigator.share) { try { await navigator.share({ title, text, url }); return; } catch (e) { if (e.name === 'AbortError') return; } }
+  try { await navigator.clipboard.writeText(`${text ? text + '\n' : ''}${url}`); toast('Link copied — paste it anywhere to share'); } catch { prompt('Copy this link:', url); }
+}
+const ICON = {
+  star: f => `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9 6.8 19.6l1-5.8L3.5 9.7l5.9-.9z" fill="${f ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>`,
+  share: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M7 8l5-5 5 5M5 13v6h14v-6" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  note: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h10l4 4v12H5z M14 4v5h5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>`
+};
+const HLC = [['gold', 'Gold'], ['aqua', 'Aqua'], ['green', 'Green'], ['rose', 'Rose']];
+
+/* ---------- verse tools (added to every verse window) ---------- */
+function verseTools(ref) {
+  const saved = !!MY.verses[ref];
+  return `<div class="vtools" data-ref="${esc(ref)}">
+    <button class="pill${saved ? ' on' : ''}" data-act="save" aria-pressed="${saved}">${ICON.star(saved)}<span>${saved ? 'Saved' : 'Save verse'}</span></button>
+    <span class="hlrow" role="group" aria-label="Highlight colour">${HLC.map(([c, l]) => `<button class="hl-dot hl-${c}${MY.hl[ref] === c ? ' on' : ''}" data-hl="${c}" aria-label="Highlight ${l}" aria-pressed="${MY.hl[ref] === c}"></button>`).join('')}<button class="hl-dot hl-none" data-hl="" aria-label="Remove highlight">×</button></span>
+    <button class="pill" data-act="share">${ICON.share}<span>Share</span></button>
+    <button class="pill" data-act="read">Read chapter</button></div>
+    <label class="notebox"><span class="kicker">My note</span><textarea rows="2" placeholder="Write a thought, prayer or question…" data-note>${esc(MY.notes[ref]?.t || '')}</textarea></label>`;
+}
+function wireVerseTools(box, ref, getText) {
+  const t = $('.vtools', box); if (!t) return;
+  t.onclick = async e => {
+    const hb = e.target.closest('[data-hl]'); if (hb) { const c = hb.dataset.hl; if (c) MY.hl[ref] = c; else delete MY.hl[ref]; saveMy();
+      $$('[data-hl]', t).forEach(b => { b.classList.toggle('on', b.dataset.hl === c && !!c); b.setAttribute('aria-pressed', b.dataset.hl === c && !!c); });
+      $$(`.rverse[data-ref="${CSS.escape(ref)}"]`).forEach(v => v.dataset.hl = c || ''); toast(c ? 'Highlighted' : 'Highlight removed'); return; }
+    const a = e.target.closest('[data-act]')?.dataset.act; if (!a) return;
+    if (a === 'save') { if (MY.verses[ref]) delete MY.verses[ref]; else MY.verses[ref] = { t: (await getText?.()) || '', d: Date.now() }; saveMy();
+      const on = !!MY.verses[ref]; const b = $('[data-act=save]', t); b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); b.innerHTML = `${ICON.star(on)}<span>${on ? 'Saved' : 'Save verse'}</span>`;
+      $$(`.rverse[data-ref="${CSS.escape(ref)}"]`).forEach(v => v.classList.toggle('saved', on)); toast(on ? 'Saved to your library' : 'Removed from your library'); }
+    if (a === 'share') { const txt = await getText?.(); shareIt({ title: ref, text: `“${(txt || '').slice(0, 240)}” — ${ref} (WEB)`, hash: 'read-' + readHash(ref) }); }
+    if (a === 'read') { if (dlg.open) dlg.close(); go('read-' + readHash(ref)); }
+  };
+  const ta = $('[data-note]', box); let tm;
+  ta.oninput = () => { clearTimeout(tm); tm = setTimeout(() => { const v = ta.value.trim(); if (v) MY.notes[ref] = { t: v, d: Date.now() }; else delete MY.notes[ref]; saveMy();
+    $$(`.rverse[data-ref="${CSS.escape(ref)}"]`).forEach(x => x.classList.toggle('noted', !!v)); }, 400); };
+}
+function readHash(ref) { const p = conc.books ? parseRef(ref) : null; if (p) return `${p.book.code}.${p.ch}.${p.v1}`; const m = String(ref).match(/^(.+?)\s+(\d+)(?::(\d+))?/); return m ? `${m[1].replace(/\s+/g, '_')}.${m[2]}${m[3] ? '.' + m[3] : ''}` : ''; }
+
+/* ---------- Bible reader ---------- */
+const NAMES_SKIP = /^(god|lord|the|sea|river|land|city|mount|valley|east|west|south|north|great|king|salt|tower)$/i;
+let placeNameRe = null;
+function placesInText(txt) {
+  if (!placeNameRe) { const pairs = []; for (const p of PLACES) for (const n of [p.n, p.bn, ...(p.alt || [])].filter(Boolean)) { const nn = String(n).trim(); if (nn.length >= 4 && !NAMES_SKIP.test(nn) && !/[()]/.test(nn)) pairs.push([nn, p.id]); }
+    pairs.sort((a, b) => b[0].length - a[0].length); placeNameRe = { re: new RegExp('\\b(' + pairs.map(([n]) => n.replace(/[.*+?^${}|[\]\\]/g, '\\$&')).join('|') + ')\\b', 'g'), map: Object.fromEntries(pairs.map(([n, id]) => [n, id])) }; }
+  const found = new Set(); let m; placeNameRe.re.lastIndex = 0; while ((m = placeNameRe.re.exec(txt))) { const id = placeNameRe.map[m[1]]; if (id) found.add(id); } return [...found];
+}
+async function glossVerse(ref) { await loadConc(); const p = parseRef(ref); if (!p) return ''; const d = await getLocal(`text/${p.book.code}.${p.ch}.json`);
+  return d.filter(([v]) => v >= p.v1 && v <= p.v2).map(([, rows]) => rows.map(r => r[2]).filter(Boolean).join(' ').replace(/[<>]/g, '')).join(' '); }
+async function chapterText(b, ch) {
+  try { const v = await bibleText(`${b.name} ${ch}`); if (v.verses.length) return { src: 'web', verses: v.verses.map(x => ({ v: x.v, t: x.t })) }; } catch {}
+  const data = await getLocal(`text/${b.code}.${ch}.json`);
+  return { src: 'gloss', verses: data.map(([v, rows]) => ({ v, t: rows.map(r => r[2]).filter(Boolean).join(' ').replace(/\s+([,.;:?!])/g, '$1').replace(/[<>]/g, '') })) };
+}
+async function viewRead(arg) {
+  setNav('read');
+  main.innerHTML = `<section class="band"><div class="wrap"><p class="muted"><span class="spin"></span>Opening the Bible…</p></div></section>`;
+  try { await loadConc(); } catch { main.innerHTML = `<section class="band"><div class="wrap"><p class="empty">The Bible data could not be loaded.</p></div></section>`; return; }
+  const books = conc.starts; let [code, ch, hv] = String(arg || MY.last || 'Jhn.1').split('.');
+  let b = conc.byCode[code] || parseRef(String(code).replace(/_/g, ' ') + ' ' + (+ch || 1))?.book || conc.byCode.Jhn;
+  ch = Math.min(Math.max(+ch || 1, 1), b.counts.length); hv = +hv || 0;
+  MY.last = `${b.code}.${ch}`; saveMy(); document.title = `${b.name} ${ch} — Bible — Just One More Lord`;
+  const prev = ch > 1 ? `${b.code}.${ch - 1}` : (b.i > 0 ? `${books[b.i - 1].code}.${books[b.i - 1].counts.length}` : null);
+  const next = ch < b.counts.length ? `${b.code}.${ch + 1}` : (b.i < books.length - 1 ? `${books[b.i + 1].code}.1` : null);
+  main.innerHTML = `<section class="band reader-band"><div class="wrap">
+    <div class="readbar"><label class="sr" for="rbk">Book</label><select id="rbk">${['Old Testament', 'New Testament'].map((g, gi) => `<optgroup label="${g}">${books.filter(x => (x.i >= 39) === !!gi).map(x => `<option value="${x.code}"${x.code === b.code ? ' selected' : ''}>${esc(x.name)}</option>`).join('')}</optgroup>`).join('')}</select>
+      <label class="sr" for="rch">Chapter</label><select id="rch">${b.counts.map((_, i) => `<option value="${i + 1}"${i + 1 === ch ? ' selected' : ''}>Chapter ${i + 1}</option>`).join('')}</select>
+      <span class="grow"></span><button class="btn ghost sm" ${prev ? `data-go="read-${prev}"` : 'disabled'} aria-label="Previous chapter">←</button><button class="btn ghost sm" ${next ? `data-go="read-${next}"` : 'disabled'} aria-label="Next chapter">→</button></div>
+    <div class="readlayout"><article class="reader"><p class="kicker" id="rsrc">World English Bible</p><h1>${esc(b.name)} <span class="neon-txt">${ch}</span></h1>
+      <p class="small muted">Tap any verse for its Hebrew or Greek words, to highlight it, save it or add a note.</p><div id="rtext"><p class="muted"><span class="spin"></span>Loading the chapter…</p></div>
+      <div class="linkrow"><button class="btn ghost sm" ${prev ? `data-go="read-${prev}"` : 'disabled'}>← Previous</button><button class="btn sm" ${next ? `data-go="read-${next}"` : 'disabled'}>Next chapter →</button></div></article>
+      <aside class="readside"><h2>Places in this chapter</h2><div class="mapbox" id="rmap" style="height:320px"></div><div class="chips" id="rplaces"></div></aside></div></div></section>`;
+  $('#rbk').onchange = e => go(`read-${e.target.value}.1`); $('#rch').onchange = e => go(`read-${b.code}.${e.target.value}`);
+  const ct = await chapterText(b, ch); const ref = v => `${b.name} ${ch}:${v}`;
+  if (ct.src === 'gloss') $('#rsrc').textContent = 'Word-for-word English (offline) · from the Hebrew/Greek';
+  $('#rtext').innerHTML = ct.verses.map(x => `<span class="rverse${MY.verses[ref(x.v)] ? ' saved' : ''}${MY.notes[ref(x.v)] ? ' noted' : ''}" data-ref="${esc(ref(x.v))}" data-hl="${MY.hl[ref(x.v)] || ''}" id="v${x.v}" tabindex="0" role="button"><sup>${x.v}</sup>${esc(x.t)} </span>`).join('');
+  $('#rtext').onclick = e => { const v = e.target.closest('.rverse'); if (v) openVerse(v.dataset.ref); };
+  $('#rtext').onkeydown = e => { if ((e.key === 'Enter' || e.key === ' ') && e.target.classList.contains('rverse')) { e.preventDefault(); openVerse(e.target.dataset.ref); } };
+  if (hv) { const el = $('#v' + hv); if (el) { el.classList.add('flash'); el.scrollIntoView({ block: 'center' }); } }
+  const key = `${b.name} ${ch}`; const fromRefs = PLACES.filter(p => (p.v || []).some(v => chapterKey(v[0]) === key || chapterKey(v[0]).replace(/^Psalm /, 'Psalms ') === key)).map(p => p.id);
+  const ids = [...new Set([...fromRefs, ...placesInText(ct.verses.map(x => x.t).join(' '))])].slice(0, 30); const ps = ids.map(i => byId[i]).filter(Boolean);
+  $('#rplaces').innerHTML = ps.length ? ps.map(p => `<button class="chip" data-go="place-${p.id}">${esc(p.n)}</button>`).join('') : '<p class="muted small">No mapped places are named in this chapter.</p>';
+  if (ps.length) makeMap($('#rmap'), { markers: ps.map(p => ({ lat: p.lat, lon: p.lon, label: p.n, sub: p.mn, kind: 'place', go: 'place-' + p.id })), maxZoom: 9 }); else $('#rmap').remove();
+  markPlanProgress(`${b.name} ${ch}`);
+}
+
+/* ---------- My Library ---------- */
+function viewLibrary() {
+  setNav('library'); document.title = 'My library — Just One More Lord';
+  const pl = Object.keys(MY.places).map(id => byId[id]).filter(Boolean);
+  const vs = Object.entries(MY.verses).sort((a, b) => b[1].d - a[1].d);
+  const hls = Object.entries(MY.hl); const ns = Object.entries(MY.notes).sort((a, b) => b[1].d - a[1].d);
+  const plans = Object.entries(MY.plans).map(([id, d]) => [JOURNEYS.find(j => j.id === id), d]).filter(x => x[0]);
+  const vbtn = (r, extra = '') => `<button class="ritem" data-verse="${esc(r)}"><div><b>${esc(r)}</b>${extra}</div><span class="tag">Open</span></button>`;
+  main.innerHTML = `<section class="band"><div class="wrap"><div class="sh"><div><p class="kicker">Saved on this device</p><h1>My library</h1><p>Your saved places, verses, highlights, notes and reading plans. Nothing is uploaded; use the backup below to move them to another phone.</p></div>
+    <div class="linkrow"><button class="btn ghost sm" id="bk">Download backup</button><label class="btn ghost sm" for="rs">Restore backup</label><input id="rs" type="file" accept="application/json" hidden></div></div>
+    <div class="statrow">${[[pl.length, 'places'], [vs.length, 'verses'], [hls.length, 'highlights'], [ns.length, 'notes'], [plans.length, 'plans']].map(([n, l]) => `<div><b>${n}</b><span>${l}</span></div>`).join('')}</div>
+    <h2 class="libh">Saved places</h2>${pl.length ? `<div class="grid" id="libp">${pl.map(placeCard).join('')}</div>` : '<p class="empty">Tap “Save place” on any place page.</p>'}
+    <h2 class="libh">Saved verses</h2>${vs.length ? `<div class="rlist">${vs.map(([r, x]) => vbtn(r, x.t ? `<span>${esc(x.t.slice(0, 160))}${x.t.length > 160 ? '…' : ''}</span>` : '')).join('')}</div>` : '<p class="empty">Tap any verse, then “Save verse”.</p>'}
+    <h2 class="libh">Highlights</h2>${hls.length ? `<div class="chips">${hls.map(([r, c]) => `<button class="chip hlchip hl-${c}" data-verse="${esc(r)}">${esc(r)}</button>`).join('')}</div>` : '<p class="empty">No highlights yet.</p>'}
+    <h2 class="libh">Notes</h2>${ns.length ? `<div class="rlist">${ns.map(([r, x]) => vbtn(r, `<span>${esc(x.t.slice(0, 220))}</span>`)).join('')}</div>` : '<p class="empty">No notes yet.</p>'}
+    <h2 class="libh">Reading plans</h2>${plans.length ? `<div class="rlist">${plans.map(([j, d]) => `<button class="ritem" data-go="plan-${j.id}"><div><b>${esc(j.n)}</b><span>${(d.done || []).length} of ${j.stops.length} days done</span></div><span class="tag">${Math.round(100 * (d.done || []).length / j.stops.length)}%</span></button>`).join('')}</div>` : '<p class="empty">Start a plan from the <button class="inl" data-go="plans">Plans</button> page.</p>'}
+    <h2 class="libh">Offline Bible</h2><p class="muted">Save the full Hebrew and Greek Bible with its word-by-word English (about 35 MB) so the reader and concordance work without signal.</p>
+    <div class="linkrow"><button class="btn sm" id="offl">Save the Bible for offline use</button><span class="small muted" id="offp"></span></div></div></section>`;
+  fillCardImages($('#libp') || main);
+  $('#bk').onclick = () => { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(MY, null, 1)], { type: 'application/json' })); a.download = `just-one-more-lord-backup-${new Date().toISOString().slice(0, 10)}.json`; a.click(); };
+  $('#rs').onchange = async e => { try { const d = JSON.parse(await e.target.files[0].text()); for (const k of ['places', 'verses', 'notes', 'hl', 'plans', 'quiz']) Object.assign(MY[k], d[k] || {}); saveMy(); toast('Backup restored'); viewLibrary(); } catch { toast('That file is not a valid backup'); } };
+  $('#offl').onclick = async () => { const reg = await navigator.serviceWorker?.ready; if (!reg?.active) { toast('Offline saving needs the installed site — open it online first'); return; }
+    await loadConc(); const files = ['lex-h.json', 'lex-g.json']; conc.starts.forEach(b => b.counts.forEach((_, i) => files.push(`text/${b.code}.${i + 1}.json`)));
+    const base = new URL(CONC, location.href).href; navigator.serviceWorker.onmessage = m => { if (m.data?.type === 'cache-progress') { $('#offp') && ($('#offp').textContent = m.data.done >= m.data.total ? 'Saved — the Bible now works offline.' : `Saving… ${Math.round(100 * m.data.done / m.data.total)}%`); } };
+    reg.active.postMessage({ type: 'cache-bible', files: files.map(f => base + f) }); $('#offp').textContent = 'Starting…'; };
+}
+function placeTools(p) {
+  const on = !!MY.places[p.id];
+  return `<div class="ptools"><button class="pill${on ? ' on' : ''}" id="savePlace" aria-pressed="${on}">${ICON.star(on)}<span>${on ? 'Saved' : 'Save place'}</span></button><button class="pill" id="sharePlace">${ICON.share}<span>Share</span></button><button class="pill" data-go="quiz-${p.id}">Quiz</button></div>`;
+}
+function enhancePlace(id) {
+  const p = byId[id]; const host = $('.phero .in'); if (!p || !host || $('.ptools', host)) return;
+  host.insertAdjacentHTML('beforeend', placeTools(p));
+  $('#savePlace').onclick = e => { if (MY.places[p.id]) delete MY.places[p.id]; else MY.places[p.id] = Date.now(); saveMy(); const on = !!MY.places[p.id]; const b = e.currentTarget; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); b.innerHTML = `${ICON.star(on)}<span>${on ? 'Saved' : 'Save place'}</span>`; toast(on ? 'Saved to your library' : 'Removed from your library'); };
+  $('#sharePlace').onclick = () => shareIt({ title: `${p.n} — Just One More Lord`, text: `${p.n}: ${p.sum || ''}`.slice(0, 220), hash: 'place-' + p.id });
+}
+
+/* ---------- verse of the day ---------- */
+const ALLV = PLACES.flatMap(p => (p.v || []).filter(v => /:\d/.test(v[0])).map(v => ({ ref: v[0], ctx: v[1], p })));
+function dayIndex() { const d = new Date(); return Math.floor((Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) - Date.UTC(2026, 0, 1)) / 864e5); }
+function votd() { const n = ALLV.length; if (!n) return null; let i = ((dayIndex() * 7919) % n + n) % n; return ALLV[i]; }
+async function homeVotd() {
+  const x = votd(); const feat = $('#feat')?.closest('.band'); if (!x || !feat) return;
+  feat.insertAdjacentHTML('beforebegin', `<section class="band votd"><div class="wrap"><div class="votdcard"><div><p class="kicker">Verse of the day · ${new Date().toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' })}</p>
+    <blockquote class="vtext" id="votdt"><span class="spin"></span>Loading…</blockquote><p class="votdref"><button class="vref" data-verse="${esc(x.ref)}">${esc(x.ref)}</button> <span class="muted">· ${esc(x.ctx)}</span></p>
+    <div class="linkrow"><button class="btn sm" data-go="place-${x.p.id}">Visit ${esc(x.p.n)} →</button><button class="btn ghost sm" data-go="read-${esc(readHash(x.ref))}">Read the chapter</button><button class="btn ghost sm" id="votdShare">${ICON.share} Share</button><a class="btn ghost sm" id="votdCal" download="verse-of-the-day.ics">Daily reminder</a></div></div>
+    <button class="votdph" data-go="place-${x.p.id}" data-wiki="${esc(x.p.wiki || x.p.n)}" aria-label="${esc(x.p.n)}"><div class="ph"><div class="mono">${monogram(x.p.n)}</div></div><span>${esc(x.p.n)}</span></button></div></div></section>`);
+  fillCardImages($('.votd'));
+  const ics = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Just One More Lord//EN', 'BEGIN:VEVENT', 'UID:votd-' + Date.now() + '@justonemorelord', 'DTSTAMP:' + new Date().toISOString().replace(/[-:]/g, '').slice(0, 15) + 'Z',
+    'DTSTART:' + new Date().toISOString().slice(0, 10).replace(/-/g, '') + 'T070000', 'DURATION:PT10M', 'RRULE:FREQ=DAILY', 'SUMMARY:Verse of the day — Just One More Lord', 'DESCRIPTION:Open today\'s verse and place: ' + SITE, 'URL:' + SITE,
+    'BEGIN:VALARM', 'TRIGGER:PT0M', 'ACTION:DISPLAY', 'DESCRIPTION:Verse of the day', 'END:VALARM', 'END:VEVENT', 'END:VCALENDAR'].join('\r\n');
+  $('#votdCal').href = URL.createObjectURL(new Blob([ics], { type: 'text/calendar' }));
+  let txt = ''; try { const v = await bibleText(x.ref); txt = v.verses.map(y => y.t).join(' ') || v.text; $('#votdt').innerHTML = esc(txt); } catch { try { txt = await glossVerse(x.ref); } catch {} $('#votdt').innerHTML = txt ? esc(txt) : `<span class="muted">${esc(x.ctx)}</span>`; }
+  $('#votdShare').onclick = () => shareIt({ title: 'Verse of the day', text: txt ? `“${txt}” — ${x.ref}` : x.ref, hash: 'place-' + x.p.id });
+}
+
+/* ---------- reading plans (one day per journey stage) ---------- */
+function viewPlans() {
+  setNav('plans'); document.title = 'Reading plans — Just One More Lord';
+  main.innerHTML = `<section class="band"><div class="wrap"><div class="sh"><div><p class="kicker">Read and travel</p><h1>Reading plans</h1><p>Walk through Scripture one stage at a time: each day gives you a passage, the place where it happened and a map. Your progress is saved on this device.</p></div></div>
+    <div class="grid">${JOURNEYS.map(j => { const d = MY.plans[j.id]?.done || []; const pc = Math.round(100 * d.length / j.stops.length);
+      return `<button class="jcard plancard" data-go="plan-${j.id}"><h3>${esc(j.n)}</h3><p class="muted small" style="margin:0">${j.stops.length} days · ${esc(j.ref)}</p><div class="prog" aria-label="${pc}% complete"><i style="width:${pc}%"></i></div><span class="small">${d.length ? `${d.length} of ${j.stops.length} days done` : 'Start this plan →'}</span></button>`; }).join('')}</div></div></section>`;
+}
+function viewPlan(id) {
+  const j = JOURNEYS.find(x => x.id === id); if (!j) return viewNotFound(); setNav('plans'); document.title = `${j.n} — reading plan`;
+  const st = MY.plans[j.id] || (MY.plans[j.id] = { done: [], start: Date.now() }); saveMy();
+  const draw = () => { const d = st.done; const nextDay = j.stops.findIndex((_, i) => !d.includes(i)); const pc = Math.round(100 * d.length / j.stops.length);
+    main.innerHTML = `<section class="band"><div class="wrap"><div class="crumbs"><button data-go="plans">Plans</button> › ${esc(j.n)}</div><h1>${esc(j.n)}</h1><p class="lead">${esc(j.intro || j.ref)}</p>
+      <div class="prog big"><i style="width:${pc}%"></i></div><p class="small muted">${d.length} of ${j.stops.length} days done${nextDay >= 0 ? '' : ' — plan complete! 🎉'}</p>
+      <ol class="days">${j.stops.map((s, i) => { const p = byId[s[0]]; return `<li class="${d.includes(i) ? 'done' : ''}${i === nextDay ? ' today' : ''}"><label class="chk"><input type="checkbox" data-day="${i}" ${d.includes(i) ? 'checked' : ''}><span>Day ${i + 1}</span></label>
+        <div><b>${esc(p?.n || s[0])}</b> · <button class="vref" data-verse="${esc(s[1])}">${esc(s[1])}</button><p class="muted small">${esc(s[2] || '')}</p>
+        <div class="linkrow"><button class="btn ghost sm" data-go="read-${esc(readHash(s[1]))}">Read</button>${p ? `<button class="btn ghost sm" data-go="place-${p.id}">The place</button>` : ''}</div></div></li>`; }).join('')}</ol>
+      <div class="linkrow"><button class="btn ghost sm" data-go="journey-${j.id}">See the whole journey on the map</button><button class="btn ghost sm" id="rstPlan">Restart plan</button></div></div></section>`;
+    main.querySelector('.days').onchange = e => { const i = +e.target.dataset.day; if (e.target.checked) { if (!st.done.includes(i)) st.done.push(i); } else st.done = st.done.filter(x => x !== i); saveMy(); draw(); if (e.target.checked) toast(st.done.length === j.stops.length ? 'Plan complete — well done!' : `Day ${i + 1} done`); };
+    $('#rstPlan').onclick = () => { if (confirm('Clear your progress for this plan?')) { st.done = []; saveMy(); draw(); } }; };
+  draw();
+}
+function markPlanProgress(chapter) { // reading a plan's chapter in the reader ticks that day
+  for (const j of JOURNEYS) { const st = MY.plans[j.id]; if (!st) continue; j.stops.forEach((s, i) => { if (chapterKey(s[1]) === chapter && !st.done.includes(i)) { st.done.push(i); saveMy(); toast(`${j.n}: day ${i + 1} marked as read`); } }); }
+}
+
+/* ---------- quizzes ---------- */
+const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const k = Math.floor(Math.random() * (i + 1)); [a[i], a[k]] = [a[k], a[i]]; } return a; };
+const pickN = (arr, n, not) => shuffle(arr.filter(x => !not.includes(x))).slice(0, n);
+const bookOf = r => (String(r).match(/^(.+?)\s+\d/) || [])[1];
+function questionsFor(p) {
+  const qs = []; const others = PLACES.filter(o => o.id !== p.id);
+  const locOf = o => (o.loc || '').split(/[;.]/)[0].trim();
+  if (locOf(p)) { const wrong = [...new Set(others.map(locOf).filter(l => l && l !== locOf(p)))]; if (wrong.length >= 3) qs.push({ q: `Where is ${p.n} today?`, a: locOf(p), o: pickN(wrong, 3, []), go: 'place-' + p.id }); }
+  const bks = [...new Set((p.v || []).map(v => bookOf(v[0])).filter(Boolean))];
+  if (bks.length) { const allB = [...new Set(ALLV.map(x => bookOf(x.ref)).filter(Boolean))]; const w = pickN(allB, 3, bks); if (w.length === 3) qs.push({ q: `Which book of the Bible mentions ${p.n}?`, a: shuffle(bks)[0], o: w, go: 'place-' + p.id }); }
+  const v = shuffle(p.v || [])[0]; if (v && v[1]) { const w = pickN(others.filter(o => o.v?.length).map(o => o.n), 3, [p.n]); qs.push({ q: `Where did this happen? “${v[1]}” (${v[0]})`, a: p.n, o: w, go: 'place-' + p.id }); }
+  const ds = discsFor(p.id); if (ds.length) { const d = shuffle(ds)[0]; const w = pickN(DISCS.filter(x => x.place !== p.id).map(x => x.n), 3, [d.n]); if (w.length === 3) qs.push({ q: `Which discovery is connected with ${p.n}?`, a: d.n, o: w, go: 'disc-' + d.id }); }
+  const js = journeysWith(p.id); if (js.length) { const w = pickN(JOURNEYS.filter(x => !js.includes(x)).map(x => x.n), 3, []); if (w.length) qs.push({ q: `${p.n} is a stop on which journey?`, a: js[0].n, o: w, go: 'journey-' + js[0].id }); }
+  if (p.pr && PREC[p.pr]) qs.push({ q: `How sure are scholars about the location of ${p.n}?`, a: PREC[p.pr][0], o: Object.values(PREC).map(x => x[0]).filter(x => x !== PREC[p.pr][0]), go: 'place-' + p.id });
+  return qs;
+}
+function viewQuiz(id) {
+  setNav('quiz'); const p = id ? byId[id] : null;
+  let qs = p ? questionsFor(p) : shuffle(PLACES.filter(x => x.v?.length)).slice(0, 14).flatMap(x => shuffle(questionsFor(x)).slice(0, 1)).slice(0, 10);
+  qs = qs.map(q => ({ ...q, opts: shuffle([q.a, ...q.o.slice(0, 3)]) }));
+  const title = p ? `Quiz: ${p.n}` : 'Bible places quiz'; document.title = title + ' — Just One More Lord';
+  let i = 0, score = 0;
+  const draw = () => {
+    if (i >= qs.length) { const best = MY.quiz[id || 'all'] = Math.max(MY.quiz[id || 'all'] || 0, score); saveMy();
+      main.innerHTML = `<section class="band"><div class="wrap quizwrap"><p class="kicker">${esc(title)}</p><h1>You scored <span class="neon-txt">${score} / ${qs.length}</span></h1><p class="lead">${score === qs.length ? 'Perfect — outstanding!' : score >= qs.length * .7 ? 'Excellent knowledge of the Bible lands.' : 'Good effort — explore the places and try again.'}</p><p class="muted small">Your best: ${best} / ${qs.length}</p>
+        <div class="linkrow"><button class="btn" id="again">Play again</button><button class="btn ghost" id="shq">${ICON.share} Challenge a friend</button>${p ? `<button class="btn ghost" data-go="place-${p.id}">Back to ${esc(p.n)}</button>` : ''}</div></div></section>`;
+      $('#again').onclick = () => viewQuiz(id); $('#shq').onclick = () => shareIt({ title, text: `I scored ${score}/${qs.length} on the ${title} — can you beat me?`, hash: id ? 'quiz-' + id : 'quiz' }); return; }
+    const q = qs[i];
+    main.innerHTML = `<section class="band"><div class="wrap quizwrap"><p class="kicker">${esc(title)} · question ${i + 1} of ${qs.length}</p><div class="prog"><i style="width:${100 * i / qs.length}%"></i></div>
+      <h2 class="qq">${esc(q.q)}</h2><div class="qopts">${q.opts.map((o, k) => `<button class="qopt" data-k="${k}">${esc(o)}</button>`).join('')}</div><div id="qfb" aria-live="polite"></div></div></section>`;
+    $('.qopts').onclick = e => { const b = e.target.closest('.qopt'); if (!b || $('.qopts').dataset.done) return; $('.qopts').dataset.done = 1; const ok = q.opts[+b.dataset.k] === q.a; if (ok) score++;
+      $$('.qopt').forEach(x => { if (q.opts[+x.dataset.k] === q.a) x.classList.add('right'); else if (x === b) x.classList.add('wrong'); x.disabled = true; });
+      $('#qfb').innerHTML = `<p class="${ok ? 'notice' : 'notice warn'}">${ok ? 'Correct!' : `The answer is <b>${esc(q.a)}</b>.`} <button class="inl" data-go="${q.go}">Learn more</button></p><div class="linkrow"><button class="btn" id="qn">${i + 1 < qs.length ? 'Next question →' : 'See my score'}</button></div>`;
+      $('#qn').onclick = () => { i++; draw(); }; $('#qn').focus(); };
+  };
+  if (!qs.length) { main.innerHTML = `<section class="band"><div class="wrap"><p class="empty">No quiz is available for this place yet.</p></div></section>`; return; }
+  draw();
+}
+
+/* ---------- near me ---------- */
+function viewNear() {
+  setNav(''); document.title = 'Bible places near me — Just One More Lord';
+  main.innerHTML = `<section class="band"><div class="wrap"><div class="sh"><div><p class="kicker">Travelling?</p><h1>Bible places near me</h1><p>Find the nearest biblical sites to where you are now — useful in Israel, Jordan, Egypt, Turkey, Greece, Italy or anywhere else. Your location stays on your device.</p></div></div>
+    <div class="linkrow"><button class="btn" id="locate">Use my location</button></div><div id="nearres" style="margin-top:20px"></div></div></section>`;
+  $('#locate').onclick = () => { if (!navigator.geolocation) { $('#nearres').innerHTML = '<p class="empty">This device cannot share its location.</p>'; return; }
+    $('#nearres').innerHTML = '<p class="muted"><span class="spin"></span>Finding you…</p>';
+    navigator.geolocation.getCurrentPosition(async pos => { const me = { lat: pos.coords.latitude, lon: pos.coords.longitude };
+      const list = PLACES.map(p => ({ p, d: km(me, p) })).sort((a, b) => a.d - b.d).slice(0, 12); const fmt = d => d < 10 ? d.toFixed(1) + ' km' : Math.round(d).toLocaleString() + ' km';
+      $('#nearres').innerHTML = `<div class="jlayout"><div class="mapbox tall" id="nmap"></div><div class="rlist">${list.map(x => `<button class="ritem" data-go="place-${x.p.id}"><div><b>${esc(x.p.n)}</b><span>${esc(x.p.loc || '')}</span></div><span class="tag">${fmt(x.d)}</span></button>`).join('')}</div></div>`;
+      const mp = await makeMap($('#nmap'), { markers: [{ ...me, label: 'You are here', kind: 'main' }, ...list.map(x => ({ lat: x.p.lat, lon: x.p.lon, label: x.p.n, sub: fmt(x.d), kind: 'place', go: 'place-' + x.p.id }))], maxZoom: 11 }); },
+    err => { $('#nearres').innerHTML = `<p class="empty">${err.code === 1 ? 'Location permission was declined. Allow location for this site in your browser settings, then try again.' : 'Your location could not be found right now. Try again outdoors or with Wi-Fi on.'}</p>`; }, { enableHighAccuracy: false, timeout: 15000, maximumAge: 600000 }); };
+}
+
+/* ---------- display settings, install, offline ---------- */
+const PREF = (() => { try { return JSON.parse(localStorage.getItem('jom:pref') || '{}') || {}; } catch { return {}; } })();
+function applyPrefs() { const r = document.documentElement; r.style.setProperty('--fs', PREF.size || 1); r.dataset.contrast = PREF.hc ? 'high' : ''; r.dataset.motion = PREF.rm ? 'reduce' : '';
+  $$('#aaPanel [data-size]').forEach(b => b.setAttribute('aria-pressed', String(+b.dataset.size === +(PREF.size || 1)))); const hc = $('#hcTog'), rm = $('#rmTog'); if (hc) hc.checked = !!PREF.hc; if (rm) rm.checked = !!PREF.rm; }
+function savePrefs() { try { localStorage.setItem('jom:pref', JSON.stringify(PREF)); } catch {} applyPrefs(); }
+(() => { const btn = $('#aaBtn'), pan = $('#aaPanel'); if (!btn) return; applyPrefs();
+  btn.onclick = e => { e.stopPropagation(); pan.hidden = !pan.hidden; btn.setAttribute('aria-expanded', !pan.hidden); };
+  document.addEventListener('click', e => { if (!pan.hidden && !e.target.closest('.tools')) { pan.hidden = true; btn.setAttribute('aria-expanded', 'false'); } });
+  pan.onclick = e => { const s = e.target.closest('[data-size]'); if (s) { PREF.size = +s.dataset.size; savePrefs(); } };
+  $('#hcTog').onchange = e => { PREF.hc = e.target.checked; savePrefs(); }; $('#rmTog').onchange = e => { PREF.rm = e.target.checked; savePrefs(); };
+  let deferred = null; const ib = $('#installBtn');
+  window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferred = e; ib.hidden = false; showInstallBanner(); });
+  ib.onclick = async () => { if (deferred) { deferred.prompt(); await deferred.userChoice; deferred = null; ib.hidden = true; } };
+  const ios = /iphone|ipad|ipod/i.test(navigator.userAgent) && !navigator.standalone;
+  function showInstallBanner() { if (localStorage.getItem('jom:noinstall') || matchMedia('(display-mode: standalone)').matches || $('#instb')) return;
+    document.body.insertAdjacentHTML('beforeend', `<div class="instb" id="instb" role="dialog" aria-label="Install the app"><img src="icons/icon-192.png" alt=""><div><b>Install Just One More Lord</b><span>${ios ? 'Tap the Share button, then “Add to Home Screen”.' : 'Add it to your home screen — it works offline too.'}</span></div>${ios ? '' : '<button class="btn sm" id="instgo">Install</button>'}<button class="dx" id="instx" aria-label="Not now">×</button></div>`);
+    $('#instgo')?.addEventListener('click', () => { ib.click(); $('#instb')?.remove(); }); $('#instx').onclick = () => { localStorage.setItem('jom:noinstall', 1); $('#instb').remove(); }; }
+  if (ios) setTimeout(showInstallBanner, 20000);
+  if ('serviceWorker' in navigator && location.protocol === 'https:') addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+})();
+
 /* ---------------- router ---------------- */
 async function render() {
   const h = decodeURIComponent(location.hash.slice(1) || 'home');
   if (dlg.open) dlg.close(); window.scrollTo(0, 0); main.onclick = null;
   try {
-    if (h === 'home' || h === '') await viewHome();
-    else if (h.startsWith('place-')) await viewPlace(h.slice(6));
+    if (h === 'home' || h === '') { await viewHome(); homeVotd(); }
+    else if (h.startsWith('place-')) { await viewPlace(h.slice(6)); enhancePlace(h.slice(6)); }
     else if (h.startsWith('disc-')) { const d = discById[h.slice(5)]; d ? await viewPlace(d.place, d.id) : viewNotFound(); }
     else if (h === 'atlas') await viewAtlas();
     else if (h === 'journeys') viewJourneys();
@@ -916,6 +1174,12 @@ async function render() {
     else if (h === 'search') await viewSearch();
     else if (h === 'about') viewAbout();
     else if (h === 'concordance') await viewConcordance();
+    else if (h === 'read' || h.startsWith('read-')) await viewRead(h.slice(5));
+    else if (h === 'library') viewLibrary();
+    else if (h === 'plans') viewPlans();
+    else if (h.startsWith('plan-')) viewPlan(h.slice(5));
+    else if (h === 'quiz' || h.startsWith('quiz-')) viewQuiz(h.slice(5));
+    else if (h === 'near') viewNear();
     else if (h.startsWith('strong-')) await viewStrong(h.slice(7));
     else if (h.startsWith('w-')) await viewWiki(h.slice(2));
     else if (h.startsWith('og-')) await viewGaz(h.slice(3));
