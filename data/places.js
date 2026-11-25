@@ -507,7 +507,7 @@ hist:'Et-Tell (excavated by Rami Arav since 1987) has substantial Iron Age remai
 bib:'Home of Philip, Andrew and Peter. Jesus heals a blind man in two stages here and pronounces woe on it.',
 civ:[['Iron Age (Geshur, at et-Tell)',-1000,-732],['Roman (Julias)',30,324],['Byzantine (el-Araj)',324,700]],
 vis:'The et-Tell excavations with an Iron Age city gate, and the el-Araj excavations in the Bethsaida Valley.',
-v:[['John 1:44','Philip was from Bethsaida, the city of Andrew and Peter.'],['Mark 8:22-26','A blind man is healed at Bethsaida.'],['Luke 9:10','Jesus withdraws to a city called Bethsaida.'],['Matthew 11:21','"Woe to you, Bethsaida!"']],
+v:[['John 1:44','Philip was from Bethsaida, the city of Andrew and Peter.'],['Mark 8:22-26','A blind man is healed at Bethsaida.'],['Luke 9:10-17','Jesus withdraws to Bethsaida and feeds the five thousand there.'],['Matthew 11:21','"Woe to you, Bethsaida!"']],
 tl:[[-900,'Iron Age','Fortified city at et-Tell.','h'],[30,'c. AD 30','Philip the Tetrarch refounds Bethsaida as Julias.','h'],[1987,'1987','Excavations at et-Tell begin.','x'],[2016,'2016','Excavations at el-Araj begin.','x']],
 rel:['capernaum','chorazin','sea-of-galilee']},
 
