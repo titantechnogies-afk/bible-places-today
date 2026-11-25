@@ -77,7 +77,7 @@ function imgFromInfo(page) {
   const ii = page?.imageinfo?.[0]; if (!ii) return null; const m = ii.extmetadata || {};
   return { title: page.title, src: ii.thumburl || ii.url, full: ii.url, page: ii.descriptionurl,
     author: strip(m.Artist?.value).slice(0, 120), license: strip(m.LicenseShortName?.value), licenseUrl: m.LicenseUrl?.value || '',
-    desc: strip(m.ImageDescription?.value).slice(0, 260), mime: ii.mime || '' };
+    desc: strip(m.ImageDescription?.value).slice(0, 260), mime: ii.mime || '', w: ii.thumbwidth || ii.width || 0, h: ii.thumbheight || ii.height || 0 };
 }
 async function commonsInfo(files, width = 900) {
   const out = {}; files = [...new Set(files.filter(Boolean))];
@@ -361,27 +361,52 @@ function nearest(p, n = 6, maxKm = 120) { return PLACES.filter(o => o.id !== p.i
 
 /* ---------------- views ---------------- */
 function heroSVG() {
-  const floor = Array.from({ length: 9 }, (_, i) => { const y = 640 + Math.pow(i / 8, 1.8) * 160; return `<line x1="0" y1="${y.toFixed(1)}" x2="1600" y2="${y.toFixed(1)}"/>`; }).join('') + Array.from({ length: 25 }, (_, i) => `<line x1="800" y1="640" x2="${-1600 + i * 200}" y2="800"/>`).join('');
-  return `<svg viewBox="0 0 1600 800" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><defs>
-  <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#020a10"/><stop offset=".5" stop-color="#04202c"/><stop offset=".8" stop-color="#0b4a5a"/><stop offset="1" stop-color="#c77a1a"/></linearGradient>
-  <linearGradient id="sunG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff3b0"/><stop offset=".5" stop-color="#ffa62b"/><stop offset="1" stop-color="#ffc72c"/></linearGradient>
-  <radialGradient id="haze" cx=".5" cy=".78" r=".55"><stop offset="0" stop-color="#ffc72c" stop-opacity=".55"/><stop offset=".5" stop-color="#1fe0d0" stop-opacity=".18"/><stop offset="1" stop-color="#1fe0d0" stop-opacity="0"/></radialGradient>
-  <mask id="bars"><rect x="560" y="200" width="480" height="440" fill="#fff"/>${Array.from({ length: 8 }, (_, i) => `<rect x="560" y="${440 + i * 18}" width="480" height="${3 + i * 1.6}" fill="#000"/>`).join('')}</mask>
-  <filter id="glow" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
-  <filter id="soft"><feGaussianBlur stdDeviation="22"/></filter></defs>
-  <rect width="1600" height="800" fill="url(#sky)"/><rect width="1600" height="800" fill="url(#haze)"/>
-  <g fill="#fff">${Array.from({ length: 70 }, (_, i) => `<circle cx="${(i * 397) % 1600}" cy="${(i * 131) % 420}" r="${i % 5 ? .9 : 1.7}" opacity="${.35 + (i % 4) * .15}"/>`).join('')}</g>
-  <circle cx="800" cy="430" r="210" fill="#ffc72c" opacity=".4" filter="url(#soft)"/>
-  <circle cx="800" cy="430" r="190" fill="url(#sunG)" mask="url(#bars)"/>
-  <path d="M0 600 C200 540 330 560 470 520 S760 470 900 505 1200 560 1600 515 V640 H0Z" fill="#041820" stroke="#1fe0d0" stroke-width="2" filter="url(#glow)" opacity=".95"/>
-  <g transform="translate(565 420)" filter="url(#glow)"><path d="M0 220 L40 170 L120 160 L210 120 L330 130 L420 170 L470 220Z" fill="#03141c" stroke="#ffc72c" stroke-width="2"/>
-  <path d="M40 200 V142 h22 v-14 h10 v14 h20 v-14 h10 v14 h46 V120 h10 v-12 h10 v12 h10 v-12 h10 v12 h12 v22 h70 v-14 h10 v14 h20 v-14 h10 v14 h60 V130 h10 v-12 h10 v12 h10 v-12 h10 v12 h10 v70Z" fill="#021219" stroke="#00d1ff" stroke-width="2.5" stroke-linejoin="round"/>
-  <path d="M190 200 v-34 a18 18 0 0 1 36 0 v34" fill="none" stroke="#fff3b0" stroke-width="2.5"/>
-  <g fill="#00d1ff"><rect x="90" y="154" width="6" height="12"/><rect x="300" y="154" width="6" height="12"/><rect x="380" y="146" width="6" height="12"/></g>
-  <path d="M208 40 v52 M190 58 h36" stroke="#fff" stroke-width="4" stroke-linecap="round"/></g>
-  <rect y="640" width="1600" height="160" fill="#020a10"/>
-  <g stroke="#ffc72c" stroke-width="1.6" opacity=".7" filter="url(#glow)">${floor}</g>
-  <line x1="0" y1="640" x2="1600" y2="640" stroke="#00d1ff" stroke-width="2.5" filter="url(#glow)"/></svg>`;
+  const rays = Array.from({ length: 18 }, (_, i) => { const a = (-80 + i * 9.4) * Math.PI / 180, b = a + 0.05 + (i % 3) * 0.02, R = 1400;
+    return `<path d="M1060 330 L${(1060 + Math.sin(a) * R).toFixed(0)} ${(330 - Math.cos(a) * R).toFixed(0)} L${(1060 + Math.sin(b) * R).toFixed(0)} ${(330 - Math.cos(b) * R).toFixed(0)}Z" opacity="${(0.05 + (i % 4) * 0.03).toFixed(2)}"/>`; }).join('');
+  return `<svg viewBox="${innerWidth < 760 ? '640 0 840 800' : '0 0 1600 800'}" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><defs>
+  <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#02080d"/><stop offset=".45" stop-color="#0b2430"/><stop offset=".75" stop-color="#6b4a1c"/><stop offset="1" stop-color="#d98d2b"/></linearGradient>
+  <radialGradient id="sun" cx="1060" cy="330" r="520" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#fff6d8"/><stop offset=".08" stop-color="#ffd88a" stop-opacity=".95"/><stop offset=".3" stop-color="#ffb347" stop-opacity=".45"/><stop offset="1" stop-color="#ff9a2b" stop-opacity="0"/></radialGradient>
+  <filter id="clouds" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency=".0026 .009" numOctaves="6" seed="7"/><feColorMatrix values="0 0 0 0 .05  0 0 0 0 .1  0 0 0 0 .13  0 0 0 2.6 -1.15"/></filter>
+  <filter id="cloudsLit" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency=".004 .014" numOctaves="5" seed="3"/><feColorMatrix values="0 0 0 0 1  0 0 0 0 .72  0 0 0 0 .35  0 0 0 2.2 -1.1"/></filter>
+  <filter id="grain"><feTurbulence type="fractalNoise" baseFrequency=".9 .03" numOctaves="3" seed="2"/><feColorMatrix values="0 0 0 0 .16  0 0 0 0 .1  0 0 0 0 .05  0 0 0 .45 0"/><feComposite in2="SourceGraphic" operator="in"/></filter>
+  <filter id="blur"><feGaussianBlur stdDeviation="3"/></filter>
+  <linearGradient id="rim" x1="1" y1="0" x2="0" y2="0"><stop offset="0" stop-color="#ffcf7a" stop-opacity=".9"/><stop offset=".12" stop-color="#ffcf7a" stop-opacity="0"/></linearGradient>
+  <radialGradient id="vig" cx=".5" cy=".5" r=".75"><stop offset=".55" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".75"/></radialGradient></defs>
+  <rect width="1600" height="800" fill="url(#sky)"/>
+  <rect width="1600" height="800" fill="url(#sun)"/>
+  <g fill="#ffe2a6">${rays}</g>
+  <rect width="1600" height="560" filter="url(#cloudsLit)" opacity=".55"/>
+  <rect width="1600" height="620" filter="url(#clouds)"/>
+  <rect width="1600" height="800" fill="url(#sun)" opacity=".7"/>
+  <g fill="#fff">${Array.from({ length: 30 }, (_, i) => `<circle cx="${(i * 397) % 900}" cy="${(i * 131) % 180}" r="${i % 5 ? .7 : 1.3}" opacity=".5"/>`).join('')}</g>
+  <path d="M0 660 C220 610 420 640 640 600 S960 560 1110 572 1380 610 1600 590 V800 H0Z" fill="#120c06"/>
+  <path d="M640 600 C760 560 900 548 1060 556 C1180 562 1300 590 1420 610" fill="none" stroke="#ffb347" stroke-width="2" opacity=".55" filter="url(#blur)"/>
+  <g transform="translate(1060 0)">
+    <path d="M-18 150 L18 150 L20 562 L-20 562Z" fill="#0d0805"/>
+    <path d="M-128 240 L128 236 L128 268 L-128 272Z" fill="#0d0805"/>
+    <path d="M-18 150 L18 150 L20 562 L-20 562Z M-128 240 L128 236 L128 268 L-128 272Z" filter="url(#grain)" fill="#000"/>
+    <path d="M-18 150 L18 150 L20 562 L-20 562Z M-128 240 L128 236 L128 268 L-128 272Z" fill="url(#rim)"/>
+    <path d="M-18 150 L18 150 M-128 240 L128 236" stroke="#ffd88a" stroke-width="1.5" opacity=".7"/>
+  </g>
+  <path d="M0 720 C300 680 600 700 900 690 S1400 700 1600 680 V800 H0Z" fill="#070402"/>
+  <rect width="1600" height="800" fill="url(#vig)"/></svg>`;
+}
+/* hero photograph of the cross: a self-hosted file first (img/hero-cross.jpg), else a dramatic cross photo from Wikimedia Commons */
+const HERO_FILE = 'img/hero-cross.jpg';
+async function heroCrossImage() {
+  const local = await new Promise(r => { const i = new Image(); i.onload = () => r(i.naturalWidth > 0); i.onerror = () => r(false); i.src = HERO_FILE; });
+  if (local) return { src: HERO_FILE, local: true };
+  if (!(await isLive())) return null;
+  try { const c = JSON.parse(localStorage.getItem('jom:heroCross') || 'null'); if (c && c.src && Date.now() - c.t < 7 * 864e5) return c; } catch {}
+  const OK = /\b(cross|crucifix|calvary|golgotha|kreuz|gipfelkreuz|croix|cruz|krzyż)\b/i, NO = /\b(red cross|grave|gravestone|cemetery|tomb|pharmacy|road|traffic|railway|stitch|swiss|flag|hospital|church interior|necklace|pendant|tattoo|celtic knot|cross-section|crossing)\b/i;
+  for (const q of ['Christian cross silhouette sunset', 'wooden cross hill sunset', 'cross silhouette dramatic sky', 'Gipfelkreuz Sonnenuntergang']) {
+    try { const j = await getJSON(CAPI + `&action=query&generator=search&gsrnamespace=6&gsrlimit=40&gsrsearch=${encodeURIComponent(q + ' filetype:bitmap')}&prop=imageinfo&iiprop=url|extmetadata|mime|size&iiurlwidth=1920&iiextmetadatafilter=${META}`);
+      const pick = (j?.query?.pages || []).sort((a, b) => (a.index || 0) - (b.index || 0)).map(imgFromInfo)
+        .filter(im => goodImg(im) && im.w >= 1400 && im.h && im.w / im.h >= 1.25 && OK.test(im.title) && !NO.test(im.title + ' ' + im.desc))[0];
+      if (pick) { try { localStorage.setItem('jom:heroCross', JSON.stringify({ ...pick, t: Date.now() })); } catch {} return pick; }
+    } catch {}
+  }
+  return null;
 }
 async function viewHome() {
   setNav('home'); document.title = 'Just One More Lord — Explore the world of the Bible';
@@ -410,8 +435,9 @@ async function viewHome() {
   $('#bigSearch').onsubmit = e => { e.preventDefault(); doSearch($('#bq').value); };
   attachSuggest($('#bq'));
   fillCardImages($('#feat'));
-  const s = await wikiSummary('Old City of Jerusalem'); const f = fileFromUrl(s?.originalimage?.source);
-  if (f) { const info = (await commonsInfo([f], 1600))[f.replace(/_/g, ' ')]; if (info && $('.hero .bg')) { const img = new Image(); img.alt = 'The Old City of Jerusalem today'; img.onload = () => { img.classList.add('on'); $('.hero .bg svg')?.remove(); }; img.src = info.src; $('.hero .bg').prepend(img); const c = $('#heroCredit'); c.hidden = false; c.innerHTML = 'Jerusalem today. Photo: ' + credit(info); } }
+  const hb = $('.hero .bg'), im = await heroCrossImage();
+  if (im && hb) { const img = new Image(); img.alt = 'The cross'; img.onload = () => { img.classList.add('on'); $('.hero .bg svg')?.remove(); }; img.src = im.src; hb.prepend(img);
+    if (!im.local) { const c = $('#heroCredit'); c.hidden = false; c.innerHTML = 'Photo: ' + credit(im); } }
 }
 function journeyCard(j) {
   const pts = j.stops.map(s => byId[s[0]]).filter(Boolean);
