@@ -1,7 +1,7 @@
 /* Just One More Lord — service worker: makes the app installable and usable offline.
    App files: served from cache, refreshed in the background. Bible/concordance data: cached on first use.
    Live sources (Wikipedia, Commons, Bible text, map tiles): network first, cached copy when offline. */
-const V = 'jom-v4';
+const V = 'jom-v5';
 const SHELL = ['./', 'index.html', 'css/style.css', 'js/app.js', 'data/places.js', 'data/discoveries.js', 'data/journeys.js', 'data/story.js', 'js/config.js',
   'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/favicon-32.png', 'img/hero.webp',
   'data/concordance/books.json'];
@@ -18,7 +18,7 @@ self.addEventListener('fetch', e => {
   const u = new URL(req.url);
   if (u.origin === location.origin) {
     if (req.mode === 'navigate') return e.respondWith(networkFirst(V + '-shell', new Request('index.html')).then(r => r.ok ? r : caches.match('index.html')));
-    if (u.pathname.includes('/data/concordance/')) return e.respondWith(cacheFirst(V + '-bible', req));
+    if (u.pathname.includes('/data/concordance/') || u.pathname.includes('/data/xrefs/')) return e.respondWith(cacheFirst(V + '-bible', req));
     return e.respondWith(staleWhileRevalidate(V + '-shell', req));
   }
   if (/(^|\.)(tile\.openstreetmap\.org|arcgisonline\.com|opentopomap\.org|upload\.wikimedia\.org|s3\.amazonaws\.com)$/.test(u.hostname)) return e.respondWith(cacheFirst(V + '-img', req));

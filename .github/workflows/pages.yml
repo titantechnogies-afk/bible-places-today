@@ -21,6 +21,8 @@ jobs:
           node-version: 22
       - name: Build the full Bible-places index (optional)
         run: node tools/build-gazetteer.mjs || echo "Skipped; the site loads the index on demand."
+      - name: Build cross-references (OpenBible.info, CC BY)
+        run: node tools/build-xrefs.mjs || echo "Cross-references skipped"
       - name: Build share pages and sitemap
         run: node tools/build-pages.mjs
       - uses: actions/configure-pages@v5
