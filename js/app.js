@@ -1980,13 +1980,13 @@ function viewProfile() {
       $('#asw').onclick = () => { mode = mode === 'in' ? 'up' : 'in'; draw(); };
       const msg = (t, bad) => { const m = $('#amsg'); m.textContent = t; m.className = 'small ' + (bad ? 'warnt' : 'okt'); };
       $('#af').onsubmit = async e => { e.preventDefault(); const email = $('#ae').value.trim(), password = $('#ap').value; msg('Please wait…');
-        try { if (mode === 'up') { const j = await sbFetch('/auth/v1/signup', { method: 'POST', body: JSON.stringify({ email, password, data: { name: $('#an')?.value.trim() || '' } }) }, false);
+        try { if (mode === 'up') { const j = await sbFetch('/auth/v1/signup?redirect_to=' + encodeURIComponent(SITE), { method: 'POST', body: JSON.stringify({ email, password, data: { name: $('#an')?.value.trim() || '' } }) }, false);
             if (!setSession(j)) { msg('Check your email and tap the confirmation link to finish creating your account.'); return; } MY.name = MY.name || $('#an')?.value.trim(); AUTH.profile = { name: MY.name }; }
           else setSession(await sbFetch('/auth/v1/token?grant_type=password', { method: 'POST', body: JSON.stringify({ email, password }) }, false));
           await pullProfile(); toast('Welcome!'); $('#meBtn')?.remove(); profileBtn(); viewProfile(); }
         catch (er) { msg(/invalid login/i.test(er.message) ? 'Wrong email or password.' : er.message, true); } };
       $('#amagic').onclick = async () => { const email = $('#ae').value.trim(); if (!email) { msg('Type your email first.', true); return; }
-        try { await sbFetch('/auth/v1/otp', { method: 'POST', body: JSON.stringify({ email, create_user: true, options: { email_redirect_to: SITE } }) }, false); msg('Check your email for a sign-in link.'); } catch (er) { msg(er.message, true); } };
+        try { await sbFetch('/auth/v1/otp?redirect_to=' + encodeURIComponent(SITE), { method: 'POST', body: JSON.stringify({ email, create_user: true, options: { email_redirect_to: SITE } }) }, false); msg('Check your email for a sign-in link.'); } catch (er) { msg(er.message, true); } };
       $('#agoogle')?.addEventListener('click', () => { location.href = `${SB.url.replace(/\/$/, '')}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(SITE)}`; }); };
     draw(); return;
   }
