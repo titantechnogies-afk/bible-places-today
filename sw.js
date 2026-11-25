@@ -1,7 +1,7 @@
 /* Just One More Lord — service worker: makes the app installable and usable offline.
    App files: served from cache, refreshed in the background. Bible/concordance data: cached on first use.
    Live sources (Wikipedia, Commons, Bible text, map tiles): network first, cached copy when offline. */
-const V = 'jom-v3';
+const V = 'jom-v4';
 const SHELL = ['./', 'index.html', 'css/style.css', 'js/app.js', 'data/places.js', 'data/discoveries.js', 'data/journeys.js', 'data/story.js', 'js/config.js',
   'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/favicon-32.png', 'img/hero.webp',
   'data/concordance/books.json'];

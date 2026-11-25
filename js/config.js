@@ -5,7 +5,7 @@
    3) Open https://giscus.app, enter titantechnogies-afk/bible-places-today, pick the "General" (or a new "Community")
       category, and copy the values of data-repo-id and data-category-id into repoId and categoryId below. */
 window.JOM_CONFIG = {
-  giscus: { repo: 'titantechnogies-afk/bible-places-today', repoId: '', category: 'General', categoryId: '' },
+  giscus: { repo: 'titantechnogies-afk/bible-places-today', repoId: 'R_kgDOV7vntw', category: 'General', categoryId: 'DIC_kwDOV7vnt84DL-Au' },
   whatsappGroup: '',        // optional: an invite link to a WhatsApp community, e.g. https://chat.whatsapp.com/...
   developer: 'Titan Technogies'
 };
