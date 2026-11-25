@@ -234,13 +234,13 @@ async function loadGazetteer(onProgress) {
 
 /* ---------------- map component (Leaflet when live, schematic SVG otherwise) ---------------- */
 const KCOL = { main: '#ffffff', place: '#00d1ff', disc: '#ff7a3d', site: '#39ff9c', near: '#7aa8ff', stop: '#00d1ff' };
-async function makeMap(box, { markers = [], lines = [], fitPad = 40, maxZoom = 13, overlays = {} } = {}) {
+async function makeMap(box, { markers = [], lines = [], fitPad = 40, maxZoom = 13, overlays = {}, areas = [] } = {}) {
   const live = await isLive();
-  if (live && window.L) return leafletMap(box, { markers, lines, fitPad, maxZoom, overlays });
-  return svgMap(box, { markers, lines });
+  if (live && window.L) return leafletMap(box, { markers, lines, fitPad, maxZoom, overlays, areas });
+  return svgMap(box, { markers, lines, areas });
 }
 function popupHTML(m) { return `<b>${esc(m.label)}</b>${m.sub ? `<br><span>${esc(m.sub)}</span>` : ''}${m.go ? `<br><a href="#${esc(m.go)}">Explore this place →</a>` : ''}${m.url ? `<br><a href="${esc(m.url)}" target="_blank" rel="noopener">Read more ↗</a>` : ''}`; }
-function leafletMap(box, { markers, lines, fitPad, maxZoom, overlays }) {
+function leafletMap(box, { markers, lines, fitPad, maxZoom, overlays, areas = [] }) {
   box.innerHTML = ''; const L = window.L;
   const map = L.map(box, { scrollWheelZoom: false, worldCopyJump: true, zoomControl: true });
   const base = {
@@ -257,6 +257,7 @@ function leafletMap(box, { markers, lines, fitPad, maxZoom, overlays }) {
     for (const m of list) { const mk = L.marker([m.lat, m.lon], { icon: icon(m), title: m.label, zIndexOffset: m.kind === 'main' ? 1000 : m.kind === 'stop' ? 500 : 0 }).bindPopup(popupHTML(m)); if (m.onClick) mk.on('click', () => m.onClick(m)); mk.addTo(g); all.push([m.lat, m.lon]); m._mk = mk; }
     return g;
   }
+  for (const a of areas) { L.polygon(a.pts, { color: a.color, weight: 2, opacity: .9, fillColor: a.color, fillOpacity: .22, dashArray: a.dash || null }).bindTooltip(a.label, { permanent: !!a.permanent, direction: 'center', className: 'arealbl' }).addTo(map); a.pts.forEach(pt => all.push(pt)); }
   for (const ln of lines) L.polyline(ln.pts, { color: ln.color || '#00d1ff', weight: ln.weight || 3, opacity: .9, dashArray: ln.dash || null }).addTo(map);
   add(markers);
   const ctl = L.control.layers(base, {}, { collapsed: true }).addTo(map);
@@ -265,12 +266,12 @@ function leafletMap(box, { markers, lines, fitPad, maxZoom, overlays }) {
   new ResizeObserver(() => map.invalidateSize()).observe(box);
   return { kind: 'leaflet', map, add(list, name) { const g = add(list, name); ctl.addOverlay(g, name); return g; }, toggle(name, on) { const g = groups[name]; if (!g) return; on ? g.addTo(map) : map.removeLayer(g); }, focus(m, zoom = 11) { map.setView([m.lat, m.lon], zoom); m._mk?.openPopup(); }, fit };
 }
-function svgMap(box, { markers, lines }) {
+function svgMap(box, { markers, lines, areas = [] }) {
   box.innerHTML = '<div class="svgmap"><svg role="img" aria-label="Schematic map"></svg><div class="note">Schematic map (live map tiles unavailable) — positions are true latitude/longitude</div></div>';
   const svg = $('svg', box); const sets = { Places: markers.slice() }; const hidden = new Set(); let focusId = null;
   const draw = () => {
     const W = box.clientWidth || 600, H = box.clientHeight || 400;
-    const pts = Object.entries(sets).filter(([k]) => !hidden.has(k)).flatMap(([, v]) => v).concat(lines.flatMap(l => l.pts.map(p => ({ lat: p[0], lon: p[1] }))));
+    const pts = Object.entries(sets).filter(([k]) => !hidden.has(k)).flatMap(([, v]) => v).concat(lines.flatMap(l => l.pts.map(p => ({ lat: p[0], lon: p[1] }))), areas.flatMap(a => a.pts.map(p => ({ lat: p[0], lon: p[1] }))));
     if (!pts.length) { svg.innerHTML = ''; return; }
     let la0 = Math.min(...pts.map(p => p.lat)), la1 = Math.max(...pts.map(p => p.lat)), lo0 = Math.min(...pts.map(p => p.lon)), lo1 = Math.max(...pts.map(p => p.lon));
     const minSpan = .08; if (la1 - la0 < minSpan) { la0 -= minSpan; la1 += minSpan; } if (lo1 - lo0 < minSpan) { lo0 -= minSpan; lo1 += minSpan; }
@@ -283,6 +284,8 @@ function svgMap(box, { markers, lines }) {
     const gLo0 = Math.floor((lo0 - span) / step) * step, gLa0 = Math.floor((la0 - span) / step) * step;
     for (let lo = gLo0; lo <= lo1 + span; lo += step) { const x = X(lo); if (x < 0 || x > W) continue; g += `<line x1="${x}" y1="0" x2="${x}" y2="${H}" stroke="#0f2a36"/><text x="${x + 3}" y="${H - 6}" fill="#4f7f8f" font-size="10">${(+lo.toFixed(1))}°E</text>`; }
     for (let la = gLa0; la <= la1 + span; la += step) { const y = Y(la); if (y < 0 || y > H) continue; g += `<line x1="0" y1="${y}" x2="${W}" y2="${y}" stroke="#0f2a36"/><text x="4" y="${y - 3}" fill="#4f7f8f" font-size="10">${(+la.toFixed(1))}°N</text>`; }
+    for (const a of areas) { const cx = a.pts.reduce((s, p) => s + X(p[1]), 0) / a.pts.length, cy = a.pts.reduce((s, p) => s + Y(p[0]), 0) / a.pts.length;
+      g += `<polygon points="${a.pts.map(p => X(p[1]) + ',' + Y(p[0])).join(' ')}" fill="${a.color}" fill-opacity=".22" stroke="${a.color}" stroke-width="2"/><text x="${cx}" y="${cy}" text-anchor="middle" font-size="12" font-weight="700" fill="#fff" paint-order="stroke" stroke="#031019" stroke-width="3">${esc(a.label)}</text>`; }
     for (const l of lines) g += `<polyline points="${l.pts.map(p => X(p[1]) + ',' + Y(p[0])).join(' ')}" fill="none" stroke="${l.color || '#00d1ff'}" stroke-width="2.5" ${l.dash ? 'stroke-dasharray="6 5"' : ''} opacity=".9"/>`;
     const labels = []; const narrow = W < 520;
     const vis = Object.entries(sets).filter(([k]) => !hidden.has(k)).flatMap(([, v]) => v).sort((a, b) => (a.kind === 'main') - (b.kind === 'main'));
@@ -1179,7 +1182,7 @@ function viewTimeline() {
   setNav('timeline'); document.title = 'Bible timeline — Just One More Lord';
   let pxy = +(localStorage.getItem('jom:tlz') || 0.5); const Y0 = -2100, Y1 = 110;
   main.innerHTML = `<section class="band"><div class="wrap"><div class="sh"><div><p class="kicker">From Abraham to Revelation</p><h1>Bible timeline</h1><p>Empires, kings, prophets and events side by side. Zoom in, scroll sideways and tap anything to read about it. Dates are approximate; items marked ≈ are debated.</p></div>
-    <div class="linkrow"><button class="btn ghost sm" id="tlout" aria-label="Zoom out">−</button><button class="btn ghost sm" id="tlin" aria-label="Zoom in">+</button><button class="btn sm" data-go="family">Family tree</button></div></div>
+    <div class="linkrow"><button class="btn ghost sm" data-go="kingdoms">Kingdom maps</button><button class="btn ghost sm" id="tlout" aria-label="Zoom out">−</button><button class="btn ghost sm" id="tlin" aria-label="Zoom in">+</button><button class="btn sm" data-go="family">Family tree</button></div></div>
     <div class="chips" id="tljump">${[['Patriarchs', -2000], ['Exodus', -1460], ['Judges', -1380], ['Kings', -1060], ['Exile', -620], ['Return', -545], ['Jesus', -10], ['Apostles', 30]].map(([l, y]) => `<button class="chip" data-y="${y}">${l}</button>`).join('')}</div>
     </div><div class="tlwrap" id="tlw" tabindex="0" aria-label="Timeline, scroll sideways"><div class="tlin" id="tli"></div></div>
     <div class="wrap"><h2 class="libh">The story in order</h2><ol class="tllist">${TL.filter(r => r[3] === 'ev' || r[3] === 'ld').slice().sort((a, b) => a[0] - b[0]).map(r => `<li><span class="yr">${r[7] ? '≈ ' : ''}${yrLbl(r[0])}</span><button class="inl" data-tl="${TL.indexOf(r)}">${esc(r[2])}</button>${r[4] ? ` <button class="vref sm" data-verse="${esc(r[4])}">${esc(r[4])}</button>` : ''}</li>`).join('')}</ol></div></section>`;
@@ -1327,7 +1330,7 @@ async function viewFly(id) {
 function homeMore() {
   const host = $('#feat')?.closest('.band'); if (!host || $('.moretiles')) return;
   const T = [['read', 'Read the Bible', 'Every chapter, with its places on a map and the Hebrew & Greek behind each verse.'], ['timeline', 'Bible timeline', 'Empires, kings, prophets and events from Abraham to Revelation.'], ['family', 'Family tree', 'The line from Adam to Jesus, with the twelve tribes and more.'],
-    ['fly-' + (JOURNEYS.find(j => j.id === 'apostles') || JOURNEYS[0])?.id, '3D fly-overs', 'Fly over the real terrain of the journeys of Abraham, Moses, Jesus and Paul.'], ['plans', 'Reading plans', 'John in 21 days, Acts with Paul, Psalms of hope and journey plans.'], ['quiz', 'Quiz', 'Test yourself and challenge a friend.'], ['near', 'Near me', 'Find Bible places close to where you are.'], ['library', 'My library', 'Your saved places, verses, highlights and notes.'], ['prayer', 'Prayer', 'A private prayer journal and a shared prayer wall.'], ['community', 'Friends & community', 'Invite friends, read plans together and join the conversation.'], ['embed', 'For churches', 'Put any Bible place or journey on your church or school website.'], ['devnotes', 'Developer notes', 'What\'s new, what\'s next, and a place for your feedback.']];
+    ['fly-' + (JOURNEYS.find(j => j.id === 'apostles') || JOURNEYS[0])?.id, '3D fly-overs', 'Fly over the real terrain of the journeys of Abraham, Moses, Jesus and Paul.'], ['kingdoms', 'Kingdom maps', 'See the borders change from David to the Romans.'], ['distance', 'How far was it?', 'Distances and walking days between Bible places.'], ['kids', 'Kids\' corner', 'Stories, a fun quiz and pictures to colour.'], ['plans', 'Reading plans', 'John in 21 days, Acts with Paul, Psalms of hope and journey plans.'], ['quiz', 'Quiz', 'Test yourself and challenge a friend.'], ['near', 'Near me', 'Find Bible places close to where you are.'], ['library', 'My library', 'Your saved places, verses, highlights and notes.'], ['prayer', 'Prayer', 'A private prayer journal and a shared prayer wall.'], ['community', 'Friends & community', 'Invite friends, read plans together and join the conversation.'], ['embed', 'For churches', 'Put any Bible place or journey on your church or school website.'], ['devnotes', 'Developer notes', 'What\'s new, what\'s next, and a place for your feedback.']];
   host.insertAdjacentHTML('afterend', `<section class="band moretiles"><div class="wrap"><div class="sh"><div><h2>More ways to explore</h2><p>Tools for personal study, families, churches and travellers — free, and they work on your phone.</p></div></div>
     <div class="tiles">${T.map(([h, t, d]) => `<button class="tile" data-go="${h}"><b>${t}</b><span>${d}</span></button>`).join('')}</div></div></section>`);
 }
@@ -1386,6 +1389,7 @@ function acceptInvite(arg) { // #friend-<name>[-<planId>]
 
 /* developer notes: what's new, what's next, and a feedback thread */
 const DEVNOTES = [
+  ['2026-11-25', 'Kingdom maps, distances, kids\' corner and languages', ['Kingdom maps for six eras, from David and Solomon to the time of Jesus', '“How far was it?” — distances and walking days, and totals for every journey', 'Kids\' corner: stories read aloud, a fun quiz and pictures to colour', '360° views of places where a panorama is available', 'Save a journey for offline travel', 'Menus in Afrikaans, isiZulu and isiXhosa (help us improve them!)']],
   ['2026-11-25', 'Prayer, translations and smarter search', ['Prayer journal (mark prayers as answered) and a shared prayer wall', 'Choose WEB, KJV, ASV, Basic English or Young\'s Literal in the reader, and compare them verse by verse', 'Word study: tap any word for its Hebrew or Greek meaning', 'Ask questions in the search box, e.g. “Where was Paul shipwrecked?”']],
   ['2026-11-25', 'Listen, badges, cross-references, presenting', ['Listen to any chapter read aloud', 'Daily streaks and 17 badges to earn', '250,000 cross-references between verses', 'Present any place or journey full-screen for church and class', 'Churches can put Bible places on their own websites']],
   ['2026-11-25', 'Community and developer notes', ['Invite friends and study plans together', 'Community board and comments on every place (once switched on)', 'This page: developer notes and feedback']],
@@ -1393,7 +1397,7 @@ const DEVNOTES = [
   ['2026-11-25', 'Stage 1: a real app', ['Install to your home screen; works offline', 'Bible reader with a live map of every chapter\'s places', 'Save places and verses, highlight, write notes, backup', 'Verse of the day with a daily reminder', 'Reading plans, quizzes, “near me”, sharing previews', 'Text size, high contrast and reduce motion']],
   ['2026-11-25', 'New look', ['Aqua-and-gold neon design', 'Shepherd and flock home picture', 'Dark night map']]
 ];
-const ROADMAP = ['Afrikaans, isiZulu and isiXhosa', 'Kingdom maps by era', 'Kids\' corner', '360° virtual tours', 'Offline maps for travellers', 'More places, journeys and discoveries'];
+const ROADMAP = ['Bible text in Afrikaans, isiZulu and isiXhosa', 'More places, journeys and discoveries', 'More kids\' stories and colouring pages'];
 function viewDevNotes() {
   setNav(''); document.title = 'Developer notes — Just One More Lord';
   main.innerHTML = `<section class="band"><div class="wrap prose"><p class="kicker">From the developer${CFG.developer ? ' · ' + esc(CFG.developer) : ''}</p><h1>Developer notes</h1>
@@ -1630,17 +1634,170 @@ function addAnswers(q) {
   h1.insertAdjacentHTML('afterend', `<div class="answers"><p class="kicker">Best answers</p><div class="rlist">${a.map(x => `<button class="ritem ans" data-go="${esc(x.go)}"><div><b>${esc(x.title)}</b><span>${esc(x.snippet)}</span></div><span class="tag">${esc(x.kind)}</span></button>`).join('')}</div></div>`);
 }
 
+/* ======================================================================================
+   STAGE 5: kingdom maps by era, distances, kids' corner, 360° tours, languages, travel pack.
+   ====================================================================================== */
+/* ---------- kingdom maps by era (deliberately simplified; ancient borders shifted and were often undefined) ---------- */
+const ERAS = [
+  { id: 'united', n: 'United kingdom of David and Solomon', y: 'c. 1000–931 BC', ref: '1 Kings 4:21', note: 'Israel at its greatest extent, from Dan to Beersheba and beyond the Jordan.',
+    areas: [['Israel', '#ffc72c', [[33.35, 35.25], [33.3, 35.85], [32.7, 36.3], [31.9, 36.05], [31.2, 35.85], [30.6, 35.3], [30.9, 34.45], [31.45, 34.75], [32.2, 34.85], [33.05, 35.1]]], ['Philistines', '#ff7276', [[31.85, 34.65], [31.8, 34.85], [31.35, 34.62], [31.25, 34.3]]]] },
+  { id: 'divided', n: 'Israel and Judah', y: 'c. 900–722 BC', ref: '1 Kings 12:19-20', note: 'After Solomon the kingdom splits: Israel in the north (capital Samaria), Judah in the south (capital Jerusalem).',
+    areas: [['Israel', '#00d1ff', [[33.35, 35.25], [33.3, 35.8], [32.65, 36.15], [32.0, 35.95], [31.95, 35.3], [32.15, 34.9], [32.95, 35.05]]], ['Judah', '#ffc72c', [[31.95, 35.3], [31.95, 35.55], [31.4, 35.48], [30.9, 35.4], [30.55, 35.1], [30.9, 34.5], [31.45, 34.8], [31.8, 34.95]]], ['Philistines', '#ff7276', [[31.85, 34.65], [31.8, 34.85], [31.35, 34.62], [31.25, 34.3]]], ['Moab', '#8fb8ff', [[31.75, 35.6], [31.7, 36.1], [31.05, 36.1], [31.1, 35.55]]], ['Edom', '#39ff9c', [[31.0, 35.45], [31.0, 35.9], [30.0, 35.6], [29.6, 35.0], [30.4, 35.1]]], ['Aram (Damascus)', '#b49cff', [[33.9, 35.9], [33.9, 36.8], [33.0, 36.8], [32.8, 36.2], [33.3, 35.9]]]] },
+  { id: 'assyria', n: 'The Assyrian Empire', y: 'c. 670 BC', ref: '2 Kings 17:6', note: 'Assyria destroys Israel (722 BC) and dominates Judah; at its height it briefly ruled Egypt.',
+    areas: [['Assyria', '#ffa62b', [[37.6, 35.8], [37.9, 40], [37.6, 44], [36.2, 45.8], [33.6, 46.8], [31.2, 47.5], [32.6, 44.5], [34.1, 41.2], [33.2, 38.2], [31.2, 36.3], [30.1, 32.8], [31.3, 31.6], [31.5, 34.3], [33.5, 35.3], [36.2, 35.9]]], ['Judah (vassal)', '#ffc72c', [[31.95, 35.3], [31.95, 35.55], [31.4, 35.48], [30.9, 35.4], [30.9, 34.9], [31.45, 34.85], [31.8, 34.95]]]] },
+  { id: 'babylon', n: 'The Babylonian Empire', y: 'c. 560 BC', ref: '2 Kings 25:8-11', note: 'Nebuchadnezzar takes Jerusalem (586 BC) and carries Judah into exile.',
+    areas: [['Babylonia', '#ff7276', [[37.0, 38.2], [36.6, 43.2], [34.2, 45.6], [31.0, 47.8], [29.9, 47.6], [31.4, 44.3], [32.4, 41.2], [30.5, 37.2], [29.5, 34.9], [31.2, 34.2], [33.5, 35.3], [36.1, 35.9]]]] },
+  { id: 'persia', n: 'The Persian Empire', y: 'c. 500 BC', ref: 'Esther 1:1', note: 'From India to Cush: the largest empire the world had yet seen. Cyrus lets the exiles return.',
+    areas: [['Persia', '#8fb8ff', [[41.2, 27.5], [42.0, 35.0], [41.2, 45.0], [40.5, 55.0], [38.5, 62.0], [36.5, 70.5], [30.0, 70.5], [25.3, 62.0], [26.5, 56.0], [29.8, 48.5], [30.0, 40.5], [24.5, 33.5], [24.0, 31.0], [31.3, 25.5], [31.6, 30.0], [36.5, 27.0]]], ['Yehud (Judah)', '#ffc72c', [[31.95, 35.0], [31.95, 35.5], [31.55, 35.45], [31.55, 35.0]]]] },
+  { id: 'jesus', n: 'The land in the time of Jesus', y: 'c. AD 30', ref: 'Luke 3:1', note: 'Judea and Samaria under a Roman prefect (Pontius Pilate); Galilee and Perea under Herod Antipas; the north-east under Philip.',
+    areas: [['Galilee', '#39ff9c', [[33.1, 35.2], [33.1, 35.62], [32.9, 35.68], [32.7, 35.62], [32.55, 35.3], [32.75, 35.05]]], ['Samaria', '#8fb8ff', [[32.55, 35.0], [32.55, 35.55], [32.05, 35.55], [32.05, 34.9]]], ['Judea', '#ffc72c', [[32.05, 34.75], [32.05, 35.55], [31.4, 35.45], [31.2, 34.9], [31.6, 34.6]]], ['Perea', '#ff7276', [[32.35, 35.6], [32.3, 35.85], [31.6, 35.75], [31.55, 35.55]]], ['Philip\'s territory', '#b49cff', [[33.3, 35.65], [33.3, 36.5], [32.7, 36.6], [32.75, 35.7]]], ['Decapolis', '#00d1ff', [[32.7, 35.72], [32.7, 36.4], [32.0, 36.2], [32.1, 35.78]]]] }
+];
+function viewKingdoms(id) {
+  setNav('timeline'); const e = ERAS.find(x => x.id === id) || ERAS[0]; document.title = `${e.n} — kingdom maps — Just One More Lord`;
+  main.innerHTML = `<section class="band"><div class="wrap"><div class="sh"><div><p class="kicker">Kingdom maps by era</p><h1>${esc(e.n)}</h1><p>${esc(e.y)} · ${esc(e.note)} <button class="vref sm" data-verse="${esc(e.ref)}">${esc(e.ref)}</button></p></div><div class="linkrow"><button class="btn ghost sm" data-go="timeline">Timeline</button></div></div>
+    <div class="chips eras">${ERAS.map(x => `<button class="chip" data-go="kingdoms-${x.id}" aria-pressed="${x.id === e.id}">${esc(x.y.replace(/^c\. /, ''))} · ${esc(x.n.replace(/^The /, ''))}</button>`).join('')}</div>
+    <div class="mapbox tall" id="kmap" style="margin-top:14px"></div><div class="maplegend">${e.areas.map(([l, c]) => `<span><span class="dot" style="background:${c};color:${c}"></span> ${esc(l)}</span>`).join('')}</div>
+    <p class="small muted">Borders are simplified sketches for orientation. Ancient frontiers moved often and were rarely fixed lines; scholars differ on many details.</p>
+    <div class="linkrow">${ERAS.indexOf(e) > 0 ? `<button class="btn ghost sm" data-go="kingdoms-${ERAS[ERAS.indexOf(e) - 1].id}">← Earlier</button>` : ''}${ERAS.indexOf(e) < ERAS.length - 1 ? `<button class="btn sm" data-go="kingdoms-${ERAS[ERAS.indexOf(e) + 1].id}">Later →</button>` : ''}</div></div></section>`;
+  const keyIds = ['assyria', 'babylon', 'persia'].includes(e.id) ? ['jerusalem', 'babylon', 'nineveh', 'susa', 'damascus', 'memphis'] : e.id === 'jesus' ? ['jerusalem', 'bethlehem', 'nazareth', 'capernaum', 'samaria', 'caesarea', 'jericho'] : ['jerusalem', 'samaria', 'dan', 'beersheba', 'shechem', 'hebron', 'damascus'];
+  makeMap($('#kmap'), { areas: e.areas.map(([label, color, pts]) => ({ label, color, pts, permanent: true })), markers: keyIds.map(i => byId[i]).filter(Boolean).map(p => ({ lat: p.lat, lon: p.lon, label: p.n, kind: 'place', go: 'place-' + p.id })), maxZoom: 9, fitPad: 20 });
+}
+
+/* ---------- distances ---------- */
+const ROADF = 1.25, KMDAY = 30;
+const fmtKm = d => d < 10 ? d.toFixed(1) + ' km' : Math.round(d).toLocaleString() + ' km';
+function journeyKm(j) { const st = j.stops.map(s => byId[s[0]]).filter(Boolean); let d = 0; for (let i = 1; i < st.length; i++) d += km(st[i - 1], st[i]); return d; }
+const DPRESETS = [['nazareth', 'bethlehem', 'Mary and Joseph travel to Bethlehem', 'Luke 2:4'], ['nazareth', 'jerusalem', 'The family goes up for Passover', 'Luke 2:41'], ['capernaum', 'jerusalem', 'Jesus goes up to Jerusalem', 'John 2:13'], ['jericho', 'jerusalem', 'The road of the Good Samaritan', 'Luke 10:30'], ['jerusalem', 'damascus', 'Saul sets out for Damascus', 'Acts 9:2'], ['ur', 'haran', 'Terah and Abram leave Ur', 'Genesis 11:31'], ['jerusalem', 'babylon', 'Judah is taken into exile', '2 Kings 25:11'], ['bethlehem', 'memphis', 'The flight to Egypt (Memphis as a stand-in)', 'Matthew 2:14']];
+function viewDistance(arg) {
+  setNav(''); document.title = 'How far was it? — Just One More Lord';
+  const [a0, b0] = String(arg || 'nazareth.bethlehem').split('.'); const opts = PLACES.slice().sort((x, y) => x.n.localeCompare(y.n));
+  main.innerHTML = `<section class="band"><div class="wrap"><div class="sh"><div><p class="kicker">How far was it?</p><h1>Distances in the Bible</h1><p>Pick two places to see how far apart they are and how long the journey would have taken on foot (about ${KMDAY} km a day).</p></div></div>
+    <div class="filters"><label class="sr" for="da">From</label><select id="da">${opts.map(p => `<option value="${p.id}"${p.id === a0 ? ' selected' : ''}>${esc(p.n)}</option>`).join('')}</select><span class="muted">to</span><label class="sr" for="db">To</label><select id="db">${opts.map(p => `<option value="${p.id}"${p.id === b0 ? ' selected' : ''}>${esc(p.n)}</option>`).join('')}</select></div>
+    <div class="jlayout"><div><div class="statrow" id="dres"></div><div class="mapbox" id="dmap" style="height:380px;margin-top:14px"></div></div>
+      <div><h2 class="libh" style="margin-top:0">Famous journeys</h2><div class="rlist">${DPRESETS.filter(([a, b]) => byId[a] && byId[b]).map(([a, b, t, r]) => `<button class="ritem" data-go="distance-${a}.${b}"><div><b>${esc(t)}</b><span>${esc(byId[a].n)} → ${esc(byId[b].n)} · ${esc(r)}</span></div><span class="tag">${fmtKm(km(byId[a], byId[b]) * ROADF)}</span></button>`).join('')}</div>
+      <h2 class="libh">Whole journeys</h2><div class="rlist">${JOURNEYS.map(j => `<button class="ritem" data-go="journey-${j.id}"><div><b>${esc(j.n)}</b><span>${j.stops.length} stages · straight-line total</span></div><span class="tag">${fmtKm(journeyKm(j))}</span></button>`).join('')}</div></div></div>
+    <p class="small muted">Distances are straight lines between the sites; the road estimate adds a quarter for winding roads and hills. Sea voyages depended on the wind.</p></div></section>`;
+  const upd = () => { const a = byId[$('#da').value], b = byId[$('#db').value]; const d = km(a, b), r = d * ROADF, days = r / KMDAY;
+    $('#dres').innerHTML = [[fmtKm(d), 'straight line'], ['≈ ' + fmtKm(r), 'by road'], [days < 1 ? '< 1 day' : `≈ ${Math.round(days)} day${Math.round(days) === 1 ? '' : 's'}`, 'on foot'], [`≈ ${Math.max(1, Math.round(r / 5))} h`, 'walking time']].map(([n, l]) => `<div><b>${n}</b><span>${l}</span></div>`).join('');
+    makeMap($('#dmap'), { markers: [{ lat: a.lat, lon: a.lon, label: a.n, kind: 'main', go: 'place-' + a.id }, { lat: b.lat, lon: b.lon, label: b.n, kind: 'place', go: 'place-' + b.id }], lines: [{ pts: [[a.lat, a.lon], [b.lat, b.lon]], color: '#ffc72c', dash: '6 6' }], maxZoom: 10 }); };
+  $('#da').onchange = $('#db').onchange = upd; upd();
+}
+
+/* ---------- kids' corner ---------- */
+const KSTORIES = [
+  ['🏹', 'Abram trusts God', 'ur', 'Genesis 12:1-4', 'God told Abram to pack up and leave his home for a land he had never seen. Abram did not know the way, but he trusted God and set off with his family, his sheep and his camels. God promised to bless him and to make his family as many as the stars.'],
+  ['⛰️', 'Moses on the mountain', 'mount-sinai', 'Exodus 19:20', 'After God rescued his people from Egypt, they camped by a great mountain. Moses climbed up to meet God, and God gave him the Ten Commandments — good rules to help people love God and love each other.'],
+  ['🎺', 'The walls of Jericho', 'jericho', 'Joshua 6:20', 'Jericho had big, strong walls. God told Joshua to march around the city for seven days. On the seventh day the priests blew their trumpets, the people shouted — and the walls came tumbling down!'],
+  ['🪨', 'David and the giant', 'valley-of-elah', '1 Samuel 17:49', 'Goliath was a giant soldier and everyone was scared of him. But David, a young shepherd boy, trusted God. With a sling and one smooth stone, David knocked the giant down.'],
+  ['🐋', 'Jonah and the big fish', 'nineveh', 'Jonah 2:10', 'God asked Jonah to go to the city of Nineveh, but Jonah sailed the other way. A storm came, and a big fish swallowed Jonah! After three days the fish spat him out, and this time Jonah went to Nineveh.'],
+  ['⭐', 'Jesus is born', 'bethlehem', 'Luke 2:7', 'Mary and Joseph travelled to the little town of Bethlehem. There was no room at the inn, so baby Jesus was born and laid in a manger. Angels told the shepherds the good news!'],
+  ['🌊', 'Jesus calms the storm', 'sea-of-galilee', 'Mark 4:39', 'Jesus and his friends were in a boat when a huge storm came. The friends were afraid, but Jesus stood up and said, “Peace! Be still!” — and the wind and the waves became calm.'],
+  ['🌳', 'Zacchaeus climbs a tree', 'jericho', 'Luke 19:4', 'Zacchaeus was too short to see Jesus over the crowd, so he climbed a sycamore tree. Jesus stopped, looked up and said, “Zacchaeus, come down! I’m coming to your house today.”'],
+  ['⛵', 'Paul and the shipwreck', 'malta', 'Acts 27:44', 'Paul was sailing to Rome when a terrible storm broke the ship apart. Everyone swam or floated on planks to the island of Malta — and God kept every single person safe!']
+];
+const KQUIZ = [['Who knocked down a giant with a stone?', 'David', ['Moses', 'Jonah']], ['What swallowed Jonah?', 'A big fish', ['A lion', 'A camel']], ['Where was Jesus born?', 'Bethlehem', ['Rome', 'Nineveh']], ['What did Jesus say to the storm?', 'Peace! Be still!', ['Go away!', 'Hurry up!']], ['Which city\'s walls fell down?', 'Jericho', ['Jerusalem', 'Malta']], ['Who climbed a tree to see Jesus?', 'Zacchaeus', ['Abram', 'Paul']], ['On which island was Paul shipwrecked?', 'Malta', ['Cyprus', 'Crete']], ['What did God give Moses on the mountain?', 'The Ten Commandments', ['A boat', 'A crown']]];
+const KCOL_PAGES = [
+  ['Boat on the Sea of Galilee', `<rect class="cz" x="0" y="0" width="400" height="190" /><circle class="cz" cx="320" cy="70" r="36"/><path class="cz" d="M0 190 Q50 170 100 190 T200 190 T300 190 T400 190 V300 H0Z"/><path class="cz" d="M90 200 L310 200 L270 250 L130 250Z"/><path class="cz" d="M200 60 L200 195 L130 195Z"/><path class="cz" d="M205 70 L205 195 L270 195Z"/><path d="M200 55 V200" stroke="#000" stroke-width="5" fill="none"/>`],
+  ['Star over Bethlehem', `<rect class="cz" x="0" y="0" width="400" height="300"/><path class="cz" d="M200 20 L214 60 L256 60 L222 84 L235 124 L200 100 L165 124 L178 84 L144 60 L186 60Z"/><path class="cz" d="M40 300 V200 H120 V300Z"/><path class="cz" d="M30 205 L80 160 L130 205Z"/><path class="cz" d="M150 300 V180 H260 V300Z"/><path class="cz" d="M140 185 L205 135 L270 185Z"/><path class="cz" d="M280 300 V215 H370 V300Z"/><rect class="cz" x="190" y="240" width="30" height="60"/>`],
+  ['The walls of Jericho', `<rect class="cz" x="0" y="0" width="400" height="300"/><path class="cz" d="M20 300 V150 H60 V130 H80 V150 H120 V130 H140 V150 H180 V130 H200 V150 H240 V130 H260 V150 H300 V130 H320 V150 H380 V300Z"/><path class="cz" d="M170 300 V240 A30 30 0 0 1 230 240 V300Z"/><path class="cz" d="M30 60 Q60 40 90 60 L80 80 Q60 70 40 80Z"/><circle class="cz" cx="330" cy="60" r="30"/>`],
+  ['A sheep for the Good Shepherd', `<rect class="cz" x="0" y="0" width="400" height="300"/><path class="cz" d="M0 230 Q200 190 400 230 V300 H0Z"/><path class="cz" d="M120 170 q-20 -40 20 -50 q10 -30 45 -20 q25 -25 55 -5 q35 -5 40 30 q35 15 15 50 q5 35 -35 35 h-120 q-35 -5 -20 -40Z"/><ellipse class="cz" cx="285" cy="150" rx="30" ry="24"/><rect class="cz" x="150" y="200" width="14" height="40"/><rect class="cz" x="230" y="200" width="14" height="40"/><circle cx="295" cy="145" r="4" fill="#000"/>`]
+];
+function viewKids(tab) {
+  setNav(''); document.title = 'Kids\' corner — Just One More Lord'; tab = tab || 'stories';
+  main.innerHTML = `<section class="band kids"><div class="wrap"><div class="sh"><div><p class="kicker">For children and families</p><h1>Kids' corner</h1><p>Bible stories with the real places on a map, a fun quiz and pictures to colour.</p></div></div>
+    <div class="chips" id="ktabs">${[['stories', '📖 Stories'], ['quiz', '❓ Quiz'], ['colour', '🖍️ Colouring']].map(([k, l]) => `<button class="chip" data-k="${k}" aria-pressed="${k === tab}">${l}</button>`).join('')}</div><div id="kbody" style="margin-top:18px"></div></div></section>`;
+  $('#ktabs').onclick = e => { const b = e.target.closest('[data-k]'); if (b) viewKids(b.dataset.k); };
+  const body = $('#kbody');
+  if (tab === 'stories') {
+    body.innerHTML = `<div class="kgrid">${KSTORIES.map(([ic, t, pid, ref, txt], i) => { const p = byId[pid]; return `<article class="kcard"><div class="kic">${ic}</div><h3>${esc(t)}</h3><p>${esc(txt)}</p>
+      <div class="linkrow"><button class="btn sm" data-ks="${i}">🔊 Read to me</button>${p ? `<button class="btn ghost sm" data-go="place-${p.id}">📍 ${esc(p.n)}</button>` : ''}<button class="btn ghost sm" data-verse="${esc(ref)}">${esc(ref)}</button></div></article>`; }).join('')}</div>`;
+    body.onclick = e => { const b = e.target.closest('[data-ks]'); if (!b || !('speechSynthesis' in window)) return; speechSynthesis.cancel(); const s = KSTORIES[+b.dataset.ks]; const u = new SpeechSynthesisUtterance(s[1] + '. ' + s[4]); const v = ttsVoice(); if (v) u.voice = v; u.rate = .92; speechSynthesis.speak(u); };
+  } else if (tab === 'quiz') {
+    const qs = shuffle(KQUIZ).slice(0, 6); let i = 0, sc = 0;
+    const draw = () => { if (i >= qs.length) { body.innerHTML = `<div class="kdone"><div class="kic">${sc >= qs.length - 1 ? '🏆' : '🌟'}</div><h2>You got ${sc} out of ${qs.length}!</h2><p>${sc === qs.length ? 'Amazing — every answer right!' : 'Well done! Try again to get them all.'}</p><button class="btn" id="kagain">Play again</button></div>`; $('#kagain').onclick = () => viewKids('quiz'); if (sc === qs.length) { MY.quizPerfect = 1; saveMy(); checkBadges(); } return; }
+      const [q, a, w] = qs[i]; const opts = shuffle([a, ...w]);
+      body.innerHTML = `<div class="kq"><p class="kicker">Question ${i + 1} of ${qs.length}</p><h2>${esc(q)}</h2><div class="kopts">${opts.map(o => `<button class="kopt" data-o="${esc(o)}">${esc(o)}</button>`).join('')}</div><div id="kfb"></div></div>`;
+      $('.kopts').onclick = e => { const b = e.target.closest('.kopt'); if (!b || $('.kopts').dataset.done) return; $('.kopts').dataset.done = 1; const ok = b.dataset.o === a; if (ok) sc++; b.classList.add(ok ? 'right' : 'wrong'); if (!ok) $$('.kopt').find(x => x.dataset.o === a)?.classList.add('right');
+        $('#kfb').innerHTML = `<p class="kfb">${ok ? '🎉 Yes, well done!' : `💡 It was ${esc(a)}.`}</p><button class="btn" id="knext">Next →</button>`; $('#knext').onclick = () => { i++; draw(); }; }; };
+    draw();
+  } else {
+    const COLS = ['#ff4d4d', '#ffa62b', '#ffd23f', '#39d353', '#2bb3ff', '#3a5bff', '#a259ff', '#ff6fb5', '#8b5a2b', '#ffffff', '#9aa5b1', '#222222']; let col = COLS[4], pg = 0;
+    const draw = () => { body.innerHTML = `<div class="kcol"><div class="chips">${KCOL_PAGES.map(([t], k) => `<button class="chip" data-p="${k}" aria-pressed="${k === pg}">${esc(t)}</button>`).join('')}</div>
+      <div class="palette" role="group" aria-label="Colours">${COLS.map(c => `<button class="sw${c === col ? ' on' : ''}" data-c="${c}" style="background:${c}" aria-label="Colour ${c}"></button>`).join('')}</div>
+      <svg class="colsvg" viewBox="0 0 400 300" role="img" aria-label="${esc(KCOL_PAGES[pg][0])} — tap the shapes to colour them">${KCOL_PAGES[pg][1]}</svg>
+      <div class="linkrow"><button class="btn ghost sm" id="kclr">Start again</button><button class="btn ghost sm" onclick="print()">Print</button></div></div>`;
+      $$('.colsvg .cz', body).forEach(el => el.setAttribute('fill', '#ffffff'));
+      body.onclick = e => { const pb = e.target.closest('[data-p]'); if (pb) { pg = +pb.dataset.p; draw(); return; } const sw = e.target.closest('[data-c]'); if (sw) { col = sw.dataset.c; $$('.sw', body).forEach(x => x.classList.toggle('on', x === sw)); return; }
+        const z = e.target.closest('.cz'); if (z) z.setAttribute('fill', col); };
+      $('#kclr').onclick = draw; };
+    draw();
+  }
+}
+
+/* ---------- 360° panoramas from Wikimedia Commons ---------- */
+let pnP = null;
+function loadPannellum() { if (window.pannellum) return Promise.resolve(); if (pnP) return pnP;
+  const add = (tag, a) => new Promise((res, rej) => { const el = document.createElement(tag); Object.assign(el, a); el.onload = res; el.onerror = rej; document.head.append(el); });
+  pnP = Promise.all([add('link', { rel: 'stylesheet', href: 'https://cdnjs.cloudflare.com/ajax/libs/pannellum/2.5.6/pannellum.css' }), add('script', { src: 'https://cdnjs.cloudflare.com/ajax/libs/pannellum/2.5.6/pannellum.js' })]).catch(e => { pnP = null; throw e; }); return pnP; }
+async function pano360(p) {
+  if (!(await isLive())) return; const host = $('#s-photos'); if (!host || $('#pano')) return;
+  const word = p.n.split(/[\s(]/)[0]; let pick = null;
+  for (const q of [`${p.n} 360`, `${p.n} equirectangular`, `${p.n} spherical panorama`]) {
+    const r = (await commonsSearch(q, 30)).filter(im => /360|equirect|spheric|photosphere/i.test(im.title + ' ' + im.desc) && new RegExp(word, 'i').test(im.title + ' ' + im.desc) && im.w && im.h && Math.abs(im.w / im.h - 2) < 0.08);
+    if (r.length) { pick = r[0]; break; } }
+  if (!pick) return;
+  host.insertAdjacentHTML('afterend', `<section class="sec" id="pano"><div class="wrap"><div class="sh"><div><h2>360° view</h2><p>Drag to look all around ${esc(p.n)}. Tap the button to load it (it is a large picture).</p></div></div>
+    <div class="panobox" id="panov"><button class="btn" id="panogo">Look around in 360°</button></div><p class="small muted">Photo: ${credit(pick)}</p></div></section>`);
+  $('#panogo').onclick = async () => { $('#panov').innerHTML = '<p class="muted" style="padding:20px"><span class="spin"></span>Loading the 360° view…</p>';
+    try { await loadPannellum(); const src = /\/thumb\//.test(pick.src) ? pick.src.replace(/\/\d+px-/, '/3000px-') : pick.full; $('#panov').innerHTML = '';
+      window.pannellum.viewer('panov', { type: 'equirectangular', panorama: src, autoLoad: true, autoRotate: -2, showZoomCtrl: true, compass: false, crossOrigin: 'anonymous' }); }
+    catch { $('#panov').innerHTML = '<p class="empty" style="margin:16px">The 360° viewer could not load. Check your connection and try again.</p>'; } };
+}
+
+/* ---------- languages (menus and main headings) ---------- */
+const I18N = {
+  af: { name: 'Afrikaans', nav: { home: 'Verken', atlas: 'Atlas', journeys: 'Reise', discoveries: 'Ontdekkings', read: 'Bybel', timeline: 'Tydlyn', concordance: 'Konkordansie', plans: 'Leesplanne', quiz: 'Vasvra', library: 'Gestoor', community: 'Gemeenskap' },
+    search: 'Soek enige Bybelse plek…', h1: 'Verken die wêreld van <span class="neon-txt">die Bybel.</span>', lede: 'Sien die plekke waar Bybelse geskiedenis afgespeel het. Verken die plekke soos hulle vandag is. Ontdek die argeologiese bewyse. Stap deur die geskiedenis.', bigsearch: 'Soek', more: 'Meer maniere om te verken', votd: 'Vers van die dag', feat: 'Uitgesoekte plekke' },
+  zu: { name: 'isiZulu', nav: { home: 'Hlola', atlas: 'I-Atlasi', journeys: 'Uhambo', discoveries: 'Okutholakele', read: 'IBhayibheli', timeline: 'Isikhathi', concordance: 'Inkomba', plans: 'Izinhlelo', quiz: 'Imibuzo', library: 'Okulondoloziwe', community: 'Umphakathi' },
+    search: 'Sesha noma iyiphi indawo yeBhayibheli…', h1: 'Hlola izwe <span class="neon-txt">leBhayibheli.</span>', lede: 'Bona izindawo lapho umlando weBhayibheli wenzeka khona. Hlola lezi zindawo namuhla. Thola ubufakazi bemivubukulo.', bigsearch: 'Sesha', more: 'Ezinye izindlela zokuhlola', votd: 'Ivesi losuku', feat: 'Izindawo ezikhethiwe' },
+  xh: { name: 'isiXhosa', nav: { home: 'Phonononga', atlas: 'Iatlasi', journeys: 'Uhambo', discoveries: 'Izinto ezifunyenweyo', read: 'IBhayibhile', timeline: 'Ixesha', concordance: 'Isalathiso', plans: 'Izicwangciso', quiz: 'Imibuzo', library: 'Okugciniweyo', community: 'Uluntu' },
+    search: 'Khangela nayiphi na indawo yeBhayibhile…', h1: 'Phonononga ihlabathi <span class="neon-txt">leBhayibhile.</span>', lede: 'Bona iindawo apho imbali yeBhayibhile yenzeka khona. Phonononga ezi ndawo namhlanje. Fumana ubungqina bezinto zakudala.', bigsearch: 'Khangela', more: 'Ezinye iindlela zokuphonononga', votd: 'Ivesi yosuku', feat: 'Iindawo ezikhethiweyo' }
+};
+const EN = {}; const lang = () => I18N[localStorage.getItem('jom:lang')] ? localStorage.getItem('jom:lang') : 'en';
+function applyLang() {
+  const L = I18N[lang()]; document.documentElement.lang = lang() === 'en' ? 'en' : lang();
+  $$('.nav button[data-go]').forEach(b => { if (!(b.dataset.go in EN)) EN[b.dataset.go] = b.textContent; b.textContent = L?.nav[b.dataset.go] || EN[b.dataset.go]; });
+  const q = $('#q'); if (q) { EN.search ||= q.placeholder; q.placeholder = L?.search || EN.search; }
+  const h1 = $('.hero h1'); if (h1) { EN.h1 ||= h1.innerHTML; h1.innerHTML = L?.h1 || EN.h1; }
+  const ld = $('.hero .lede'); if (ld) { EN.lede ||= ld.textContent; ld.textContent = L?.lede || EN.lede; }
+  const bs = $('#bigSearch .btn'); if (bs) { EN.bigsearch ||= bs.textContent; bs.textContent = L?.bigsearch || EN.bigsearch; }
+  const mt = $('.moretiles h2'); if (mt) { EN.more ||= mt.textContent; mt.textContent = L?.more || EN.more; }
+  const fh = $('#feat')?.closest('.band')?.querySelector('h2'); if (fh) { EN.feat ||= fh.textContent; fh.textContent = L?.feat || EN.feat; }
+}
+(() => { const pan = $('#aaPanel'); if (!pan) return;
+  pan.insertAdjacentHTML('afterbegin', `<label class="tog" style="display:grid;gap:4px"><span class="kicker">Language · Taal · Ulimi · Ulwimi</span><select id="langSel">${[['en', 'English'], ...Object.entries(I18N).map(([k, v]) => [k, v.name])].map(([k, n]) => `<option value="${k}"${k === lang() ? ' selected' : ''}>${n}</option>`).join('')}</select></label><p class="small muted" style="margin:0">Menus and headings are translated; Bible text stays in English for now.</p>`);
+  $('#langSel').onchange = e => { localStorage.setItem('jom:lang', e.target.value); applyLang(); toast(e.target.value === 'en' ? 'English' : I18N[e.target.value].name); };
+})();
+
+/* ---------- travel pack: save a journey's places, photos and verses for offline use ---------- */
+async function travelPack(j, btn) {
+  const st = j.stops.map(s => ({ p: byId[s[0]], ref: s[1] })).filter(s => s.p); let done = 0; const tot = st.length;
+  btn.disabled = true; const upd = () => btn.textContent = `Saving… ${Math.round(100 * done / tot)}%`; upd();
+  for (const s of st) { try { const w = s.p.wiki || s.p.n; await wikiSummary(w); const im = (await leadImages([w]))[w]; if (im) await fetch(im.src, { mode: 'no-cors' }).catch(() => {}); await bibleText(s.ref).catch(() => {}); } catch {} done++; upd(); }
+  btn.textContent = '✓ Saved for offline'; toast('Journey saved — photos, summaries and verses now work without signal');
+}
+
 /* ---------------- router ---------------- */
 async function render() {
   const h = decodeURIComponent(location.hash.slice(1) || 'home');
   if (dlg.open) dlg.close(); window.scrollTo(0, 0); main.onclick = null; if (!h.startsWith('embed-')) document.documentElement.classList.remove('embed');
   try {
     if (h === 'home' || h === '') { await viewHome(); homeVotd(); homeMore(); }
-    else if (h.startsWith('place-')) { await viewPlace(h.slice(6)); enhancePlace(h.slice(6)); if (byId[h.slice(6)]) { thenAndNow(byId[h.slice(6)]); placeComments(h.slice(6)); } }
+    else if (h.startsWith('place-')) { await viewPlace(h.slice(6)); enhancePlace(h.slice(6)); if (byId[h.slice(6)]) { thenAndNow(byId[h.slice(6)]); pano360(byId[h.slice(6)]); placeComments(h.slice(6)); } }
     else if (h.startsWith('disc-')) { const d = discById[h.slice(5)]; d ? await viewPlace(d.place, d.id) : viewNotFound(); }
     else if (h === 'atlas') await viewAtlas();
     else if (h === 'journeys') viewJourneys();
-    else if (h.startsWith('journey-')) { await viewJourney(h.slice(8)); const jj = h.slice(8); $('main h1')?.insertAdjacentHTML('afterend', `<div class="linkrow"><button class="btn sm" data-go="fly-${jj}">3D fly-over</button><button class="btn ghost sm" data-go="plan-${jj}">Reading plan</button><button class="btn ghost sm" data-go="present-journey-${jj}">Present</button></div>`); }
+    else if (h.startsWith('journey-')) { await viewJourney(h.slice(8)); const jj = h.slice(8); $('main h1')?.insertAdjacentHTML('afterend', `<div class="linkrow"><button class="btn sm" data-go="fly-${jj}">3D fly-over</button><button class="btn ghost sm" data-go="plan-${jj}">Reading plan</button><button class="btn ghost sm" data-go="present-journey-${jj}">Present</button><button class="btn ghost sm" id="tpack">Save for offline travel</button><span class="tag">≈ ${fmtKm(journeyKm(JOURNEYS.find(x => x.id === jj) || { stops: [] }))} in a straight line</span></div>`); $('#tpack')?.addEventListener('click', e => travelPack(JOURNEYS.find(x => x.id === jj), e.currentTarget)); }
     else if (h === 'discoveries') viewDiscoveries();
     else if (h === 'search') { await viewSearch(); let q = state.lastQuery; if (!q) { try { q = sessionStorage.getItem('bpt:q') || ''; } catch {} } addAnswers(q); }
     else if (h === 'about') viewAbout();
@@ -1654,6 +1811,9 @@ async function render() {
     else if (h === 'timeline') viewTimeline();
     else if (h === 'community') viewCommunity();
     else if (h === 'prayer') viewPrayer();
+    else if (h === 'kingdoms' || h.startsWith('kingdoms-')) viewKingdoms(h.slice(9));
+    else if (h === 'distance' || h.startsWith('distance-')) viewDistance(h.slice(9));
+    else if (h === 'kids' || h.startsWith('kids-')) viewKids(h.slice(5));
     else if (h.startsWith('friend-')) acceptInvite(h.slice(7));
     else if (h === 'devnotes') viewDevNotes();
     else if (h.startsWith('present-')) await viewPresent(h.slice(8));
@@ -1668,6 +1828,7 @@ async function render() {
     else if (byId[h]) await viewPlace(h);
     else viewNotFound();
   } catch (err) { console.error(err); main.insertAdjacentHTML('beforeend', `<div class="wrap"><p class="notice warn">Part of this page failed to load (${esc(err.message)}). Try reloading.</p></div>`); }
+  try { applyLang(); } catch {}
   main.focus({ preventScroll: true });
 }
 window.addEventListener('hashchange', render);

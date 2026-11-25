@@ -693,3 +693,19 @@ html.embed body{background:#020a10}html.embed main{min-height:0}
 .cmpbox{display:grid;gap:8px;margin:10px 0}.cmp{padding:10px 12px;border-radius:12px;background:rgba(5,20,28,.55);border:1px solid rgba(31,224,208,.18)}
 .cmp b{font:700 13px "Sora",sans-serif;color:var(--gold2)}.cmp p{margin:4px 0 0;font-family:"Cormorant Garamond",Georgia,serif;font-size:19px;line-height:1.45}
 .answers{margin:18px 0 8px}.ritem.ans{border-color:rgba(255,199,44,.45)}.ritem.ans b{color:#ffe08a}
+/* ===================== STAGE 5 ===================== */
+.arealbl{background:rgba(3,12,18,.8);border:0;color:#fff;font:700 12px "Sora",sans-serif;box-shadow:none;padding:2px 6px}.arealbl::before{display:none}
+.eras .chip{font-size:14px}
+.kgrid{display:grid;gap:16px;grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr))}
+.kcard{padding:18px;border-radius:20px;background:var(--glass);border:1px solid rgba(255,199,44,.3)}.kcard h3{font-size:22px;margin:6px 0}.kcard p{font-size:17px;line-height:1.6}
+.kic{font-size:46px;line-height:1}
+.kq,.kdone{max-width:640px;text-align:center;margin:0 auto}.kq h2,.kdone h2{font-size:clamp(24px,4vw,34px);margin:10px 0 18px}
+.kopts{display:grid;gap:12px}.kopt{min-height:60px;border-radius:18px;border:2px solid rgba(31,224,208,.4);background:var(--glass);color:#fff;font:700 20px "Sora",sans-serif}
+.kopt.right{border-color:#39ff9c;background:rgba(57,255,156,.2)}.kopt.wrong{border-color:#ff4d8d;background:rgba(255,77,141,.15)}.kfb{font-size:22px;font-weight:700;margin:16px 0}
+.kdone .kic{font-size:80px}
+.kcol{max-width:720px}.palette{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0}
+.sw{width:42px;height:42px;border-radius:50%;border:3px solid rgba(255,255,255,.3)}.sw.on{border-color:#fff;box-shadow:0 0 0 3px #00d1ff}
+.colsvg{width:100%;height:auto;background:#fff;border-radius:16px;display:block}.colsvg .cz{stroke:#000;stroke-width:3;cursor:pointer}
+.panobox{height:min(70vh,520px);border-radius:var(--r);overflow:hidden;border:1px solid rgba(31,224,208,.35);display:grid;place-items:center;background:radial-gradient(circle,rgba(0,209,255,.15),transparent 70%),#031019}
+#tpack:disabled{opacity:.8}
+@media print{.kids .chips,.kids .palette,.kids .linkrow,.kids .sh{display:none!important}.colsvg{border:1px solid #000}}
