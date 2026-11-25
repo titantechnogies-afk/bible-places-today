@@ -23,6 +23,8 @@ jobs:
         run: node tools/build-gazetteer.mjs || echo "Skipped; the site loads the index on demand."
       - name: Build cross-references (OpenBible.info, CC BY)
         run: node tools/build-xrefs.mjs || echo "Cross-references skipped"
+      - name: Stamp file versions so phones always get matching files
+        run: sed -i "s/__V__/${GITHUB_SHA::8}/g" index.html && sed -i "s/jom-v[0-9]*/jom-${GITHUB_SHA::8}/" sw.js
       - name: Build share pages and sitemap
         run: node tools/build-pages.mjs
       - uses: actions/configure-pages@v5
