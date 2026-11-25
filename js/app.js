@@ -911,7 +911,7 @@ attachSuggest($('#q'));
    ====================================================================================== */
 const SITE = 'https://titantechnogies-afk.github.io/bible-places-today/';
 const MY = (() => { let d = {}; try { d = JSON.parse(localStorage.getItem('jom:my') || '{}') || {}; } catch {}
-  for (const k of ['places', 'verses', 'notes', 'hl', 'plans', 'quiz']) if (!d[k] || typeof d[k] !== 'object') d[k] = {}; return d; })();
+  for (const k of ['places', 'verses', 'notes', 'hl', 'plans', 'quiz', 'friends']) if (!d[k] || typeof d[k] !== 'object') d[k] = {}; return d; })();
 const saveMy = () => { try { localStorage.setItem('jom:my', JSON.stringify(MY)); } catch {} };
 function toast(msg) { let t = $('#toast'); if (!t) { t = document.createElement('div'); t.id = 'toast'; t.className = 'toast'; t.setAttribute('role', 'status'); document.body.append(t); }
   t.textContent = msg; t.classList.add('on'); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('on'), 2400); }
@@ -955,7 +955,7 @@ function wireVerseTools(box, ref, getText) {
   ta.oninput = () => { clearTimeout(tm); tm = setTimeout(() => { const v = ta.value.trim(); if (v) MY.notes[ref] = { t: v, d: Date.now() }; else delete MY.notes[ref]; saveMy();
     $$(`.rverse[data-ref="${CSS.escape(ref)}"]`).forEach(x => x.classList.toggle('noted', !!v)); }, 400); };
 }
-function readHash(ref) { const p = conc.books ? parseRef(ref) : null; if (p) return `${p.book.code}.${p.ch}.${p.v1}`; const m = String(ref).match(/^(.+?)\s+(\d+)(?::(\d+))?/); return m ? `${m[1].replace(/\s+/g, '_')}.${m[2]}${m[3] ? '.' + m[3] : ''}` : ''; }
+function readHash(ref) { const p = conc.books ? parseRef(ref) : null; if (p) return `${p.book.code}.${p.ch}${/:\d/.test(ref) ? '.' + p.v1 : ''}`; const m = String(ref).match(/^(.+?)\s+(\d+)(?::(\d+))?/); return m ? `${m[1].replace(/\s+/g, '_')}.${m[2]}${m[3] ? '.' + m[3] : ''}` : ''; }
 
 /* ---------- Bible reader ---------- */
 const NAMES_SKIP = /^(god|lord|the|sea|river|land|city|mount|valley|east|west|south|north|great|king|salt|tower)$/i;
@@ -1010,7 +1010,7 @@ function viewLibrary() {
   const pl = Object.keys(MY.places).map(id => byId[id]).filter(Boolean);
   const vs = Object.entries(MY.verses).sort((a, b) => b[1].d - a[1].d);
   const hls = Object.entries(MY.hl); const ns = Object.entries(MY.notes).sort((a, b) => b[1].d - a[1].d);
-  const plans = Object.entries(MY.plans).map(([id, d]) => [JOURNEYS.find(j => j.id === id), d]).filter(x => x[0]);
+  const plans = Object.entries(MY.plans).map(([id, d]) => [ALLPLANS.find(j => j.id === id), d]).filter(x => x[0]);
   const vbtn = (r, extra = '') => `<button class="ritem" data-verse="${esc(r)}"><div><b>${esc(r)}</b>${extra}</div><span class="tag">Open</span></button>`;
   main.innerHTML = `<section class="band"><div class="wrap"><div class="sh"><div><p class="kicker">Saved on this device</p><h1>My library</h1><p>Your saved places, verses, highlights, notes and reading plans. Nothing is uploaded; use the backup below to move them to another phone.</p></div>
     <div class="linkrow"><button class="btn ghost sm" id="bk">Download backup</button><label class="btn ghost sm" for="rs">Restore backup</label><input id="rs" type="file" accept="application/json" hidden></div></div>
@@ -1032,7 +1032,7 @@ function viewLibrary() {
 }
 function placeTools(p) {
   const on = !!MY.places[p.id];
-  return `<div class="ptools"><button class="pill${on ? ' on' : ''}" id="savePlace" aria-pressed="${on}">${ICON.star(on)}<span>${on ? 'Saved' : 'Save place'}</span></button><button class="pill" id="sharePlace">${ICON.share}<span>Share</span></button><button class="pill" data-go="quiz-${p.id}">Quiz</button></div>`;
+  return `<div class="ptools"><button class="pill${on ? ' on' : ''}" id="savePlace" aria-pressed="${on}">${ICON.star(on)}<span>${on ? 'Saved' : 'Save place'}</span></button><button class="pill" id="sharePlace">${ICON.share}<span>Share</span></button><button class="pill" data-go="quiz-${p.id}">Quiz</button><button class="pill" data-go="study-${p.id}">Group study</button></div>`;
 }
 function enhancePlace(id) {
   const p = byId[id]; const host = $('.phero .in'); if (!p || !host || $('.ptools', host)) return;
@@ -1064,25 +1064,25 @@ async function homeVotd() {
 function viewPlans() {
   setNav('plans'); document.title = 'Reading plans — Just One More Lord';
   main.innerHTML = `<section class="band"><div class="wrap"><div class="sh"><div><p class="kicker">Read and travel</p><h1>Reading plans</h1><p>Walk through Scripture one stage at a time: each day gives you a passage, the place where it happened and a map. Your progress is saved on this device.</p></div></div>
-    <div class="grid">${JOURNEYS.map(j => { const d = MY.plans[j.id]?.done || []; const pc = Math.round(100 * d.length / j.stops.length);
+    <div class="grid">${ALLPLANS.map(j => { const d = MY.plans[j.id]?.done || []; const pc = Math.round(100 * d.length / j.stops.length);
       return `<button class="jcard plancard" data-go="plan-${j.id}"><h3>${esc(j.n)}</h3><p class="muted small" style="margin:0">${j.stops.length} days · ${esc(j.ref)}</p><div class="prog" aria-label="${pc}% complete"><i style="width:${pc}%"></i></div><span class="small">${d.length ? `${d.length} of ${j.stops.length} days done` : 'Start this plan →'}</span></button>`; }).join('')}</div></div></section>`;
 }
 function viewPlan(id) {
-  const j = JOURNEYS.find(x => x.id === id); if (!j) return viewNotFound(); setNav('plans'); document.title = `${j.n} — reading plan`;
+  const j = ALLPLANS.find(x => x.id === id); if (!j) return viewNotFound(); setNav('plans'); document.title = `${j.n} — reading plan`;
   const st = MY.plans[j.id] || (MY.plans[j.id] = { done: [], start: Date.now() }); saveMy();
   const draw = () => { const d = st.done; const nextDay = j.stops.findIndex((_, i) => !d.includes(i)); const pc = Math.round(100 * d.length / j.stops.length);
     main.innerHTML = `<section class="band"><div class="wrap"><div class="crumbs"><button data-go="plans">Plans</button> › ${esc(j.n)}</div><h1>${esc(j.n)}</h1><p class="lead">${esc(j.intro || j.ref)}</p>
       <div class="prog big"><i style="width:${pc}%"></i></div><p class="small muted">${d.length} of ${j.stops.length} days done${nextDay >= 0 ? '' : ' — plan complete! 🎉'}</p>
       <ol class="days">${j.stops.map((s, i) => { const p = byId[s[0]]; return `<li class="${d.includes(i) ? 'done' : ''}${i === nextDay ? ' today' : ''}"><label class="chk"><input type="checkbox" data-day="${i}" ${d.includes(i) ? 'checked' : ''}><span>Day ${i + 1}</span></label>
-        <div><b>${esc(p?.n || s[0])}</b> · <button class="vref" data-verse="${esc(s[1])}">${esc(s[1])}</button><p class="muted small">${esc(s[2] || '')}</p>
+        <div>${p ? `<b>${esc(p.n)}</b> · ` : ''}<button class="vref" data-verse="${esc(s[1])}">${esc(s[1])}</button><p class="muted small">${esc(s[2] || '')}</p>
         <div class="linkrow"><button class="btn ghost sm" data-go="read-${esc(readHash(s[1]))}">Read</button>${p ? `<button class="btn ghost sm" data-go="place-${p.id}">The place</button>` : ''}</div></div></li>`; }).join('')}</ol>
-      <div class="linkrow"><button class="btn ghost sm" data-go="journey-${j.id}">See the whole journey on the map</button><button class="btn ghost sm" id="rstPlan">Restart plan</button></div></div></section>`;
+      <div class="linkrow">${byId[j.stops[0][0]] ? `<button class="btn ghost sm" data-go="journey-${j.id}">See the whole journey on the map</button><button class="btn ghost sm" data-go="fly-${j.id}">3D fly-over</button>` : ''}<button class="btn ghost sm" id="rstPlan">Restart plan</button></div></div></section>`;
     main.querySelector('.days').onchange = e => { const i = +e.target.dataset.day; if (e.target.checked) { if (!st.done.includes(i)) st.done.push(i); } else st.done = st.done.filter(x => x !== i); saveMy(); draw(); if (e.target.checked) toast(st.done.length === j.stops.length ? 'Plan complete — well done!' : `Day ${i + 1} done`); };
     $('#rstPlan').onclick = () => { if (confirm('Clear your progress for this plan?')) { st.done = []; saveMy(); draw(); } }; };
   draw();
 }
 function markPlanProgress(chapter) { // reading a plan's chapter in the reader ticks that day
-  for (const j of JOURNEYS) { const st = MY.plans[j.id]; if (!st) continue; j.stops.forEach((s, i) => { if (chapterKey(s[1]) === chapter && !st.done.includes(i)) { st.done.push(i); saveMy(); toast(`${j.n}: day ${i + 1} marked as read`); } }); }
+  for (const j of ALLPLANS) { const st = MY.plans[j.id]; if (!st) continue; j.stops.forEach((s, i) => { if (chapterKey(s[1]) === chapter && !st.done.includes(i)) { st.done.push(i); saveMy(); toast(`${j.n}: day ${i + 1} marked as read`); } }); }
 }
 
 /* ---------- quizzes ---------- */
@@ -1159,17 +1159,250 @@ function savePrefs() { try { localStorage.setItem('jom:pref', JSON.stringify(PRE
   if ('serviceWorker' in navigator && location.protocol === 'https:') addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
 })();
 
+/* ======================================================================================
+   STAGE 2: Bible timeline, family tree, group study, chapter reading plans, then & now, 3D fly-overs.
+   ====================================================================================== */
+const TL = window.JOM_TIMELINE || [], FAM = window.JOM_FAMILY || [];
+const LANES = [['em', 'Empires'], ['ld', 'Leaders & kings'], ['pr', 'Prophets'], ['ev', 'Events']];
+const yrLbl = y => y < 0 ? `${-y} BC` : `AD ${y || 1}`;
+function viewTimeline() {
+  setNav('timeline'); document.title = 'Bible timeline — Just One More Lord';
+  let pxy = +(localStorage.getItem('jom:tlz') || 0.5); const Y0 = -2100, Y1 = 110;
+  main.innerHTML = `<section class="band"><div class="wrap"><div class="sh"><div><p class="kicker">From Abraham to Revelation</p><h1>Bible timeline</h1><p>Empires, kings, prophets and events side by side. Zoom in, scroll sideways and tap anything to read about it. Dates are approximate; items marked ≈ are debated.</p></div>
+    <div class="linkrow"><button class="btn ghost sm" id="tlout" aria-label="Zoom out">−</button><button class="btn ghost sm" id="tlin" aria-label="Zoom in">+</button><button class="btn sm" data-go="family">Family tree</button></div></div>
+    <div class="chips" id="tljump">${[['Patriarchs', -2000], ['Exodus', -1460], ['Judges', -1380], ['Kings', -1060], ['Exile', -620], ['Return', -545], ['Jesus', -10], ['Apostles', 30]].map(([l, y]) => `<button class="chip" data-y="${y}">${l}</button>`).join('')}</div>
+    </div><div class="tlwrap" id="tlw" tabindex="0" aria-label="Timeline, scroll sideways"><div class="tlin" id="tli"></div></div>
+    <div class="wrap"><h2 class="libh">The story in order</h2><ol class="tllist">${TL.filter(r => r[3] === 'ev' || r[3] === 'ld').slice().sort((a, b) => a[0] - b[0]).map(r => `<li><span class="yr">${r[7] ? '≈ ' : ''}${yrLbl(r[0])}</span><button class="inl" data-tl="${TL.indexOf(r)}">${esc(r[2])}</button>${r[4] ? ` <button class="vref sm" data-verse="${esc(r[4])}">${esc(r[4])}</button>` : ''}</li>`).join('')}</ol></div></section>`;
+  const draw = () => {
+    const W = (Y1 - Y0) * pxy, X = y => (y - Y0) * pxy; let html = `<div class="tlaxis" style="width:${W}px">`;
+    const step = pxy >= 2 ? 50 : pxy >= 1 ? 100 : 200;
+    for (let y = Math.ceil(Y0 / step) * step; y <= Y1; y += step) html += `<span style="left:${X(y)}px">${y === 0 ? 'BC | AD' : yrLbl(y)}</span>`;
+    html += '</div>';
+    for (const [lane, lbl] of LANES) {
+      const rows = TL.map((r, i) => [r, i]).filter(([r]) => r[3] === lane); const ends = [];
+      const items = rows.map(([r, i]) => { const x = X(r[0]), w = Math.max(r[1] != null ? (r[1] - r[0]) * pxy : 0, 8); const lab = r[2].length * 7.8 + 22, est = (lane === 'em' || lane === 'ld') ? Math.max(w, lab) : w + 6 + lab;
+        let row = ends.findIndex(e => e < x - 4); if (row < 0) { row = ends.length; ends.push(0); } ends[row] = x + est;
+        return `<button class="tli ${lane}${r[1] == null ? ' pt' : ''}" data-tl="${i}" style="left:${x}px;top:${row * 38}px;--w:${w}px" title="${esc(r[2])} (${yrLbl(r[0])}${r[1] != null ? '–' + yrLbl(r[1]) : ''})"><i></i><span>${r[7] ? '≈ ' : ''}${esc(r[2])}</span></button>`; });
+      html += `<div class="tllane" style="width:${W}px;height:${Math.max(1, ends.length) * 38 + 8}px"><b class="tlname">${lbl}</b>${items.join('')}</div>`;
+    }
+    $('#tli').innerHTML = html;
+  };
+  const zoom = f => { const w = $('#tlw'); const mid = (w.scrollLeft + w.clientWidth / 2) / pxy + Y0; pxy = Math.min(6, Math.max(0.25, pxy * f)); localStorage.setItem('jom:tlz', pxy); draw(); w.scrollLeft = (mid - Y0) * pxy - w.clientWidth / 2; };
+  $('#tlin').onclick = () => zoom(1.6); $('#tlout').onclick = () => zoom(1 / 1.6);
+  $('#tljump').onclick = e => { const b = e.target.closest('[data-y]'); if (b) $('#tlw').scrollTo({ left: (+b.dataset.y - Y0) * pxy - 20, behavior: 'smooth' }); };
+  draw();
+}
+document.addEventListener('click', e => { const t = e.target.closest('[data-tl]'); if (!t) return; e.preventDefault(); const r = TL[+t.dataset.tl]; if (!r) return; const p = byId[r[5]];
+  openDlg(`<p class="kicker">${r[7] ? 'Approximate · debated · ' : 'Approximate · '}${yrLbl(r[0])}${r[1] != null ? ' – ' + yrLbl(r[1]) : ''}</p><h2>${esc(r[2])}</h2><p class="lead">${esc(r[6] || '')}</p>
+    <div class="linkrow">${r[4] ? `<button class="btn sm" data-verse="${esc(r[4])}">Read ${esc(r[4])}</button>` : ''}${p ? `<button class="btn ghost sm" data-go="place-${p.id}">Visit ${esc(p.n)}</button>` : ''}</div>`, r[2]); });
+
+/* ---------- family tree ---------- */
+function viewFamily() {
+  setNav('timeline'); document.title = 'Family tree from Adam to Jesus — Just One More Lord';
+  const kids = {}; FAM.forEach(r => { (kids[r[2]] ||= []).push(r); });
+  const node = (r, depth) => { const ch = kids[r[0]] || []; const main = r[5]; const open = main || depth < 1;
+    return `<li class="fnode${main ? ' main' : ''}" data-name="${esc(r[1].toLowerCase())}"><div class="fcard"><b>${esc(r[1])}</b>${r[4] ? `<span>${esc(r[4])}</span>` : ''}<span class="frow">${r[3] ? `<button class="vref sm" data-verse="${esc(r[3])}">${esc(r[3])}</button>` : ''}${ch.length ? `<button class="ftog" aria-expanded="${open}">${ch.length} ${ch.length === 1 ? 'child' : 'children'}</button>` : ''}</span></div>${ch.length ? `<ul${open ? '' : ' hidden'}>${ch.sort((a, b) => (a[5] || 0) - (b[5] || 0)).map(c => node(c, depth + 1)).join('')}</ul>` : ''}</li>`; };
+  main.innerHTML = `<section class="band"><div class="wrap"><div class="sh"><div><p class="kicker">Genesis 5 & 11 · Ruth 4 · Matthew 1 · Luke 3</p><h1>Family tree: Adam to Jesus</h1><p>The highlighted line runs from Adam to Jesus as Genesis, Ruth and Matthew record it. Tap “children” to open other branches — the twelve tribes, Moses and Aaron, Lot and more.</p></div>
+    <div class="linkrow"><button class="btn ghost sm" data-go="timeline">Timeline</button></div></div>
+    <div class="filters"><label class="sr" for="fq">Find a person</label><input id="fq" type="search" placeholder="Find a person — e.g. Ruth, Boaz, Levi" style="flex:1;max-width:420px"><button class="btn ghost sm" id="fall">Open all</button><button class="btn ghost sm" id="fmain">Main line only</button></div>
+    <ul class="ftree">${(kids[null] || kids['null'] || []).map(r => node(r, 0)).join('')}</ul></div></section>`;
+  const tree = $('.ftree');
+  tree.onclick = e => { const t = e.target.closest('.ftog'); if (!t) return; const ul = t.closest('li').querySelector(':scope > ul'); ul.hidden = !ul.hidden; t.setAttribute('aria-expanded', !ul.hidden); };
+  const setAll = (fn) => $$('.fnode', tree).forEach(li => { const ul = li.querySelector(':scope > ul'); if (ul) { ul.hidden = !fn(li); const t = li.querySelector(':scope > .fcard .ftog'); t && t.setAttribute('aria-expanded', !ul.hidden); } });
+  $('#fall').onclick = () => setAll(() => true); $('#fmain').onclick = () => setAll(li => li.classList.contains('main'));
+  $('#fq').oninput = e => { const q = e.target.value.trim().toLowerCase(); $$('.fnode', tree).forEach(li => li.classList.remove('hit')); if (q.length < 2) return;
+    const hits = $$('.fnode', tree).filter(li => li.dataset.name.includes(q)); hits.forEach(li => { li.classList.add('hit'); let p = li.parentElement; while (p && p !== tree) { if (p.tagName === 'UL') p.hidden = false; p = p.parentElement; } });
+    hits[0]?.scrollIntoView({ block: 'center', behavior: 'smooth' }); };
+}
+
+/* ---------- group study (printable, shareable) ---------- */
+function viewStudy(id) {
+  const p = byId[id]; if (!p) return viewNotFound(); setNav(''); document.title = `Group study: ${p.n} — Just One More Lord`;
+  const vs = (p.v || []).slice(0, 3); const ds = discsFor(p.id).slice(0, 2); const js = journeysWith(p.id);
+  const qs = [`Read ${vs.map(v => v[0]).join(', ') || 'the passages'} aloud. What happens at ${p.n}? Who is there, and what do they do?`,
+    vs[0] ? `${vs[0][1]} — what does this show us about God's character?` : `Why do you think ${p.n} matters in the Bible's story?`,
+    `Look at the map. What would it have been like to live in or travel to ${p.n}?`,
+    ds.length ? `Archaeologists found “${ds[0].n}”. How does knowing the real place help you read the Bible?` : `What does ${p.n} look like today? What has changed, and what has stayed the same?`,
+    `What is one thing from this passage you want to remember or put into practice this week?`];
+  main.innerHTML = `<section class="band study"><div class="wrap prose"><div class="crumbs noprint"><button data-go="place-${p.id}">${esc(p.n)}</button> › Group study</div>
+    <p class="kicker">Small group study · about 45 minutes</p><h1>${esc(p.n)}</h1><p class="lead">${esc(p.sum || '')}</p>
+    <div class="linkrow noprint"><button class="btn sm" onclick="print()">Print or save as PDF</button><button class="btn ghost sm" id="stsh">${ICON.share} Send to the group</button></div>
+    <h3>1 · Open (5 min)</h3><p>Pray together. Ask: <i>Have you ever visited a place that made a story come alive?</i></p>
+    <h3>2 · Read (10 min)</h3><div class="verses">${vs.map(v => `<div class="verse"><div class="row"><button class="vref" data-verse="${esc(v[0])}">${esc(v[0])}</button><span>${esc(v[1])}</span></div><div class="vtext stv" data-ref="${esc(v[0])}"></div></div>`).join('')}</div>
+    <h3>3 · See the place (10 min)</h3><div class="mapbox" id="stmap" style="height:300px"></div><p>${esc((p.vis || p.hist || '').slice(0, 420))}</p>
+    ${ds.length ? `<p><b>Archaeology:</b> ${ds.map(d => `${esc(d.n)} (${esc(STATUS[d.status]?.[0] || d.status)})`).join('; ')}.</p>` : ''}${js.length ? `<p><b>Journeys:</b> ${js.map(j => esc(j.n)).join(', ')}.</p>` : ''}
+    <h3>4 · Discuss (15 min)</h3><ol>${qs.map(q => `<li>${esc(q)}</li>`).join('')}</ol>
+    <h3>5 · Pray and go (5 min)</h3><p>Pray for one another, and for the people who live in ${esc((p.loc || p.n).split(/[,;.]/)[0])} today.</p>
+    <p class="small muted">From Just One More Lord · ${SITE}p/${p.id}.html</p></div></section>`;
+  $('#stsh').onclick = () => shareIt({ title: `Group study: ${p.n}`, text: `This week's group study: ${p.n}`, hash: 'study-' + p.id });
+  makeMap($('#stmap'), { markers: [{ lat: p.lat, lon: p.lon, label: p.n, kind: 'main' }, ...nearest(p, 5, 60).map(x => ({ lat: x.o.lat, lon: x.o.lon, label: x.o.n, kind: 'near', go: 'place-' + x.o.id }))], maxZoom: 10 });
+  $$('.stv').forEach(async el => { try { const v = await bibleText(el.dataset.ref); el.innerHTML = verseHTML(v); } catch { try { const g = await glossVerse(el.dataset.ref); el.textContent = g; } catch {} } });
+}
+
+/* ---------- chapter reading plans ---------- */
+const chapters = (book, from, to, note = '') => Array.from({ length: to - from + 1 }, (_, i) => [null, `${book} ${from + i}`, note]);
+const EXTRA_PLANS = [
+  { id: 'john21', n: 'The Gospel of John in 21 days', ref: 'John 1–21', intro: 'Meet Jesus through the eyes of the beloved disciple, one chapter a day.', stops: chapters('John', 1, 21) },
+  { id: 'mark16', n: 'Mark in 16 days', ref: 'Mark 1–16', intro: 'The fastest-moving Gospel — perfect for a first read.', stops: chapters('Mark', 1, 16) },
+  { id: 'acts28', n: 'Walk with Paul: Acts in 28 days', ref: 'Acts 1–28', intro: 'From Jerusalem to Rome: the church spreads across the Roman world. The places in each chapter appear on the map as you read.', stops: chapters('Acts', 1, 28) },
+  { id: 'genesis50', n: 'Genesis in 50 days', ref: 'Genesis 1–50', intro: 'Creation, the flood, and the journeys of Abraham, Isaac, Jacob and Joseph.', stops: chapters('Genesis', 1, 50) },
+  { id: 'psalms30', n: '30 Psalms of hope', ref: 'Psalms', intro: 'A Psalm a day for comfort and praise.', stops: [1, 4, 8, 16, 19, 23, 27, 30, 31, 32, 34, 37, 40, 42, 46, 51, 62, 63, 84, 90, 91, 96, 100, 103, 112, 116, 121, 139, 145, 150].map(n => [null, `Psalms ${n}`, '']) }
+];
+const ALLPLANS = [...JOURNEYS, ...EXTRA_PLANS];
+
+/* ---------- then & now (historic photograph vs today) ---------- */
+async function thenAndNow(p) {
+  if (!(await isLive())) return; const host = $('#s-photos'); if (!host || $('#tnn')) return;
+  const name = p.wiki || p.n; const OLD = /(18[4-9]\d|19[0-3]\d|photochrom|american colony|bonfils|frith|matson|g\. ?eric|antique|historic|old photograph)/i;
+  let old = null;
+  for (const q of [`${p.n} photochrom`, `${p.n} American Colony`, `${p.n} 1890`, `${p.n} 19th century photograph`]) {
+    const r = (await commonsSearch(q, 30)).filter(im => OLD.test(im.title + ' ' + im.desc) && new RegExp(p.n.split(/[\s(]/)[0], 'i').test(im.title + ' ' + im.desc));
+    if (r.length) { old = r[0]; break; } }
+  if (!old) return; const now = (await leadImages([name]))[name]; if (!now) return;
+  host.insertAdjacentHTML('afterend', `<section class="sec" id="tnn"><div class="wrap"><div class="sh"><div><h2>Then and now</h2><p>Drag the slider to compare an early photograph of ${esc(p.n)} with the place today.</p></div></div>
+    <div class="tnn"><img src="${esc(now.src)}" alt="${esc(p.n)} today"><div class="tnn-old"><img src="${esc(old.src)}" alt="${esc(p.n)} in an early photograph"></div><i class="tnn-bar"></i><span class="tnn-l">Then</span><span class="tnn-r">Now</span>
+    <input type="range" min="0" max="100" value="50" aria-label="Compare then and now"></div><p class="small muted">Then: ${credit(old)} · Now: ${credit(now)}</p></div></section>`);
+  const box = $('.tnn'); const upd = v => box.style.setProperty('--x', v + '%'); $('input', box).oninput = e => upd(e.target.value); upd(50);
+}
+
+/* ---------- 3D fly-overs (MapLibre GL, free terrain and imagery, no keys) ---------- */
+let mlP = null;
+function loadMapLibre() {
+  if (window.maplibregl) return Promise.resolve(window.maplibregl);
+  if (mlP) return mlP;
+  const add = (tag, attrs) => new Promise((res, rej) => { const el = document.createElement(tag); Object.assign(el, attrs); el.onload = res; el.onerror = rej; document.head.append(el); });
+  const V = '4.7.1', tryFrom = base => Promise.all([add('link', { rel: 'stylesheet', href: base + 'maplibre-gl.css' }), add('script', { src: base + 'maplibre-gl.js' })]);
+  mlP = tryFrom(`https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/${V}/`).catch(() => tryFrom(`https://unpkg.com/maplibre-gl@${V}/dist/`)).then(() => window.maplibregl).catch(e => { mlP = null; throw e; });
+  return mlP;
+}
+async function viewFly(id) {
+  const j = ALLPLANS.find(x => x.id === id && x.stops?.[0]?.[0]) || JOURNEYS[0]; setNav('journeys'); document.title = `3D fly-over: ${j.n} — Just One More Lord`;
+  const stops = j.stops.map(s => ({ p: byId[s[0]], ref: s[1], note: s[2] })).filter(s => s.p);
+  main.innerHTML = `<section class="flywrap"><div id="fly" class="flymap" role="region" aria-label="3D map"></div>
+    <div class="flyhud"><div class="crumbs"><button data-go="journey-${j.id}">${esc(j.n)}</button> › 3D fly-over</div><p class="kicker" id="flyn">Stage 1 of ${stops.length}</p><h2 id="flyt">${esc(stops[0]?.p.n || '')}</h2><p id="flyd" class="small"></p>
+      <div class="linkrow"><button class="btn ghost sm" id="flyprev" aria-label="Previous stage">←</button><button class="btn sm" id="flyplay">▶ Play</button><button class="btn ghost sm" id="flynext" aria-label="Next stage">→</button><button class="btn ghost sm" id="flyread">Read</button></div>
+      <div class="chips" id="flyj">${JOURNEYS.map(x => `<button class="chip" data-go="fly-${x.id}" aria-pressed="${x.id === j.id}">${esc(x.n)}</button>`).join('')}</div></div></section>`;
+  const setInfo = i => { const s = stops[i]; $('#flyn').textContent = `Stage ${i + 1} of ${stops.length}`; $('#flyt').textContent = s.p.n; $('#flyd').textContent = `${s.ref}${s.note ? ' — ' + s.note : ''}`; $('#flyread').onclick = () => openVerse(s.ref); };
+  setInfo(0);
+  let ml; try { if (!(await isLive())) throw 0; ml = await loadMapLibre(); } catch { $('#fly').innerHTML = '<p class="empty" style="margin:20px">The 3D map needs an internet connection. Showing the flat map instead.</p><div class="mapbox tall" id="flyflat"></div>';
+    makeMap($('#flyflat'), { markers: stops.map((s, i) => ({ lat: s.p.lat, lon: s.p.lon, label: `${i + 1}. ${s.p.n}`, kind: 'stop', num: i + 1, go: 'place-' + s.p.id })), lines: [{ pts: stops.map(s => [s.p.lat, s.p.lon]), color: j.color }] }); return; }
+  let map; try { map = new ml.Map({ container: 'fly', pitch: 60, bearing: 0, center: [stops[0].p.lon, stops[0].p.lat], zoom: 7, maxPitch: 80, attributionControl: { compact: true },
+    style: { version: 8, sources: {
+      sat: { type: 'raster', tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'], tileSize: 256, maxzoom: 18, attribution: 'Imagery © Esri, Maxar, Earthstar Geographics' },
+      dem: { type: 'raster-dem', tiles: ['https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png'], tileSize: 256, encoding: 'terrarium', maxzoom: 14, attribution: 'Terrain: Mapzen / AWS Terrain Tiles' } },
+      layers: [{ id: 'sat', type: 'raster', source: 'sat' }], terrain: { source: 'dem', exaggeration: 1.6 },
+      sky: { 'sky-color': '#0b2a36', 'horizon-color': '#c77a1a', 'fog-color': '#020a10', 'sky-horizon-blend': 0.6, 'horizon-fog-blend': 0.6, 'fog-ground-blend': 0.4 } } });
+  } catch { $('#fly').innerHTML = '<p class="empty" style="margin:20px">This device cannot show 3D maps (WebGL is unavailable).</p>'; return; }
+  map.addControl(new ml.NavigationControl({ visualizePitch: true }), 'top-right');
+  map.on('load', () => {
+    map.addSource('route', { type: 'geojson', data: { type: 'Feature', geometry: { type: 'LineString', coordinates: stops.map(s => [s.p.lon, s.p.lat]) } } });
+    map.addLayer({ id: 'route-glow', type: 'line', source: 'route', paint: { 'line-color': j.color || '#00d1ff', 'line-width': 10, 'line-opacity': 0.35, 'line-blur': 6 } });
+    map.addLayer({ id: 'route', type: 'line', source: 'route', paint: { 'line-color': j.color || '#00d1ff', 'line-width': 3 } });
+    stops.forEach((s, i) => { const el = document.createElement('button'); el.className = 'mk stop flymk'; el.textContent = i + 1; el.title = s.p.n; el.onclick = () => { stop(); goTo(i); };
+      new ml.Marker({ element: el }).setLngLat([s.p.lon, s.p.lat]).addTo(map); });
+  });
+  let cur = 0, playing = false, timer = null;
+  const bearingTo = (a, b) => { if (!b) return map.getBearing(); const t = Math.PI / 180, y = Math.sin((b.lon - a.lon) * t) * Math.cos(b.lat * t), x = Math.cos(a.lat * t) * Math.sin(b.lat * t) - Math.sin(a.lat * t) * Math.cos(b.lat * t) * Math.cos((b.lon - a.lon) * t); return Math.atan2(y, x) / t; };
+  const goTo = i => { cur = (i + stops.length) % stops.length; setInfo(cur); const s = stops[cur].p, nx = stops[cur + 1]?.p;
+    map.flyTo({ center: [s.lon, s.lat], zoom: 10.5, pitch: 68, bearing: bearingTo(s, nx), speed: 0.6, curve: 1.6, essential: true }); };
+  const stop = () => { playing = false; clearTimeout(timer); $('#flyplay').textContent = '▶ Play'; };
+  const step = () => { if (!playing) return; goTo(cur + 1); map.once('moveend', () => { timer = setTimeout(step, 3500); }); if (cur === stops.length - 1) stop(); };
+  $('#flyplay').onclick = () => { if (playing) return stop(); playing = true; $('#flyplay').textContent = '❚❚ Pause'; if (cur >= stops.length - 1) cur = -1; step(); };
+  $('#flynext').onclick = () => { stop(); goTo(cur + 1); }; $('#flyprev').onclick = () => { stop(); goTo(cur - 1); };
+  map.once('load', () => goTo(0));
+  const off = () => { stop(); try { map.remove(); } catch {} window.removeEventListener('hashchange', off); }; window.addEventListener('hashchange', off);
+}
+
+/* ---------- explore-more tiles on home ---------- */
+function homeMore() {
+  const host = $('#feat')?.closest('.band'); if (!host || $('.moretiles')) return;
+  const T = [['read', 'Read the Bible', 'Every chapter, with its places on a map and the Hebrew & Greek behind each verse.'], ['timeline', 'Bible timeline', 'Empires, kings, prophets and events from Abraham to Revelation.'], ['family', 'Family tree', 'The line from Adam to Jesus, with the twelve tribes and more.'],
+    ['fly-' + (JOURNEYS.find(j => j.id === 'apostles') || JOURNEYS[0])?.id, '3D fly-overs', 'Fly over the real terrain of the journeys of Abraham, Moses, Jesus and Paul.'], ['plans', 'Reading plans', 'John in 21 days, Acts with Paul, Psalms of hope and journey plans.'], ['quiz', 'Quiz', 'Test yourself and challenge a friend.'], ['near', 'Near me', 'Find Bible places close to where you are.'], ['library', 'My library', 'Your saved places, verses, highlights and notes.'], ['community', 'Friends & community', 'Invite friends, read plans together and join the conversation.'], ['devnotes', 'Developer notes', 'What\'s new, what\'s next, and a place for your feedback.']];
+  host.insertAdjacentHTML('afterend', `<section class="band moretiles"><div class="wrap"><div class="sh"><div><h2>More ways to explore</h2><p>Tools for personal study, families, churches and travellers — free, and they work on your phone.</p></div></div>
+    <div class="tiles">${T.map(([h, t, d]) => `<button class="tile" data-go="${h}"><b>${t}</b><span>${d}</span></button>`).join('')}</div></div></section>`);
+}
+
+/* ======================================================================================
+   COMMUNITY: friends & invitations, comments (giscus), developer notes.
+   ====================================================================================== */
+const CFG = window.JOM_CONFIG || {}; const GZ = CFG.giscus || {};
+const commentsOn = () => !!(GZ.repo && GZ.repoId && GZ.categoryId);
+function giscus(host, term, { title = 'Comments' } = {}) {
+  if (!host) return;
+  if (!commentsOn()) { host.innerHTML = `<div class="empty">Comments are almost ready — the site owner needs to switch them on (see <code>js/config.js</code>).</div>`; return; }
+  host.innerHTML = `<p class="small muted">Sign in with a free GitHub account to comment. Please be kind — comments are public.</p>`;
+  const s = document.createElement('script'); s.src = 'https://giscus.app/client.js'; s.async = true; s.crossOrigin = 'anonymous';
+  Object.entries({ 'data-repo': GZ.repo, 'data-repo-id': GZ.repoId, 'data-category': GZ.category || 'General', 'data-category-id': GZ.categoryId, 'data-mapping': 'specific', 'data-term': term,
+    'data-strict': '1', 'data-reactions-enabled': '1', 'data-emit-metadata': '0', 'data-input-position': 'top', 'data-theme': 'transparent_dark', 'data-lang': 'en', 'data-loading': 'lazy' }).forEach(([k, v]) => s.setAttribute(k, v));
+  host.append(s);
+}
+function placeComments(id) { if (!commentsOn() || $('#s-comments')) return; const last = $$('main .sec').pop(); if (!last) return;
+  last.insertAdjacentHTML('afterend', `<section class="sec" id="s-comments"><div class="wrap"><h2>Comments and questions</h2><div id="pcm"></div></div></section>`); giscus($('#pcm'), 'place-' + id); }
+
+/* friends: a personal name + invite links + study-together invitations, all without an account */
+function myName() { return MY.name || ''; }
+function viewCommunity() {
+  setNav('community'); document.title = 'Community — Just One More Lord';
+  const plans = Object.entries(MY.plans).map(([id, d]) => [ALLPLANS.find(j => j.id === id), d]).filter(x => x[0]);
+  const friends = Object.values(MY.friends || {});
+  main.innerHTML = `<section class="band"><div class="wrap"><div class="sh"><div><p class="kicker">Grow together</p><h1>Community</h1><p>Invite friends, study the same plan together, and talk with other readers. Everything personal stays on your phone; comments use free GitHub sign-in.</p></div></div>
+    <div class="commgrid">
+      <div class="panel"><h2>Your name</h2><p class="small muted">Shown on the invitations you send.</p><div class="filters"><label class="sr" for="mynm">Your first name</label><input id="mynm" type="text" maxlength="40" placeholder="Your first name" value="${esc(myName())}" style="flex:1"><button class="btn sm" id="mynmS">Save</button></div></div>
+      <div class="panel"><h2>Invite a friend</h2><p class="small muted">Send a personal invitation by WhatsApp, SMS or email.</p><div class="linkrow"><button class="btn" id="invite">${ICON.share} Invite a friend</button>${CFG.whatsappGroup ? `<a class="btn ghost" href="${esc(CFG.whatsappGroup)}" target="_blank" rel="noopener">Join our WhatsApp community</a>` : ''}</div></div>
+      <div class="panel"><h2>Study together</h2><p class="small muted">Pick a plan and invite friends to start it with you. When they open your link, it starts the same plan for them.</p>
+        <div class="filters"><label class="sr" for="tplan">Plan</label><select id="tplan" style="flex:1">${ALLPLANS.map(j => `<option value="${j.id}">${esc(j.n)}</option>`).join('')}</select><button class="btn sm" id="tinv">Invite</button></div>
+        ${plans.length ? `<p class="small">Your plans: ${plans.map(([j, d]) => `<button class="inl" data-go="plan-${j.id}">${esc(j.n)}</button> (${(d.done || []).length}/${j.stops.length})`).join(' · ')}</p>` : ''}</div>
+      <div class="panel"><h2>Friends</h2><p class="small muted">People whose invitations you accepted on this phone.</p>${friends.length ? `<ul class="flist">${friends.map(f => `<li><b>${esc(f.n)}</b><span class="small muted"> · since ${new Date(f.d).toLocaleDateString()}${f.plan ? ' · studying ' + esc(ALLPLANS.find(j => j.id === f.plan)?.n || '') : ''}</span></li>`).join('')}</ul>` : '<p class="empty">No friends yet — send an invitation.</p>'}</div>
+    </div>
+    <h2 class="libh">Community board</h2><p class="muted">Introduce yourself, share prayer requests and ask questions about the Bible lands.</p><div id="cmm"></div></div></section>`;
+  $('#mynmS').onclick = () => { MY.name = $('#mynm').value.trim().slice(0, 40); saveMy(); toast('Saved'); };
+  const nm = () => myName() || 'A friend';
+  $('#invite').onclick = () => shareIt({ title: 'Just One More Lord', text: `${nm()} invites you to explore the places of the Bible on Just One More Lord — maps, photos, a Bible reader and more. Free, no sign-up.`, hash: `friend-${encodeURIComponent(nm())}` });
+  $('#tinv').onclick = () => { const j = ALLPLANS.find(x => x.id === $('#tplan').value); if (!MY.plans[j.id]) { MY.plans[j.id] = { done: [], start: Date.now() }; saveMy(); }
+    shareIt({ title: `Study ${j.n} with me`, text: `${nm()} invites you to read “${j.n}” together on Just One More Lord. Tap to start the same plan:`, hash: `friend-${encodeURIComponent(nm())}-${j.id}` }); };
+  giscus($('#cmm'), 'community');
+}
+function acceptInvite(arg) { // #friend-<name>[-<planId>]
+  const parts = String(arg).split('-'); let plan = null; if (parts.length > 1 && ALLPLANS.find(j => j.id === parts[parts.length - 1])) plan = parts.pop();
+  const name = decodeURIComponent(parts.join('-')).slice(0, 40) || 'A friend'; const j = plan && ALLPLANS.find(x => x.id === plan);
+  setNav(''); document.title = 'You have been invited — Just One More Lord';
+  main.innerHTML = `<section class="band"><div class="wrap quizwrap"><p class="kicker">Invitation</p><h1><span class="neon-txt">${esc(name)}</span> invited you</h1>
+    <p class="lead">${j ? `to read <b>${esc(j.n)}</b> together — ${esc(j.intro || j.ref)}` : 'to explore the places of the Bible: maps, photographs, archaeology, a Bible reader and Hebrew & Greek word meanings.'}</p>
+    <div class="linkrow"><button class="btn" id="acc">${j ? 'Start the plan together' : 'Accept and explore'}</button><button class="btn ghost" data-go="home">Just look around</button></div></div></section>`;
+  $('#acc').onclick = () => { MY.friends ||= {}; MY.friends[name.toLowerCase()] = { n: name, d: Date.now(), plan }; if (j && !MY.plans[j.id]) MY.plans[j.id] = { done: [], start: Date.now() }; saveMy();
+    toast(`${name} added to your friends`); go(j ? 'plan-' + j.id : 'home'); };
+}
+
+/* developer notes: what's new, what's next, and a feedback thread */
+const DEVNOTES = [
+  ['2026-11-25', 'Community and developer notes', ['Invite friends and study plans together', 'Community board and comments on every place (once switched on)', 'This page: developer notes and feedback']],
+  ['2026-11-25', 'Stage 2: timeline, family tree, 3D', ['Zoomable Bible timeline: empires, kings, prophets and events', 'Family tree from Adam to Jesus with all twelve tribes', '3D fly-overs of the journeys over real terrain', 'Then-and-now photo slider on place pages', 'Group study pages you can print or send', 'New plans: John, Mark, Acts with Paul, Genesis, Psalms of hope']],
+  ['2026-11-25', 'Stage 1: a real app', ['Install to your home screen; works offline', 'Bible reader with a live map of every chapter\'s places', 'Save places and verses, highlight, write notes, backup', 'Verse of the day with a daily reminder', 'Reading plans, quizzes, “near me”, sharing previews', 'Text size, high contrast and reduce motion']],
+  ['2026-11-25', 'New look', ['Aqua-and-gold neon design', 'Shepherd and flock home picture', 'Dark night map']]
+];
+const ROADMAP = ['Afrikaans, isiZulu and isiXhosa', 'Audio Bible', 'More places, journeys and discoveries', 'Prayer journal'];
+function viewDevNotes() {
+  setNav(''); document.title = 'Developer notes — Just One More Lord';
+  main.innerHTML = `<section class="band"><div class="wrap prose"><p class="kicker">From the developer${CFG.developer ? ' · ' + esc(CFG.developer) : ''}</p><h1>Developer notes</h1>
+    <p class="lead">What's new, what's coming next, and a place to send ideas, report a mistake or say hello.</p>
+    <h3>Coming next</h3><ul>${ROADMAP.map(r => `<li>${esc(r)}</li>`).join('')}</ul>
+    ${DEVNOTES.map(([d, t, items]) => `<h3>${esc(t)} <span class="small muted">· ${new Date(d).toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' })}</span></h3><ul>${items.map(i => `<li>${esc(i)}</li>`).join('')}</ul>`).join('')}
+    <h3>Feedback and comments</h3><div id="dcm"></div>
+    <p class="small muted">Prefer email or a private message? Use the GitHub repository's Issues tab: <a href="https://github.com/${esc(GZ.repo || 'titantechnogies-afk/bible-places-today')}/issues" target="_blank" rel="noopener">report an issue or idea ↗</a></p></div></section>`;
+  giscus($('#dcm'), 'developer-notes');
+}
+
 /* ---------------- router ---------------- */
 async function render() {
   const h = decodeURIComponent(location.hash.slice(1) || 'home');
   if (dlg.open) dlg.close(); window.scrollTo(0, 0); main.onclick = null;
   try {
-    if (h === 'home' || h === '') { await viewHome(); homeVotd(); }
-    else if (h.startsWith('place-')) { await viewPlace(h.slice(6)); enhancePlace(h.slice(6)); }
+    if (h === 'home' || h === '') { await viewHome(); homeVotd(); homeMore(); }
+    else if (h.startsWith('place-')) { await viewPlace(h.slice(6)); enhancePlace(h.slice(6)); if (byId[h.slice(6)]) { thenAndNow(byId[h.slice(6)]); placeComments(h.slice(6)); } }
     else if (h.startsWith('disc-')) { const d = discById[h.slice(5)]; d ? await viewPlace(d.place, d.id) : viewNotFound(); }
     else if (h === 'atlas') await viewAtlas();
     else if (h === 'journeys') viewJourneys();
-    else if (h.startsWith('journey-')) await viewJourney(h.slice(8));
+    else if (h.startsWith('journey-')) { await viewJourney(h.slice(8)); const jj = h.slice(8); $('main h1')?.insertAdjacentHTML('afterend', `<div class="linkrow"><button class="btn sm" data-go="fly-${jj}">3D fly-over</button><button class="btn ghost sm" data-go="plan-${jj}">Reading plan</button></div>`); }
     else if (h === 'discoveries') viewDiscoveries();
     else if (h === 'search') await viewSearch();
     else if (h === 'about') viewAbout();
@@ -1180,6 +1413,13 @@ async function render() {
     else if (h.startsWith('plan-')) viewPlan(h.slice(5));
     else if (h === 'quiz' || h.startsWith('quiz-')) viewQuiz(h.slice(5));
     else if (h === 'near') viewNear();
+    else if (h === 'timeline') viewTimeline();
+    else if (h === 'community') viewCommunity();
+    else if (h.startsWith('friend-')) acceptInvite(h.slice(7));
+    else if (h === 'devnotes') viewDevNotes();
+    else if (h === 'family') viewFamily();
+    else if (h.startsWith('study-')) viewStudy(h.slice(6));
+    else if (h.startsWith('fly-')) await viewFly(h.slice(4));
     else if (h.startsWith('strong-')) await viewStrong(h.slice(7));
     else if (h.startsWith('w-')) await viewWiki(h.slice(2));
     else if (h.startsWith('og-')) await viewGaz(h.slice(3));

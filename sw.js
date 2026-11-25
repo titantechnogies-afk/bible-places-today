@@ -1,8 +1,8 @@
 /* Just One More Lord — service worker: makes the app installable and usable offline.
    App files: served from cache, refreshed in the background. Bible/concordance data: cached on first use.
    Live sources (Wikipedia, Commons, Bible text, map tiles): network first, cached copy when offline. */
-const V = 'jom-v1';
-const SHELL = ['./', 'index.html', 'css/style.css', 'js/app.js', 'data/places.js', 'data/discoveries.js', 'data/journeys.js',
+const V = 'jom-v3';
+const SHELL = ['./', 'index.html', 'css/style.css', 'js/app.js', 'data/places.js', 'data/discoveries.js', 'data/journeys.js', 'data/story.js', 'js/config.js',
   'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/favicon-32.png', 'img/hero.webp',
   'data/concordance/books.json'];
 const LIMITS = { [V + '-img']: 400, [V + '-live']: 600 };
@@ -21,8 +21,8 @@ self.addEventListener('fetch', e => {
     if (u.pathname.includes('/data/concordance/')) return e.respondWith(cacheFirst(V + '-bible', req));
     return e.respondWith(staleWhileRevalidate(V + '-shell', req));
   }
-  if (/(^|\.)(tile\.openstreetmap\.org|arcgisonline\.com|opentopomap\.org|upload\.wikimedia\.org)$/.test(u.hostname)) return e.respondWith(cacheFirst(V + '-img', req));
-  if (/(fonts\.googleapis\.com|fonts\.gstatic\.com|cdnjs\.cloudflare\.com)$/.test(u.hostname)) return e.respondWith(staleWhileRevalidate(V + '-lib', req));
+  if (/(^|\.)(tile\.openstreetmap\.org|arcgisonline\.com|opentopomap\.org|upload\.wikimedia\.org|s3\.amazonaws\.com)$/.test(u.hostname)) return e.respondWith(cacheFirst(V + '-img', req));
+  if (/(fonts\.googleapis\.com|fonts\.gstatic\.com|cdnjs\.cloudflare\.com|unpkg\.com)$/.test(u.hostname)) return e.respondWith(staleWhileRevalidate(V + '-lib', req));
   if (/(wikipedia\.org|wikimedia\.org|wikidata\.org|bible-api\.com|githubusercontent\.com)$/.test(u.hostname)) return e.respondWith(networkFirst(V + '-live', req));
 });
 self.addEventListener('message', e => {

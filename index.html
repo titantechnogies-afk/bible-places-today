@@ -41,10 +41,12 @@
       <button data-go="journeys">Journeys</button>
       <button data-go="discoveries">Discoveries</button>
       <button data-go="read">Bible</button>
+      <button data-go="timeline">Timeline</button>
       <button data-go="concordance">Concordance</button>
       <button data-go="plans">Plans</button>
       <button data-go="quiz">Quiz</button>
       <button data-go="library">Saved</button>
+      <button data-go="community">Community</button>
     </nav>
     <div class="tools"><button class="tbtn" id="aaBtn" aria-haspopup="true" aria-expanded="false" aria-controls="aaPanel" title="Text size and contrast"><span aria-hidden="true">Aa</span><span class="sr">Text size and contrast</span></button>
       <div class="aapanel" id="aaPanel" hidden><p class="kicker">Display</p><div class="seg" role="group" aria-label="Text size"><button data-size="1">A</button><button data-size="1.12">A+</button><button data-size="1.25">A++</button></div>
@@ -64,15 +66,17 @@
   <div class="foot-in">
     <div><b class="ft">Just One More Lord</b><p>Explore the places. Discover the evidence. Walk through biblical history.</p></div>
     <div><p>Photographs: Wikimedia Commons contributors (licence shown on each image). Maps © OpenStreetMap contributors; satellite imagery © Esri and its sources; terrain © OpenTopoMap (CC BY-SA). Summaries: Wikipedia (CC BY-SA). Scripture: World English Bible (public domain), via bible-api.com. Archaeological data: Wikidata (CC0). Optional gazetteer: OpenBible.info (CC BY 4.0). Concordance: Hebrew and Greek text, translation and Strong's tagging by STEPBible.org (Tyndale House, CC BY 4.0); Strong's dictionary (public domain, OpenScriptures edition CC BY-SA).</p>
-    <p><button class="inl" data-go="about">About &amp; sources</button> · <button class="inl" data-go="near">Bible places near me</button> · <button class="inl" data-go="library">My library &amp; backup</button></p>
+    <p><button class="inl" data-go="about">About &amp; sources</button> · <button class="inl" data-go="near">Bible places near me</button> · <button class="inl" data-go="library">My library &amp; backup</button> · <button class="inl" data-go="community">Friends &amp; community</button> · <button class="inl" data-go="devnotes">Developer notes</button></p>
     <p>Archaeology and theology are different disciplines. This site reports what excavations found and how specialists assess it; it marks interpretations, disputes and traditions as such.</p></div>
   </div>
 </footer>
 <dialog id="dlg" aria-label="Details"><div class="dlg-in"><button class="dx" data-close aria-label="Close">×</button><div id="dlgBody"></div></div></dialog>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="js/config.js"></script>
 <script src="data/places.js"></script>
 <script src="data/discoveries.js"></script>
 <script src="data/journeys.js"></script>
+<script src="data/story.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>
