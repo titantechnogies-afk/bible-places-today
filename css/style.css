@@ -718,3 +718,25 @@ html.embed body{background:#020a10}html.embed main{min-height:0}
 .ytwrap iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
 .ytplay{width:74px;height:74px;border-radius:50%;display:grid;place-items:center;font-size:28px;background:var(--neon);color:#021219;box-shadow:0 0 30px rgba(0,209,255,.6)}
 .yttitle{position:absolute;left:0;right:0;bottom:0;padding:12px 14px;background:linear-gradient(transparent,rgba(0,0,0,.8));font:700 15px "Sora",sans-serif;text-align:left}
+/* stage 6 */
+.mref{font-size:clamp(30px,5vw,48px)}
+.mhint{font:600 clamp(24px,3.4vw,34px)/1.5 "Sora",sans-serif;letter-spacing:.08em;color:#ffe08a;margin:18px 0 6px}
+.mtext{font-family:"Cormorant Garamond",Georgia,serif;font-size:clamp(24px,3.2vw,34px);line-height:1.6;margin:18px 0}
+.blank{background:rgba(0,209,255,.1);border:0;border-bottom:2px solid var(--cyan);color:var(--cyan);font:inherit;padding:0 4px;border-radius:4px}.blank.on{color:#ffe08a;border-color:#ffc72c}
+.devo{padding:22px;border-radius:20px;background:linear-gradient(135deg,rgba(255,199,44,.08),rgba(0,209,255,.06));border:1px solid rgba(255,199,44,.35)}
+.devopray{font-style:italic;color:#e2f4f8}.devocard p{font-size:16px}
+.ritem.feast.hebfeast{border-color:rgba(255,199,44,.4)}
+.pcard .ph img ~ .mono,.votdph .ph img ~ .mono{display:none!important}
+/* accounts */
+.authform{display:grid;gap:12px;max-width:460px;margin:16px 0}
+.authform label{display:grid;gap:6px;font-weight:600;font-size:15px}
+.authform input,.authform textarea{font:inherit;font-size:16px;padding:11px 13px;border-radius:12px;border:1px solid rgba(31,224,208,.35);background:rgba(5,20,28,.75);color:var(--ink)}
+.authform input:focus,.authform textarea:focus{outline:none;border-color:var(--cyan);box-shadow:0 0 0 1px var(--cyan),0 0 16px rgba(0,209,255,.3)}
+.warnt{color:#ffb3c8}.okt{color:#9dffd0}
+.tbtn.me{font-size:18px;background:var(--neon);color:#021219;border:0}
+.ftree ul{margin-left:0;padding-left:0;border-left:0}
+.ftree ul>.fnode::before{display:none}
+.ftree ul>.fnode:not(.main){margin-left:26px;padding-left:12px;border-left:1px dashed rgba(31,224,208,.35)}
+.ftree .fnode.main>.fcard{position:relative}
+.ftree ul>.fnode.main>.fcard::before{content:"↓";position:absolute;top:-14px;left:16px;color:#ffc72c;font-size:12px}
+.ftree{overflow-x:auto}

@@ -101,8 +101,12 @@ async function commonsSearch(q, limit = 24) {
     return (j?.query?.pages || []).sort((a, b) => (a.index || 0) - (b.index || 0)).map(imgFromInfo).filter(goodImg); } catch { return []; }
 }
 /* lead images for many Wikipedia titles at once → {requestedTitle: img} */
+let W2ID = null;
 async function leadImages(titles) {
-  const out = {}; if (!titles.length || !(await isLive())) return out;
+  const out = {}; titles = titles.filter(Boolean); if (!titles.length) return out;
+  const L = window.JOM_IMAGES || {}; if (!W2ID) { W2ID = {}; for (const p of PLACES) { W2ID[p.wiki || p.n] = p.id; W2ID[p.n] = W2ID[p.n] || p.id; } }
+  for (const t of titles) { const x = L[W2ID[t]]; if (x) out[t] = { src: x.f, full: x.f, author: x.a, license: x.l, licenseUrl: x.lu, page: x.u, title: t, desc: '', mime: 'image/jpeg' }; }
+  titles = titles.filter(t => !out[t]); if (!titles.length || !(await isLive())) return out;
   const uniq = [...new Set(titles)];
   const fileOf = {};
   for (let i = 0; i < uniq.length; i += 45) {
@@ -354,8 +358,13 @@ function placeCard(p) {
   const cats = (p.cat || []).map(c => CATS.find(x => x[0] === c)?.[1]).filter(Boolean).slice(0, 3);
   return `<button class="pcard" data-go="place-${p.id}" data-wiki="${esc(p.wiki || p.n)}"><div class="ph"><div class="mono">${monogram(p.n)}</div></div><div class="bd"><h3>${esc(p.n)}</h3><p>${esc(p.mn && p.mn !== p.n ? p.mn + ' · ' : '')}${esc((p.loc || '').split(/[,;.]/)[0])}</p><div class="tags">${cats.map(c => `<span class="tag">${esc(c)}</span>`).join('')}</div></div></button>`;
 }
+const IMGS = window.JOM_IMAGES || {};
+const localImg = id => { const x = IMGS[id]; return x ? { src: x.f, author: x.a, license: x.l, licenseUrl: x.lu, page: x.u, title: '', desc: '' } : null; };
 async function fillCardImages(root) {
   const cards = $$('[data-wiki]', root); if (!cards.length) return;
+  for (const c of cards) { const id = (c.dataset.go || '').replace(/^place-/, '') || Object.keys(IMGS).find(k => byId[k] && (byId[k].wiki || byId[k].n) === c.dataset.wiki); const im = localImg(id); const ph = $('.ph', c);
+    if (im && ph && !$('img', ph)) { const img = new Image(); img.alt = ''; img.loading = 'lazy'; img.decoding = 'async'; img.src = im.src; img.title = 'Photo: ' + (im.author || 'Wikimedia Commons') + (im.license ? ' (' + im.license + ')' : ''); ph.prepend(img); c.dataset.wiki = ''; } }
+  if (!$$('[data-wiki]', root).some(c => c.dataset.wiki)) return;
   const imgs = await leadImages(cards.map(c => c.dataset.wiki));
   for (const c of cards) { const im = imgs[c.dataset.wiki]; const ph = $('.ph', c); if (im && ph && !$('img', ph)) { const img = new Image(); img.alt = ''; img.loading = 'lazy'; img.src = im.src; img.title = 'Photo: ' + (im.author || 'Wikimedia Commons') + (im.license ? ' (' + im.license + ')' : ''); ph.prepend(img); } }
 }
@@ -915,7 +924,7 @@ attachSuggest($('#q'));
 const SITE = 'https://titantechnogies-afk.github.io/bible-places-today/';
 const MY = (() => { let d = {}; try { d = JSON.parse(localStorage.getItem('jom:my') || '{}') || {}; } catch {}
   for (const k of ['places', 'verses', 'notes', 'hl', 'plans', 'quiz', 'friends']) if (!d[k] || typeof d[k] !== 'object') d[k] = {}; return d; })();
-const saveMy = () => { try { localStorage.setItem('jom:my', JSON.stringify(MY)); } catch {} };
+let saveMy = () => { try { localStorage.setItem('jom:my', JSON.stringify(MY)); } catch {} };
 function toast(msg) { let t = $('#toast'); if (!t) { t = document.createElement('div'); t.id = 'toast'; t.className = 'toast'; t.setAttribute('role', 'status'); document.body.append(t); }
   t.textContent = msg; t.classList.add('on'); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('on'), 2400); }
 async function shareIt({ title, text = '', hash = '' }) {
@@ -938,7 +947,7 @@ function verseTools(ref) {
     <button class="pill${saved ? ' on' : ''}" data-act="save" aria-pressed="${saved}">${ICON.star(saved)}<span>${saved ? 'Saved' : 'Save verse'}</span></button>
     <span class="hlrow" role="group" aria-label="Highlight colour">${HLC.map(([c, l]) => `<button class="hl-dot hl-${c}${MY.hl[ref] === c ? ' on' : ''}" data-hl="${c}" aria-label="Highlight ${l}" aria-pressed="${MY.hl[ref] === c}"></button>`).join('')}<button class="hl-dot hl-none" data-hl="" aria-label="Remove highlight">×</button></span>
     <button class="pill" data-act="share">${ICON.share}<span>Share</span></button>
-    <button class="pill" data-act="read">Read chapter</button><button class="pill" data-act="cmp">Compare translations</button></div>
+    <button class="pill" data-act="read">Read chapter</button><button class="pill" data-act="cmp">Compare translations</button><button class="pill" data-act="mem">Memorise</button></div>
     <label class="notebox"><span class="kicker">My note</span><textarea rows="2" placeholder="Write a thought, prayer or question…" data-note>${esc(MY.notes[ref]?.t || '')}</textarea></label>`;
 }
 function wireVerseTools(box, ref, getText) {
@@ -953,6 +962,7 @@ function wireVerseTools(box, ref, getText) {
       $$(`.rverse[data-ref="${CSS.escape(ref)}"]`).forEach(v => v.classList.toggle('saved', on)); toast(on ? 'Saved to your library' : 'Removed from your library'); }
     if (a === 'share') { const txt = await getText?.(); shareIt({ title: ref, text: `“${(txt || '').slice(0, 240)}” — ${ref} (WEB)`, hash: 'read-' + readHash(ref) }); }
     if (a === 'read') { if (dlg.open) dlg.close(); go('read-' + readHash(ref)); }
+    if (a === 'mem') addMemory(ref, (await getText?.()) || '');
     if (a === 'cmp') { const old = $('.cmpbox', box); if (old) { old.remove(); return; } const c = document.createElement('div'); c.className = 'cmpbox'; c.innerHTML = '<p class="muted small"><span class="spin"></span>Loading translations…</p>'; t.after(c); c.innerHTML = await compareHTML(ref); }
   };
   const ta = $('[data-note]', box); let tm;
@@ -1028,6 +1038,7 @@ function viewLibrary() {
     <div class="linkrow"><button class="btn ghost sm" id="bk">Download backup</button><label class="btn ghost sm" for="rs">Restore backup</label><input id="rs" type="file" accept="application/json" hidden></div></div>
     <div class="statrow">${[[pl.length, 'places'], [vs.length, 'verses'], [hls.length, 'highlights'], [ns.length, 'notes'], [plans.length, 'plans']].map(([n, l]) => `<div><b>${n}</b><span>${l}</span></div>`).join('')}</div>
     <h2 class="libh">My progress</h2>${progressHTML()}
+    <div class="linkrow" style="margin-top:14px"><button class="btn sm" data-go="memory">Scripture memory (${Object.keys(MY.mem || {}).length})</button><button class="btn ghost sm" data-go="prayer">Prayer journal</button><button class="btn ghost sm" data-go="plan-year">Bible in a year</button></div>
     <h2 class="libh">Saved places</h2>${pl.length ? `<div class="grid" id="libp">${pl.map(placeCard).join('')}</div>` : '<p class="empty">Tap “Save place” on any place page.</p>'}
     <h2 class="libh">Saved verses</h2>${vs.length ? `<div class="rlist">${vs.map(([r, x]) => vbtn(r, x.t ? `<span>${esc(x.t.slice(0, 160))}${x.t.length > 160 ? '…' : ''}</span>` : '')).join('')}</div>` : '<p class="empty">Tap any verse, then “Save verse”.</p>'}
     <h2 class="libh">Highlights</h2>${hls.length ? `<div class="chips">${hls.map(([r, c]) => `<button class="chip hlchip hl-${c}" data-verse="${esc(r)}">${esc(r)}</button>`).join('')}</div>` : '<p class="empty">No highlights yet.</p>'}
@@ -1049,6 +1060,7 @@ function placeTools(p) {
 }
 function enhancePlace(id) {
   const p = byId[id]; const host = $('.phero .in'); if (!p || !host || $('.ptools', host)) return; track('visited', id);
+  const li = localImg(id), pb = $('#pbg'); if (li && pb && !$('img', pb)) pb.innerHTML = `<img src="${esc(li.src)}" alt="${esc(p.n)} today">`;
   host.insertAdjacentHTML('beforeend', placeTools(p));
   $('#savePlace').onclick = e => { if (MY.places[p.id]) delete MY.places[p.id]; else MY.places[p.id] = Date.now(); saveMy(); const on = !!MY.places[p.id]; const b = e.currentTarget; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); b.innerHTML = `${ICON.star(on)}<span>${on ? 'Saved' : 'Save place'}</span>`; toast(on ? 'Saved to your library' : 'Removed from your library'); };
   $('#sharePlace').onclick = () => shareIt({ title: `${p.n} — Just One More Lord`, text: `${p.n}: ${p.sum || ''}`.slice(0, 220), hash: 'place-' + p.id });
@@ -1087,7 +1099,7 @@ function viewPlan(id) {
     main.innerHTML = `<section class="band"><div class="wrap"><div class="crumbs"><button data-go="plans">Plans</button> › ${esc(j.n)}</div><h1>${esc(j.n)}</h1><p class="lead">${esc(j.intro || j.ref)}</p>
       <div class="prog big"><i style="width:${pc}%"></i></div><p class="small muted">${d.length} of ${j.stops.length} days done${nextDay >= 0 ? '' : ' — plan complete! 🎉'}</p>
       <ol class="days">${j.stops.map((s, i) => { const p = byId[s[0]]; return `<li class="${d.includes(i) ? 'done' : ''}${i === nextDay ? ' today' : ''}"><label class="chk"><input type="checkbox" data-day="${i}" ${d.includes(i) ? 'checked' : ''}><span>Day ${i + 1}</span></label>
-        <div>${p ? `<b>${esc(p.n)}</b> · ` : ''}<button class="vref" data-verse="${esc(s[1])}">${esc(s[1])}</button><p class="muted small">${esc(s[2] || '')}</p>
+        <div>${p ? `<b>${esc(p.n)}</b> · ` : ''}${s[3] ? `<b>${esc(s[2])}</b>` : `<button class="vref" data-verse="${esc(s[1])}">${esc(s[1])}</button><p class="muted small">${esc(s[2] || '')}</p>`}
         <div class="linkrow"><button class="btn ghost sm" data-go="read-${esc(readHash(s[1]))}">Read</button>${p ? `<button class="btn ghost sm" data-go="place-${p.id}">The place</button>` : ''}</div></div></li>`; }).join('')}</ol>
       <div class="linkrow">${byId[j.stops[0][0]] ? `<button class="btn ghost sm" data-go="journey-${j.id}">See the whole journey on the map</button><button class="btn ghost sm" data-go="fly-${j.id}">3D fly-over</button>` : ''}<button class="btn ghost sm" id="rstPlan">Restart plan</button></div></div></section>`;
     main.querySelector('.days').onchange = e => { const i = +e.target.dataset.day; if (e.target.checked) { if (!st.done.includes(i)) st.done.push(i); } else st.done = st.done.filter(x => x !== i); saveMy(); draw(); track(); if (e.target.checked) toast(st.done.length === j.stops.length ? 'Plan complete — well done!' : `Day ${i + 1} done`); };
@@ -1095,7 +1107,7 @@ function viewPlan(id) {
   draw();
 }
 function markPlanProgress(chapter) { // reading a plan's chapter in the reader ticks that day
-  for (const j of ALLPLANS) { const st = MY.plans[j.id]; if (!st) continue; j.stops.forEach((s, i) => { if (chapterKey(s[1]) === chapter && !st.done.includes(i)) { st.done.push(i); saveMy(); toast(`${j.n}: day ${i + 1} marked as read`); } }); }
+  for (const j of ALLPLANS) { const st = MY.plans[j.id]; if (!st) continue; j.stops.forEach((s, i) => { if ((s[3] ? s[3].includes(chapter) && s[3].every(c => MY.readCh[c] || c === chapter) : chapterKey(s[1]) === chapter) && !st.done.includes(i)) { st.done.push(i); saveMy(); toast(`${j.n}: day ${i + 1} marked as read`); } }); }
 }
 
 /* ---------- quizzes ---------- */
@@ -1182,7 +1194,7 @@ function viewTimeline() {
   setNav('timeline'); document.title = 'Bible timeline — Just One More Lord';
   let pxy = +(localStorage.getItem('jom:tlz') || 0.5); const Y0 = -2100, Y1 = 110;
   main.innerHTML = `<section class="band"><div class="wrap"><div class="sh"><div><p class="kicker">From Abraham to Revelation</p><h1>Bible timeline</h1><p>Empires, kings, prophets and events side by side. Zoom in, scroll sideways and tap anything to read about it. Dates are approximate; items marked ≈ are debated.</p></div>
-    <div class="linkrow"><button class="btn ghost sm" data-go="kingdoms">Kingdom maps</button><button class="btn ghost sm" id="tlout" aria-label="Zoom out">−</button><button class="btn ghost sm" id="tlin" aria-label="Zoom in">+</button><button class="btn sm" data-go="family">Family tree</button></div></div>
+    <div class="linkrow"><button class="btn ghost sm" data-go="feasts">Feasts</button><button class="btn ghost sm" data-go="kingdoms">Kingdom maps</button><button class="btn ghost sm" id="tlout" aria-label="Zoom out">−</button><button class="btn ghost sm" id="tlin" aria-label="Zoom in">+</button><button class="btn sm" data-go="family">Family tree</button></div></div>
     <div class="chips" id="tljump">${[['Patriarchs', -2000], ['Exodus', -1460], ['Judges', -1380], ['Kings', -1060], ['Exile', -620], ['Return', -545], ['Jesus', -10], ['Apostles', 30]].map(([l, y]) => `<button class="chip" data-y="${y}">${l}</button>`).join('')}</div>
     </div><div class="tlwrap" id="tlw" tabindex="0" aria-label="Timeline, scroll sideways"><div class="tlin" id="tli"></div></div>
     <div class="wrap"><h2 class="libh">The story in order</h2><ol class="tllist">${TL.filter(r => r[3] === 'ev' || r[3] === 'ld').slice().sort((a, b) => a[0] - b[0]).map(r => `<li><span class="yr">${r[7] ? '≈ ' : ''}${yrLbl(r[0])}</span><button class="inl" data-tl="${TL.indexOf(r)}">${esc(r[2])}</button>${r[4] ? ` <button class="vref sm" data-verse="${esc(r[4])}">${esc(r[4])}</button>` : ''}</li>`).join('')}</ol></div></section>`;
@@ -1330,7 +1342,7 @@ async function viewFly(id) {
 function homeMore() {
   const host = $('#feat')?.closest('.band'); if (!host || $('.moretiles')) return;
   const T = [['read', 'Read the Bible', 'Every chapter, with its places on a map and the Hebrew & Greek behind each verse.'], ['timeline', 'Bible timeline', 'Empires, kings, prophets and events from Abraham to Revelation.'], ['family', 'Family tree', 'The line from Adam to Jesus, with the twelve tribes and more.'],
-    ['fly-' + (JOURNEYS.find(j => j.id === 'apostles') || JOURNEYS[0])?.id, '3D fly-overs', 'Fly over the real terrain of the journeys of Abraham, Moses, Jesus and Paul.'], ['kingdoms', 'Kingdom maps', 'See the borders change from David to the Romans.'], ['distance', 'How far was it?', 'Distances and walking days between Bible places.'], ['kids', 'Kids\' corner', 'Stories, a fun quiz and pictures to colour.'], ['plans', 'Reading plans', 'John in 21 days, Acts with Paul, Psalms of hope and journey plans.'], ['quiz', 'Quiz', 'Test yourself and challenge a friend.'], ['near', 'Near me', 'Find Bible places close to where you are.'], ['library', 'My library', 'Your saved places, verses, highlights and notes.'], ['teachings', 'Teachings', 'Watch Andrew Wommack and Dan Mohler from their official channels.'], ['prayer', 'Prayer', 'A private prayer journal and a shared prayer wall.'], ['community', 'Friends & community', 'Invite friends, read plans together and join the conversation.'], ['embed', 'For churches', 'Put any Bible place or journey on your church or school website.'], ['devnotes', 'Developer notes', 'What\'s new, what\'s next, and a place for your feedback.']];
+    ['fly-' + (JOURNEYS.find(j => j.id === 'apostles') || JOURNEYS[0])?.id, '3D fly-overs', 'Fly over the real terrain of the journeys of Abraham, Moses, Jesus and Paul.'], ['kingdoms', 'Kingdom maps', 'See the borders change from David to the Romans.'], ['distance', 'How far was it?', 'Distances and walking days between Bible places.'], ['kids', 'Kids\' corner', 'Stories, a fun quiz and pictures to colour.'], ['plans', 'Reading plans', 'John in 21 days, Acts with Paul, Psalms of hope and journey plans.'], ['quiz', 'Quiz', 'Test yourself and challenge a friend.'], ['near', 'Near me', 'Find Bible places close to where you are.'], ['library', 'My library', 'Your saved places, verses, highlights and notes.'], ['memory', 'Scripture memory', 'Learn verses by heart with a few minutes\' practice a day.'], ['devotionals', 'Devotionals', 'Short reflections and prayers from the Bible lands.'], ['feasts', 'Feasts & holy days', 'Passover, Pentecost, Tabernacles and Easter — dates for the year ahead.'], ['teachings', 'Teachings', 'Watch Andrew Wommack and Dan Mohler from their official channels.'], ['prayer', 'Prayer', 'A private prayer journal and a shared prayer wall.'], ['community', 'Friends & community', 'Invite friends, read plans together and join the conversation.'], ['embed', 'For churches', 'Put any Bible place or journey on your church or school website.'], ['devnotes', 'Developer notes', 'What\'s new, what\'s next, and a place for your feedback.']];
   host.insertAdjacentHTML('afterend', `<section class="band moretiles"><div class="wrap"><div class="sh"><div><h2>More ways to explore</h2><p>Tools for personal study, families, churches and travellers — free, and they work on your phone.</p></div></div>
     <div class="tiles">${T.map(([h, t, d]) => `<button class="tile" data-go="${h}"><b>${t}</b><span>${d}</span></button>`).join('')}</div></div></section>`);
 }
@@ -1389,6 +1401,7 @@ function acceptInvite(arg) { // #friend-<name>[-<planId>]
 
 /* developer notes: what's new, what's next, and a feedback thread */
 const DEVNOTES = [
+  ['2026-11-25', 'Profiles, memory verses and a year in the Bible', ['Free profiles with sign-up and sync across devices', 'The whole Bible in a year plan', 'Scripture memory with daily practice', 'Devotionals from 13 Bible places', 'Feasts and holy days for the year ahead', 'A photograph for every place, and a share picture for every place', 'Faster loading', 'Privacy policy and app-store preparation']],
   ['2026-11-25', 'Kingdom maps, distances, kids\' corner and languages', ['Kingdom maps for six eras, from David and Solomon to the time of Jesus', '“How far was it?” — distances and walking days, and totals for every journey', 'Kids\' corner: stories read aloud, a fun quiz and pictures to colour', '360° views of places where a panorama is available', 'Save a journey for offline travel', 'Menus in Afrikaans, isiZulu and isiXhosa (help us improve them!)']],
   ['2026-11-25', 'Prayer, translations and smarter search', ['Prayer journal (mark prayers as answered) and a shared prayer wall', 'Choose WEB, KJV, ASV, Basic English or Young\'s Literal in the reader, and compare them verse by verse', 'Word study: tap any word for its Hebrew or Greek meaning', 'Ask questions in the search box, e.g. “Where was Paul shipwrecked?”']],
   ['2026-11-25', 'Listen, badges, cross-references, presenting', ['Listen to any chapter read aloud', 'Daily streaks and 17 badges to earn', '250,000 cross-references between verses', 'Present any place or journey full-screen for church and class', 'Churches can put Bible places on their own websites']],
@@ -1813,13 +1826,200 @@ function viewTeachings(id) {
     <p class="small muted">All teachings belong to the speakers and their ministries and are shown from their own channels; videos only load when you tap play. Teachers are listed by the site owner; as always, test everything against Scripture (Acts 17:11).</p></div></section>`;
 }
 
+/* ======================================================================================
+   STAGE 6: Bible in a year, Scripture memory, devotionals by place, feasts calendar.
+   ====================================================================================== */
+const BOOKCH = [["Genesis",50],["Exodus",40],["Leviticus",27],["Numbers",36],["Deuteronomy",34],["Joshua",24],["Judges",21],["Ruth",4],["1 Samuel",31],["2 Samuel",24],["1 Kings",22],["2 Kings",25],["1 Chronicles",29],["2 Chronicles",36],["Ezra",10],["Nehemiah",13],["Esther",10],["Job",42],["Psalms",150],["Proverbs",31],["Ecclesiastes",12],["Song of Solomon",8],["Isaiah",66],["Jeremiah",52],["Lamentations",5],["Ezekiel",48],["Daniel",12],["Hosea",14],["Joel",3],["Amos",9],["Obadiah",1],["Jonah",4],["Micah",7],["Nahum",3],["Habakkuk",3],["Zephaniah",3],["Haggai",2],["Zechariah",14],["Malachi",4],["Matthew",28],["Mark",16],["Luke",24],["John",21],["Acts",28],["Romans",16],["1 Corinthians",16],["2 Corinthians",13],["Galatians",6],["Ephesians",6],["Philippians",4],["Colossians",4],["1 Thessalonians",5],["2 Thessalonians",3],["1 Timothy",6],["2 Timothy",4],["Titus",3],["Philemon",1],["Hebrews",13],["James",5],["1 Peter",5],["2 Peter",3],["1 John",5],["2 John",1],["3 John",1],["Jude",1],["Revelation",22]];
+(() => { // Bible in a year: every chapter, in order, over 365 days
+  const all = BOOKCH.flatMap(([b, n]) => Array.from({ length: n }, (_, i) => `${b} ${i + 1}`)); const days = 365, stops = [];
+  for (let d = 0; d < days; d++) { const a = Math.round(d * all.length / days), z = Math.round((d + 1) * all.length / days); const ch = all.slice(a, z); if (!ch.length) continue;
+    const f = ch[0], l = ch[ch.length - 1], fb = f.replace(/ \d+$/, ''), lb = l.replace(/ \d+$/, '');
+    const label = ch.length === 1 ? f : fb === lb ? `${f}–${l.split(' ').pop()}` : `${f} – ${l}`; stops.push([null, f, label, ch]); }
+  ALLPLANS.unshift({ id: 'year', n: 'The whole Bible in a year', ref: 'Genesis – Revelation', intro: 'Every chapter of the Bible, in order, in 365 days — about three chapters (15 minutes) a day. Days tick off automatically when you read them in the reader.', stops });
+})();
+
+/* ---------- Scripture memory (spaced repetition) ---------- */
+if (!MY.mem || typeof MY.mem !== 'object') MY.mem = {};
+const BOXDAYS = [0, 1, 2, 4, 8, 16, 32, 64];
+const firstLetters = t => t.replace(/([A-Za-zÀ-ɏ])[A-Za-zÀ-ɏ'’]*/g, '$1');
+async function memText(ref) { const m = MY.mem[ref]; if (m?.t) return m.t; let t = MY.verses[ref]?.t || ''; if (!t) { try { const v = await bibleText(ref); t = v.verses.map(x => x.t).join(' ') || v.text; } catch { try { t = await glossVerse(ref); } catch {} } } if (m && t) { m.t = t; saveMy(); } return t; }
+function addMemory(ref, t) { if (!MY.mem[ref]) { MY.mem[ref] = { box: 0, due: Date.now(), t: t || '', d: Date.now() }; saveMy(); toast('Added to Scripture memory'); } else toast('Already in your memory verses'); }
+function viewMemory() {
+  setNav('library'); document.title = 'Scripture memory — Just One More Lord';
+  const refs = Object.keys(MY.mem), due = refs.filter(r => MY.mem[r].due <= Date.now());
+  const saved = Object.keys(MY.verses).filter(r => !MY.mem[r]);
+  main.innerHTML = `<section class="band"><div class="wrap"><div class="sh"><div><p class="kicker">“I have hidden your word in my heart” · Psalm 119:11</p><h1>Scripture memory</h1><p>Learn verses by heart with short daily practice. Verses you know well come back less often; ones you find hard come back sooner.</p></div></div>
+    <div class="statrow"><div><b>${due.length}</b><span>to practise today</span></div><div><b>${refs.length}</b><span>memory verses</span></div><div><b>${refs.filter(r => MY.mem[r].box >= 5).length}</b><span>learned</span></div></div>
+    <div class="linkrow" style="margin:16px 0">${due.length ? '<button class="btn" id="mpr">Start practice</button>' : '<span class="notice">All caught up — well done! Come back tomorrow.</span>'}<a class="btn ghost sm" id="mcal" download="memory-reminder.ics">Daily reminder</a></div>
+    <div class="filters"><label class="sr" for="madd">Add a verse</label><input id="madd" type="text" placeholder="Add a verse, e.g. John 3:16 or Psalm 23:1" style="flex:1;max-width:420px"><button class="btn sm" id="maddb">Add</button></div>
+    ${['John 3:16', 'Psalms 23:1', 'Philippians 4:13', 'Proverbs 3:5', 'Romans 8:28', 'Joshua 1:9', 'Isaiah 40:31', 'Matthew 11:28'].filter(r => !MY.mem[r]).length ? `<p class="small muted">Popular: ${['John 3:16', 'Psalms 23:1', 'Philippians 4:13', 'Proverbs 3:5', 'Romans 8:28', 'Joshua 1:9', 'Isaiah 40:31', 'Matthew 11:28'].filter(r => !MY.mem[r]).map(r => `<button class="inl" data-madd="${r}">${r}</button>`).join(' · ')}</p>` : ''}
+    ${saved.length ? `<p class="small muted">From your saved verses: ${saved.slice(0, 12).map(r => `<button class="inl" data-madd="${esc(r)}">${esc(r)}</button>`).join(' · ')}</p>` : ''}
+    <h2 class="libh">My memory verses</h2>${refs.length ? `<div class="rlist">${refs.sort((a, b) => MY.mem[a].due - MY.mem[b].due).map(r => `<div class="ritem"><div><b>${esc(r)}</b><span>${MY.mem[r].box >= 5 ? 'Learned ✓' : 'Level ' + MY.mem[r].box + ' of 5'} · next ${MY.mem[r].due <= Date.now() ? 'today' : new Date(MY.mem[r].due).toLocaleDateString()}</span></div><button class="btn ghost sm" data-mdel="${esc(r)}">Remove</button></div>`).join('')}</div>` : '<p class="empty">Add your first verse above.</p>'}</div></section>`;
+  const add = async r => { await loadConc(); const p = parseRef(r); if (!p) { toast('Type a reference like John 3:16'); return; } const ref = `${p.book.name} ${p.ch}:${p.v1}${p.v2 !== p.v1 && p.v2 < 999 ? '-' + p.v2 : ''}`; addMemory(ref); await memText(ref); viewMemory(); };
+  $('#maddb').onclick = () => add($('#madd').value); $('#madd').onkeydown = e => { if (e.key === 'Enter') add(e.target.value); };
+  main.querySelector('.wrap').addEventListener('click', e => { const a = e.target.closest('[data-madd]'); if (a) add(a.dataset.madd); const d = e.target.closest('[data-mdel]'); if (d) { delete MY.mem[d.dataset.mdel]; saveMy(); viewMemory(); } });
+  $('#mpr')?.addEventListener('click', () => practise(due));
+  const ics = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Just One More Lord//EN', 'BEGIN:VEVENT', 'UID:memory-' + Date.now() + '@justonemorelord', 'DTSTAMP:' + new Date().toISOString().replace(/[-:]/g, '').slice(0, 15) + 'Z', 'DTSTART:' + new Date().toISOString().slice(0, 10).replace(/-/g, '') + 'T071500', 'DURATION:PT5M', 'RRULE:FREQ=DAILY', 'SUMMARY:Scripture memory practice', 'URL:' + SITE + '#memory', 'BEGIN:VALARM', 'TRIGGER:PT0M', 'ACTION:DISPLAY', 'DESCRIPTION:Practise your memory verses', 'END:VALARM', 'END:VEVENT', 'END:VCALENDAR'].join('\r\n');
+  $('#mcal').href = URL.createObjectURL(new Blob([ics], { type: 'text/calendar' }));
+}
+async function practise(list) {
+  let i = 0, ok = 0; list = shuffle(list);
+  const step = async () => { if (i >= list.length) { main.innerHTML = `<section class="band"><div class="wrap quizwrap"><p class="kicker">Practice complete</p><h1>${ok} of ${list.length} remembered</h1><p class="lead">Every verse you practise is going deeper into your heart.</p><div class="linkrow"><button class="btn" data-go="memory">Back to memory verses</button></div></div></section>`; track(); return; }
+    const ref = list[i], t = await memText(ref), words = t.split(/\s+/); let mode = 0;
+    const draw = () => { const shown = mode === 0 ? `<p class="mhint">${esc(firstLetters(t))}</p><p class="small muted">First letters only — say the verse aloud, then reveal.</p>` : mode === 1 ? `<p class="mtext">${words.map((w, k) => k % 3 === 1 ? `<button class="blank" data-w="${esc(w)}">${'_'.repeat(Math.max(3, w.replace(/\W/g, '').length))}</button>` : esc(w)).join(' ')}</p><p class="small muted">Tap a blank to check it.</p>` : `<p class="mtext full">${esc(t)}</p>`;
+      main.innerHTML = `<section class="band"><div class="wrap quizwrap"><p class="kicker">Verse ${i + 1} of ${list.length}</p><h1 class="mref">${esc(ref)}</h1>${shown}
+        <div class="linkrow">${mode < 2 ? `<button class="btn ghost" id="mnext">${mode === 0 ? 'Fill in the blanks' : 'Show the whole verse'}</button>` : `<button class="btn" id="mgood">✓ I knew it</button><button class="btn ghost" id="mbad">Not yet</button>`}</div></div></section>`;
+      $('#mnext')?.addEventListener('click', () => { mode++; draw(); });
+      main.querySelectorAll('.blank').forEach(b => b.onclick = () => { b.textContent = b.dataset.w; b.classList.add('on'); });
+      $('#mgood')?.addEventListener('click', () => grade(true)); $('#mbad')?.addEventListener('click', () => grade(false)); };
+    const grade = good => { const m = MY.mem[ref]; if (good) { ok++; m.box = Math.min(7, m.box + 1); } else m.box = Math.max(0, m.box - 2); m.due = Date.now() + (good ? BOXDAYS[m.box] * 864e5 : 6e5); saveMy(); i++; step(); };
+    draw(); };
+  step();
+}
+
+/* ---------- devotionals by place (written for this app) ---------- */
+const DEVOS = {
+  bethlehem: ['Small places, great purposes', 'Micah 5:2', 'Bethlehem was "little among the clans of Judah" — a village, not a capital. Yet God chose it for the birth of David and of Jesus. God often works through what the world overlooks. Your street, your job and your season may feel small, but nothing given to God is insignificant.', 'Lord, help me to be faithful in the small place where you have put me today.'],
+  nazareth: ['Can anything good come from Nazareth?', 'John 1:46', 'Nathanael doubted that anything good could come from Nazareth. Philip did not argue; he said, "Come and see." People\'s opinions about where we are from do not define us. Jesus grew up in an ordinary town and was not ashamed of it — and he is not ashamed of us.', 'Jesus, thank you that my past and my background do not limit what you can do in me.'],
+  capernaum: ['Jesus at home among us', 'Mark 2:1-5', 'Capernaum became Jesus\' home town. In a crowded house there, four friends dug through a roof to bring a paralysed man to him. Jesus saw their faith. Who could you carry to Jesus today — in prayer, in kindness, or by inviting them to come and see?', 'Lord, show me someone I can bring to you, and give me the courage of those four friends.'],
+  'sea-of-galilee': ['Peace in the storm', 'Mark 4:39', 'The disciples were experienced fishermen, yet this storm terrified them. Jesus was asleep in the same boat. He spoke, and the wind and waves obeyed. The storm was real, but so was his presence. Whatever is raging around you, Jesus is in the boat with you.', 'Jesus, speak peace over my storm, and teach me to trust you while I wait.'],
+  jericho: ['Walls that fall', 'Joshua 6:20', 'Jericho\'s walls looked impossible. God\'s plan — marching, waiting, shouting — looked foolish. But obedience, not strength, brought them down. Centuries later, in the same town, Jesus called Zacchaeus down from a tree and the walls around a lonely heart fell too.', 'Father, I bring you the walls I cannot move. Help me to obey you and watch you work.'],
+  'mount-sinai': ['God speaks', 'Exodus 20:2', 'Before God gave a single commandment at Sinai, he reminded Israel who he was: the God who brought them out of slavery. His commands came after his rescue, not before it. We do not obey in order to be loved; we obey because we already are.', 'Lord, thank you for rescuing me. Help me to live as someone who is free and loved.'],
+  'valley-of-elah': ['The battle belongs to the Lord', '1 Samuel 17:47', 'An army froze in fear while a shepherd boy remembered what God had already done — the lion, the bear. David\'s courage came from memory. Remembering God\'s past faithfulness is how we face today\'s giants.', 'God, remind me of every time you have helped me, so I can face what is in front of me with courage.'],
+  gethsemane: ['Not my will, but yours', 'Luke 22:42', 'In the olive grove Jesus was honest about his anguish and asked if there was another way. Then he surrendered: "Not my will, but yours." Prayer is not pretending to be strong; it is bringing our real feelings to the Father and trusting him with the outcome.', 'Father, here is what I really feel. I trust you with what happens next.'],
+  golgotha: ['It is finished', 'John 19:30', 'At Golgotha Jesus cried, "It is finished." Not "I am finished" — but the work is complete. Every sin, every debt, every barrier between us and God was dealt with at the cross. There is nothing left for us to add, only to receive with thanks.', 'Jesus, thank you that what you did on the cross is complete. I receive it with all my heart.'],
+  jerusalem: ['He is not here — he is risen', 'Luke 24:6', 'Jerusalem saw Jesus\' trial, death and burial — and then an empty tomb. The city of his suffering became the city of his victory and the birthplace of the church at Pentecost. The place of your deepest loss can become the place where God\'s power is most seen.', 'Risen Lord, bring resurrection life into the places in me that feel dead.'],
+  bethany: ['Jesus wept', 'John 11:35', 'At Bethany Jesus knew he was about to raise Lazarus, yet he wept with Mary and Martha. He does not rush past our grief. The Lord of life stands beside us in sorrow, sharing our tears, before he speaks the word that changes everything.', 'Lord, thank you that you understand my sorrow. Stay close to me and bring life.'],
+  malta: ['Safe through the shipwreck', 'Acts 27:44', 'God had promised Paul that no life would be lost — and still the ship broke apart. Some swam, some clung to planks, but all reached Malta safely. God\'s promises do not always mean an easy journey, but they do mean a sure arrival.', 'Lord, when my plans break apart, help me hold on to your promise and to whatever plank you give me.'],
+  philippi: ['Songs at midnight', 'Acts 16:25', 'Beaten and locked in stocks, Paul and Silas prayed and sang at midnight — and the other prisoners listened. Their worship in the dark led a whole family to faith. Someone is listening to how you respond to your hardest moments.', 'Jesus, put a song in my heart even at midnight, and let others see you in me.']
+};
+function addDevotional(id) {
+  const d = DEVOS[id]; const host = $('#s-ov'); if (!d || !host || $('#devo')) return;
+  host.insertAdjacentHTML('afterend', `<section class="sec" id="devo"><div class="wrap"><div class="devo"><p class="kicker">Devotional · ${esc(byId[id]?.n || '')}</p><h2>${esc(d[0])}</h2><p class="pvref" style="font-size:16px"><button class="vref" data-verse="${esc(d[1])}">${esc(d[1])}</button></p><p class="lead">${esc(d[2])}</p><p class="devopray"><b>Pray:</b> ${esc(d[3])}</p>
+    <div class="linkrow"><button class="btn ghost sm" id="devosh">${ICON.share} Share</button><button class="btn ghost sm" data-go="devotionals">All devotionals</button></div></div></div></section>`);
+  $('#devosh').onclick = () => shareIt({ title: d[0], text: `${d[0]} — ${d[2].slice(0, 160)}… (${d[1]})`, hash: 'place-' + id });
+}
+function viewDevotionals() {
+  setNav(''); document.title = 'Devotionals — Just One More Lord';
+  main.innerHTML = `<section class="band"><div class="wrap"><div class="sh"><div><p class="kicker">Short reflections</p><h1>Devotionals from the Bible lands</h1><p>A short reflection, a verse and a prayer from the places where it happened.</p></div></div>
+    <div class="kgrid">${Object.entries(DEVOS).map(([id, d]) => `<article class="kcard devocard"><p class="kicker">${esc(byId[id]?.n || id)}</p><h3>${esc(d[0])}</h3><p>${esc(d[2])}</p><p class="devopray"><b>Pray:</b> ${esc(d[3])}</p><div class="linkrow"><button class="btn ghost sm" data-verse="${esc(d[1])}">${esc(d[1])}</button><button class="btn ghost sm" data-go="place-${id}">Visit ${esc(byId[id]?.n || '')}</button></div></article>`).join('')}</div></div></section>`;
+}
+
+/* ---------- feasts and holy days (Hebrew dates computed by the device's own calendar) ---------- */
+function easter(y) { const a = y % 19, b = Math.floor(y / 100), c = y % 100, d = Math.floor(b / 4), e = b % 4, f = Math.floor((b + 8) / 25), g = Math.floor((b - f + 1) / 3), h = (19 * a + b - d - g + 15) % 30, i = Math.floor(c / 4), k = c % 4, l = (32 + 2 * e + 2 * i - h - k) % 7, m = Math.floor((a + 11 * h + 22 * l) / 451), mo = Math.floor((h + l - 7 * m + 114) / 31), da = ((h + l - 7 * m + 114) % 31) + 1; return new Date(y, mo - 1, da); }
+function hebrewDays(from, to) { let fmt; try { fmt = new Intl.DateTimeFormat('en-u-ca-hebrew', { day: 'numeric', month: 'long' }); } catch { return []; } const out = [];
+  for (let d = new Date(from); d <= to; d.setDate(d.getDate() + 1)) { const p = fmt.formatToParts(d); out.push({ date: new Date(d), m: p.find(x => x.type === 'month')?.value || '', day: +(p.find(x => x.type === 'day')?.value || 0) }); } return out; }
+const FEASTS = [['Purim', ['Adar', 'Adar II'], 14, 'Esther 9:21-22', 'susa', 'Celebrates the deliverance of the Jewish people in Persia through Queen Esther.'], ['Passover (Pesach)', ['Nisan'], 15, 'Exodus 12:14', 'rameses', 'Remembers the Exodus from Egypt. Jesus\' Last Supper was a Passover meal.'], ['Pentecost (Shavuot)', ['Sivan'], 6, 'Acts 2:1', 'jerusalem', 'Harvest feast fifty days after Passover; the day the Holy Spirit was given.'], ['Feast of Trumpets (Rosh Hashanah)', ['Tishri'], 1, 'Leviticus 23:24', 'jerusalem', 'The Jewish New Year, announced with trumpet blasts.'], ['Day of Atonement (Yom Kippur)', ['Tishri'], 10, 'Leviticus 16:30', 'temple-mount', 'The holiest day: fasting, repentance and atonement.'], ['Feast of Tabernacles (Sukkot)', ['Tishri'], 15, 'John 7:37', 'jerusalem', 'Living in shelters to remember the wilderness; Jesus taught at this feast.'], ['Feast of Dedication (Hanukkah)', ['Kislev'], 25, 'John 10:22-23', 'temple-mount', 'Remembers the rededication of the Temple; Jesus was in Jerusalem at this feast.']];
+function viewFeasts() {
+  setNav('timeline'); document.title = 'Feasts and holy days — Just One More Lord';
+  const now = new Date(); now.setHours(0, 0, 0, 0); const end = new Date(now); end.setFullYear(end.getFullYear() + 1); const list = [];
+  for (const h of hebrewDays(now, end)) for (const f of FEASTS) if (f[1].includes(h.m) && h.day === f[2]) list.push({ date: h.date, n: f[0], ref: f[3], pl: f[4], d: f[5], heb: true });
+  for (const y of [now.getFullYear(), now.getFullYear() + 1]) { const e = easter(y); const add = (n, off, ref, pl, d) => { const x = new Date(e); x.setDate(x.getDate() + off); list.push({ date: x, n, ref, pl, d }); };
+    add('Palm Sunday', -7, 'John 12:13', 'mount-of-olives', 'Jesus rides into Jerusalem.'); add('Good Friday', -2, 'Luke 23:33', 'golgotha', 'The crucifixion of Jesus.'); add('Easter Sunday', 0, 'Luke 24:6', 'jerusalem', 'The resurrection of Jesus.'); add('Ascension Day', 39, 'Acts 1:9', 'mount-of-olives', 'Jesus ascends to heaven.'); add('Pentecost Sunday', 49, 'Acts 2:4', 'jerusalem', 'The church celebrates the coming of the Holy Spirit.');
+    list.push({ date: new Date(y, 11, 25), n: 'Christmas', ref: 'Luke 2:11', pl: 'bethlehem', d: 'The birth of Jesus.' }); }
+  const items = list.filter(x => x.date >= now && x.date <= end).sort((a, b) => a.date - b.date);
+  main.innerHTML = `<section class="band"><div class="wrap"><div class="sh"><div><p class="kicker">The year ahead</p><h1>Feasts and holy days</h1><p>The biblical feasts and the main Christian holy days for the next twelve months, with their Bible readings and places. Jewish feasts begin at sunset the evening before the date shown.</p></div><div class="linkrow"><button class="btn ghost sm" data-go="timeline">Timeline</button></div></div>
+    ${items.length ? `<div class="rlist">${items.map(x => `<div class="ritem feast${x.heb ? ' hebfeast' : ''}"><div><b>${esc(x.n)}</b><span>${x.date.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })} · ${esc(x.d)}</span><span class="linkrow" style="margin-top:6px"><button class="btn ghost sm" data-verse="${esc(x.ref)}">${esc(x.ref)}</button>${byId[x.pl] ? `<button class="btn ghost sm" data-go="place-${x.pl}">${esc(byId[x.pl].n)}</button>` : ''}</span></div><span class="tag">${Math.round((x.date - now) / 864e5) === 0 ? 'Today' : 'in ' + Math.round((x.date - now) / 864e5) + ' days'}</span></div>`).join('')}</div>` : '<p class="empty">This device cannot calculate the Hebrew calendar.</p>'}
+    <p class="small muted">Hebrew dates are calculated by your device's built-in Hebrew calendar. Some traditions keep feasts on different days (for example, Orthodox Easter).</p></div></section>`;
+}
+
+/* ======================================================================================
+   ACCOUNTS: sign up / sign in, profile and cloud sync (Supabase, free tier). Switched on by js/config.js → supabase.
+   Also: privacy-friendly visitor counts (Cloudflare), donate button, WhatsApp channel.
+   ====================================================================================== */
+const SB = CFG.supabase || {}; const sbOn = () => !!(SB.url && SB.anonKey);
+const AUTH = (() => { try { return JSON.parse(localStorage.getItem('jom:auth') || 'null'); } catch { return null; } })() || {};
+const saveAuth = () => { try { localStorage.setItem('jom:auth', JSON.stringify(AUTH)); } catch {} };
+async function sbFetch(path, opts = {}, auth = true) {
+  if (auth && AUTH.exp && Date.now() > AUTH.exp - 60000) await sbRefresh();
+  const r = await fetch(SB.url.replace(/\/$/, '') + path, { ...opts, headers: { apikey: SB.anonKey, 'Content-Type': 'application/json', ...(auth && AUTH.access ? { Authorization: 'Bearer ' + AUTH.access } : {}), ...(opts.headers || {}) } });
+  const txt = await r.text(); let j = null; try { j = txt ? JSON.parse(txt) : null; } catch {}
+  if (!r.ok) { const e = new Error(j?.msg || j?.error_description || j?.message || j?.error || 'Request failed (' + r.status + ')'); e.status = r.status; throw e; } return j;
+}
+function setSession(j) { if (!j?.access_token) return false; Object.assign(AUTH, { access: j.access_token, refresh: j.refresh_token, exp: Date.now() + (j.expires_in || 3600) * 1000, user: j.user || AUTH.user }); saveAuth(); return true; }
+async function sbRefresh() { if (!AUTH.refresh) return; try { setSession(await sbFetch('/auth/v1/token?grant_type=refresh_token', { method: 'POST', body: JSON.stringify({ refresh_token: AUTH.refresh }) }, false)); } catch { signOutLocal(); } }
+function signOutLocal() { for (const k of Object.keys(AUTH)) delete AUTH[k]; saveAuth(); }
+const signedIn = () => !!(AUTH.access && AUTH.user);
+function handleAuthRedirect() { // magic-link / confirmation / Google sign-in come back as #access_token=...
+  const h = location.hash.slice(1); if (!/access_token=/.test(h) && !/error_description=/.test(h)) return false;
+  const q = new URLSearchParams(h); if (q.get('error_description')) { history.replaceState(null, '', location.pathname + '#profile'); setTimeout(() => toast(q.get('error_description')), 500); return true; }
+  setSession({ access_token: q.get('access_token'), refresh_token: q.get('refresh_token'), expires_in: +q.get('expires_in') || 3600 });
+  history.replaceState(null, '', location.pathname + '#profile');
+  sbFetch('/auth/v1/user').then(u => { AUTH.user = u; saveAuth(); pullProfile().then(() => { toast('Signed in'); if (location.hash === '#profile') viewProfile(); }); }).catch(() => {});
+  return true;
+}
+/* sync: the whole library (MY) is stored in your own profile row, merged with what is on this phone */
+const SYNC_KEYS = ['places', 'verses', 'notes', 'hl', 'plans', 'quiz', 'friends', 'days', 'readCh', 'visited', 'strongs', 'badges', 'mem'];
+function mergeMy(remote) { if (!remote || typeof remote !== 'object') return;
+  for (const k of SYNC_KEYS) if (remote[k] && typeof remote[k] === 'object') { MY[k] = MY[k] || {}; for (const [kk, v] of Object.entries(remote[k])) {
+    if (k === 'plans') { const a = MY.plans[kk]?.done || [], b = v?.done || []; MY.plans[kk] = { ...(MY.plans[kk] || v), done: [...new Set([...a, ...b])] }; }
+    else if (!(kk in MY[k])) MY[k][kk] = v; else if (v && typeof v === 'object' && (v.d || 0) > (MY[k][kk]?.d || 0)) MY[k][kk] = v; } }
+  if (Array.isArray(remote.prayers)) MY.prayers = [...(MY.prayers || []), ...remote.prayers.filter(p => !(MY.prayers || []).some(x => x.id === p.id))];
+  ['name', 'quizPerfect', 'last'].forEach(k => { if (remote[k] && !MY[k]) MY[k] = remote[k]; });
+  try { localStorage.setItem('jom:my', JSON.stringify(MY)); } catch {} }
+async function pullProfile() { if (!sbOn() || !signedIn()) return null; try { const rows = await sbFetch(`/rest/v1/profiles?id=eq.${AUTH.user.id}&select=*`); const r = rows?.[0]; if (r) { AUTH.profile = { name: r.name, church: r.church, country: r.country, bio: r.bio, public: r.is_public }; saveAuth(); mergeMy(r.data); } await pushProfile(); return r; } catch (e) { console.warn(e); return null; } }
+let pushT = null, pushing = false;
+async function pushProfile() { if (!sbOn() || !signedIn() || pushing) return; pushing = true;
+  try { const pr = AUTH.profile || {}; await sbFetch('/rest/v1/profiles', { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=minimal' }, body: JSON.stringify({ id: AUTH.user.id, name: pr.name || MY.name || null, church: pr.church || null, country: pr.country || null, bio: pr.bio || null, is_public: !!pr.public, data: MY, updated_at: new Date().toISOString() }) }); AUTH.synced = Date.now(); saveAuth(); }
+  catch (e) { console.warn('sync', e.message); } finally { pushing = false; } }
+const _saveMy = saveMy;
+saveMy = () => { _saveMy(); if (sbOn() && signedIn()) { clearTimeout(pushT); pushT = setTimeout(pushProfile, 4000); } };
+function profileBtn() { const t = $('.tools'); if (!t || $('#meBtn')) return; const n = (AUTH.profile?.name || MY.name || '').trim();
+  t.insertAdjacentHTML('afterbegin', `<button class="tbtn me" id="meBtn" data-go="profile" title="My profile" aria-label="My profile">${n ? esc(n[0].toUpperCase()) : '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="12" cy="8" r="4" fill="none" stroke="currentColor" stroke-width="2"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>'}</button>`); }
+function viewProfile() {
+  setNav(''); document.title = 'My profile — Just One More Lord';
+  if (!sbOn()) { main.innerHTML = `<section class="band"><div class="wrap quizwrap"><p class="kicker">Accounts</p><h1>Profiles are almost ready</h1><p class="lead">Sign-up needs the site owner to connect a free Supabase account (see <code>SETUP.md</code>). Until then, everything you save is kept on this phone — use <button class="inl" data-go="library">My library</button> → Download backup to move it.</p></div></section>`; return; }
+  if (!signedIn()) {
+    let mode = 'in';
+    const draw = () => { main.innerHTML = `<section class="band"><div class="wrap quizwrap"><p class="kicker">Free account</p><h1>${mode === 'in' ? 'Sign in' : 'Create your profile'}</h1><p class="lead">Keep your saved places, verses, notes, prayers, plans, streaks and badges safe — and on every device you use.</p>
+      <form class="authform" id="af"><label>Email<input type="email" id="ae" required autocomplete="email"></label><label>Password<input type="password" id="ap" required minlength="8" autocomplete="${mode === 'in' ? 'current-password' : 'new-password'}" placeholder="At least 8 characters"></label>
+      ${mode === 'up' ? '<label>Your name<input type="text" id="an" maxlength="40" autocomplete="given-name"></label>' : ''}<button class="btn" type="submit">${mode === 'in' ? 'Sign in' : 'Create account'}</button><p class="small" id="amsg" aria-live="polite"></p></form>
+      ${SB.google ? '<button class="btn ghost" id="agoogle">Continue with Google</button>' : ''}
+      <p class="small">${mode === 'in' ? 'New here? <button class="inl" id="asw">Create a free account</button>' : 'Already have an account? <button class="inl" id="asw">Sign in</button>'} · <button class="inl" id="amagic">Email me a sign-in link</button></p>
+      <p class="small muted">By creating an account you agree to the <a href="privacy.html" target="_blank">privacy policy</a>. Your data is never sold.</p></div></section>`;
+      $('#asw').onclick = () => { mode = mode === 'in' ? 'up' : 'in'; draw(); };
+      const msg = (t, bad) => { const m = $('#amsg'); m.textContent = t; m.className = 'small ' + (bad ? 'warnt' : 'okt'); };
+      $('#af').onsubmit = async e => { e.preventDefault(); const email = $('#ae').value.trim(), password = $('#ap').value; msg('Please wait…');
+        try { if (mode === 'up') { const j = await sbFetch('/auth/v1/signup', { method: 'POST', body: JSON.stringify({ email, password, data: { name: $('#an')?.value.trim() || '' } }) }, false);
+            if (!setSession(j)) { msg('Check your email and tap the confirmation link to finish creating your account.'); return; } MY.name = MY.name || $('#an')?.value.trim(); AUTH.profile = { name: MY.name }; }
+          else setSession(await sbFetch('/auth/v1/token?grant_type=password', { method: 'POST', body: JSON.stringify({ email, password }) }, false));
+          await pullProfile(); toast('Welcome!'); $('#meBtn')?.remove(); profileBtn(); viewProfile(); }
+        catch (er) { msg(/invalid login/i.test(er.message) ? 'Wrong email or password.' : er.message, true); } };
+      $('#amagic').onclick = async () => { const email = $('#ae').value.trim(); if (!email) { msg('Type your email first.', true); return; }
+        try { await sbFetch('/auth/v1/otp', { method: 'POST', body: JSON.stringify({ email, create_user: true, options: { email_redirect_to: SITE } }) }, false); msg('Check your email for a sign-in link.'); } catch (er) { msg(er.message, true); } };
+      $('#agoogle')?.addEventListener('click', () => { location.href = `${SB.url.replace(/\/$/, '')}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(SITE)}`; }); };
+    draw(); return;
+  }
+  const pr = AUTH.profile || {}; const u = AUTH.user || {};
+  main.innerHTML = `<section class="band"><div class="wrap"><div class="sh"><div><p class="kicker">Signed in as ${esc(u.email || '')}</p><h1>${esc(pr.name || 'My profile')}</h1><p>Your library is saved to your account and syncs to every device where you sign in.</p></div></div>
+    <div class="commgrid"><form class="panel authform" id="pf"><h2>Profile</h2><label>Name<input id="pn" maxlength="40" value="${esc(pr.name || MY.name || '')}"></label><label>Church (optional)<input id="pc" maxlength="80" value="${esc(pr.church || '')}"></label>
+      <label>Country (optional)<input id="pco" maxlength="60" value="${esc(pr.country || '')}"></label><label>About me (optional)<textarea id="pb" rows="3" maxlength="300">${esc(pr.bio || '')}</textarea></label>
+      <label class="tog"><input type="checkbox" id="ppub" ${pr.public ? 'checked' : ''}> Let friends find me by name</label><button class="btn" type="submit">Save profile</button></form>
+      <div class="panel"><h2>Sync</h2><p class="small muted">Last synced: ${AUTH.synced ? new Date(AUTH.synced).toLocaleString() : 'not yet'}</p><div class="linkrow"><button class="btn sm" id="psync">Sync now</button><button class="btn ghost sm" data-go="library">My library</button></div>
+        <h2 style="margin-top:18px">Account</h2><div class="linkrow"><button class="btn ghost sm" id="pout">Sign out</button><button class="btn ghost sm" id="pdel">Delete my data</button></div>
+        <p class="small muted">Deleting removes your profile and synced library from our database. To remove the login itself, email the address in the <a href="privacy.html" target="_blank">privacy policy</a>.</p></div></div>
+    <h2 class="libh">My progress</h2>${progressHTML()}</div></section>`;
+  $('#pf').onsubmit = async e => { e.preventDefault(); AUTH.profile = { name: $('#pn').value.trim(), church: $('#pc').value.trim(), country: $('#pco').value.trim(), bio: $('#pb').value.trim(), public: $('#ppub').checked }; MY.name = AUTH.profile.name; saveAuth(); _saveMy(); await pushProfile(); toast('Profile saved'); $('#meBtn')?.remove(); profileBtn(); };
+  $('#psync').onclick = async () => { await pullProfile(); toast('Synced'); viewProfile(); };
+  $('#pout').onclick = async () => { try { await sbFetch('/auth/v1/logout', { method: 'POST' }); } catch {} signOutLocal(); toast('Signed out'); $('#meBtn')?.remove(); profileBtn(); viewProfile(); };
+  $('#pdel').onclick = async () => { if (!confirm('Delete your profile and synced library from the server? What is on this phone stays.')) return; try { await sbFetch(`/rest/v1/profiles?id=eq.${u.id}`, { method: 'DELETE' }); toast('Your data was deleted from the server'); } catch (er) { toast(er.message); } signOutLocal(); $('#meBtn')?.remove(); profileBtn(); viewProfile(); };
+}
+
+/* ---------- extras switched on in js/config.js ---------- */
+(() => {
+  if (CFG.cloudflareToken) { const s = document.createElement('script'); s.defer = true; s.src = 'https://static.cloudflareinsights.com/beacon.min.js'; s.setAttribute('data-cf-beacon', JSON.stringify({ token: CFG.cloudflareToken })); document.head.append(s); }
+  const f = $('.foot-in > div'); if (f && (CFG.donateUrl || CFG.whatsappChannel)) f.insertAdjacentHTML('beforeend', `<div class="linkrow">${CFG.whatsappChannel ? `<a class="btn ghost sm" href="${esc(CFG.whatsappChannel)}" target="_blank" rel="noopener">Follow on WhatsApp</a>` : ''}${CFG.donateUrl ? `<a class="btn sm" href="${esc(CFG.donateUrl)}" target="_blank" rel="noopener">❤ Support this app</a>` : ''}</div>`);
+  if (location.hash.includes('access_token=') || location.hash.includes('error_description=')) handleAuthRedirect();
+  profileBtn(); if (sbOn() && signedIn()) setTimeout(pullProfile, 1500);
+})();
+
 /* ---------------- router ---------------- */
 async function render() {
   const h = decodeURIComponent(location.hash.slice(1) || 'home');
   if (dlg.open) dlg.close(); window.scrollTo(0, 0); main.onclick = null; if (!h.startsWith('embed-')) document.documentElement.classList.remove('embed');
   try {
     if (h === 'home' || h === '') { await viewHome(); homeVotd(); homeMore(); }
-    else if (h.startsWith('place-')) { await viewPlace(h.slice(6)); enhancePlace(h.slice(6)); if (byId[h.slice(6)]) { thenAndNow(byId[h.slice(6)]); pano360(byId[h.slice(6)]); placeComments(h.slice(6)); } }
+    else if (h.startsWith('place-')) { await viewPlace(h.slice(6)); enhancePlace(h.slice(6)); if (byId[h.slice(6)]) { addDevotional(h.slice(6)); thenAndNow(byId[h.slice(6)]); pano360(byId[h.slice(6)]); placeComments(h.slice(6)); } }
     else if (h.startsWith('disc-')) { const d = discById[h.slice(5)]; d ? await viewPlace(d.place, d.id) : viewNotFound(); }
     else if (h === 'atlas') await viewAtlas();
     else if (h === 'journeys') viewJourneys();
@@ -1837,6 +2037,10 @@ async function render() {
     else if (h === 'timeline') viewTimeline();
     else if (h === 'community') viewCommunity();
     else if (h === 'prayer') viewPrayer();
+    else if (h === 'memory') viewMemory();
+    else if (h === 'profile') viewProfile();
+    else if (h === 'devotionals') viewDevotionals();
+    else if (h === 'feasts') viewFeasts();
     else if (h === 'teachings' || h.startsWith('teachings-')) viewTeachings(h.slice(10));
     else if (h === 'kingdoms' || h.startsWith('kingdoms-')) viewKingdoms(h.slice(9));
     else if (h === 'distance' || h.startsWith('distance-')) viewDistance(h.slice(9));
