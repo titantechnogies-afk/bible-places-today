@@ -233,7 +233,7 @@ async function loadGazetteer(onProgress) {
 }
 
 /* ---------------- map component (Leaflet when live, schematic SVG otherwise) ---------------- */
-const KCOL = { main: '#ffffff', place: '#22e6ff', disc: '#ff7a3d', site: '#39ff9c', near: '#7aa8ff', stop: '#22e6ff' };
+const KCOL = { main: '#ffffff', place: '#00d1ff', disc: '#ff7a3d', site: '#39ff9c', near: '#7aa8ff', stop: '#00d1ff' };
 async function makeMap(box, { markers = [], lines = [], fitPad = 40, maxZoom = 13, overlays = {} } = {}) {
   const live = await isLive();
   if (live && window.L) return leafletMap(box, { markers, lines, fitPad, maxZoom, overlays });
@@ -257,7 +257,7 @@ function leafletMap(box, { markers, lines, fitPad, maxZoom, overlays }) {
     for (const m of list) { const mk = L.marker([m.lat, m.lon], { icon: icon(m), title: m.label, zIndexOffset: m.kind === 'main' ? 1000 : m.kind === 'stop' ? 500 : 0 }).bindPopup(popupHTML(m)); if (m.onClick) mk.on('click', () => m.onClick(m)); mk.addTo(g); all.push([m.lat, m.lon]); m._mk = mk; }
     return g;
   }
-  for (const ln of lines) L.polyline(ln.pts, { color: ln.color || '#22e6ff', weight: ln.weight || 3, opacity: .9, dashArray: ln.dash || null }).addTo(map);
+  for (const ln of lines) L.polyline(ln.pts, { color: ln.color || '#00d1ff', weight: ln.weight || 3, opacity: .9, dashArray: ln.dash || null }).addTo(map);
   add(markers);
   const ctl = L.control.layers(base, {}, { collapsed: true }).addTo(map);
   const fit = () => { if (all.length === 1) map.setView(all[0], Math.min(maxZoom, 12)); else if (all.length) map.fitBounds(all, { padding: [fitPad, fitPad], maxZoom }); else map.setView([31.8, 35.2], 6); };
@@ -279,17 +279,17 @@ function svgMap(box, { markers, lines }) {
     const ox = (W - (lo1 - lo0) * k * s) / 2, oy = (H - (la1 - la0) * s) / 2;
     const X = lon => ox + (lon - lo0) * k * s, Y = lat => H - oy - (lat - la0) * s;
     const span = Math.max(la1 - la0, lo1 - lo0), step = span > 20 ? 5 : span > 8 ? 2 : span > 3 ? 1 : span > 1 ? .5 : .1;
-    let g = `<rect width="${W}" height="${H}" fill="#07051a"/>`;
+    let g = `<rect width="${W}" height="${H}" fill="#031019"/>`;
     const gLo0 = Math.floor((lo0 - span) / step) * step, gLa0 = Math.floor((la0 - span) / step) * step;
-    for (let lo = gLo0; lo <= lo1 + span; lo += step) { const x = X(lo); if (x < 0 || x > W) continue; g += `<line x1="${x}" y1="0" x2="${x}" y2="${H}" stroke="#1c1640"/><text x="${x + 3}" y="${H - 6}" fill="#6f66a8" font-size="10">${(+lo.toFixed(1))}°E</text>`; }
-    for (let la = gLa0; la <= la1 + span; la += step) { const y = Y(la); if (y < 0 || y > H) continue; g += `<line x1="0" y1="${y}" x2="${W}" y2="${y}" stroke="#1c1640"/><text x="4" y="${y - 3}" fill="#6f66a8" font-size="10">${(+la.toFixed(1))}°N</text>`; }
-    for (const l of lines) g += `<polyline points="${l.pts.map(p => X(p[1]) + ',' + Y(p[0])).join(' ')}" fill="none" stroke="${l.color || '#22e6ff'}" stroke-width="2.5" ${l.dash ? 'stroke-dasharray="6 5"' : ''} opacity=".9"/>`;
+    for (let lo = gLo0; lo <= lo1 + span; lo += step) { const x = X(lo); if (x < 0 || x > W) continue; g += `<line x1="${x}" y1="0" x2="${x}" y2="${H}" stroke="#0f2a36"/><text x="${x + 3}" y="${H - 6}" fill="#4f7f8f" font-size="10">${(+lo.toFixed(1))}°E</text>`; }
+    for (let la = gLa0; la <= la1 + span; la += step) { const y = Y(la); if (y < 0 || y > H) continue; g += `<line x1="0" y1="${y}" x2="${W}" y2="${y}" stroke="#0f2a36"/><text x="4" y="${y - 3}" fill="#4f7f8f" font-size="10">${(+la.toFixed(1))}°N</text>`; }
+    for (const l of lines) g += `<polyline points="${l.pts.map(p => X(p[1]) + ',' + Y(p[0])).join(' ')}" fill="none" stroke="${l.color || '#00d1ff'}" stroke-width="2.5" ${l.dash ? 'stroke-dasharray="6 5"' : ''} opacity=".9"/>`;
     const labels = []; const narrow = W < 520;
     const vis = Object.entries(sets).filter(([k]) => !hidden.has(k)).flatMap(([, v]) => v).sort((a, b) => (a.kind === 'main') - (b.kind === 'main'));
     vis.forEach((m, i) => {
       const x = X(m.lon), y = Y(m.lat), r = m.kind === 'main' ? 8 : m.kind === 'stop' ? 9 : 5;
-      const shape = m.kind === 'disc' ? `<rect x="${x - 5}" y="${y - 5}" width="10" height="10" transform="rotate(45 ${x} ${y})" fill="${KCOL.disc}" stroke="#06040f" stroke-width="2"/>` : `<circle cx="${x}" cy="${y}" r="${r}" fill="${KCOL[m.kind] || '#22e6ff'}" stroke="${m.kind === 'main' ? '#ff3ec8' : '#06040f'}" stroke-width="${m.kind === 'main' ? 4 : 2}"/>`;
-      g += `<g class="pt" data-i="${i}" tabindex="0" role="button" aria-label="${esc(m.label)}">${shape}${m.num != null ? `<text x="${x}" y="${y + 4}" text-anchor="middle" font-size="10" font-weight="700" fill="#07041a">${m.num}</text>` : ''}<title>${esc(m.label)}</title></g>`;
+      const shape = m.kind === 'disc' ? `<rect x="${x - 5}" y="${y - 5}" width="10" height="10" transform="rotate(45 ${x} ${y})" fill="${KCOL.disc}" stroke="#020a10" stroke-width="2"/>` : `<circle cx="${x}" cy="${y}" r="${r}" fill="${KCOL[m.kind] || '#00d1ff'}" stroke="${m.kind === 'main' ? '#ffc72c' : '#020a10'}" stroke-width="${m.kind === 'main' ? 4 : 2}"/>`;
+      g += `<g class="pt" data-i="${i}" tabindex="0" role="button" aria-label="${esc(m.label)}">${shape}${m.num != null ? `<text x="${x}" y="${y + 4}" text-anchor="middle" font-size="10" font-weight="700" fill="#021219">${m.num}</text>` : ''}<title>${esc(m.label)}</title></g>`;
       if ((m.kind === 'main' || m.kind === 'stop' || m.kind === 'place' || (!narrow && m.kind === 'near')) ) labels.push({ x, y, t: m.label, main: m.kind === 'main' });
     });
     const placed = [];
@@ -297,7 +297,7 @@ function svgMap(box, { markers, lines }) {
       const w = Math.min(L1.t.length * 6.6, 170), cand = [[10, 4], [-w - 10, 4], [10, -10], [-w - 10, -10], [10, 18]];
       for (const [dx, dy] of cand) { const bx = L1.x + dx, by = L1.y + dy - 11; if (bx < 2 || bx + w > W - 2 || by < 2 || by + 14 > H - 18) continue;
         if (placed.some(p => bx < p.x + p.w && bx + w > p.x && by < p.y + 14 && by + 14 > p.y)) continue;
-        placed.push({ x: bx, y: by, w }); g += `<text x="${bx}" y="${by + 11}" font-size="${L1.main ? 13 : 11.5}" font-weight="${L1.main ? 700 : 600}" fill="${L1.main ? '#fff' : '#d9d3f7'}" paint-order="stroke" stroke="#07051a" stroke-width="3">${esc(L1.t.length > 26 ? L1.t.slice(0, 25) + '…' : L1.t)}</text>`; break; }
+        placed.push({ x: bx, y: by, w }); g += `<text x="${bx}" y="${by + 11}" font-size="${L1.main ? 13 : 11.5}" font-weight="${L1.main ? 700 : 600}" fill="${L1.main ? '#fff' : '#cfe7ee'}" paint-order="stroke" stroke="#031019" stroke-width="3">${esc(L1.t.length > 26 ? L1.t.slice(0, 25) + '…' : L1.t)}</text>`; break; }
     }
     svg.setAttribute('viewBox', `0 0 ${W} ${H}`); svg.innerHTML = g;
     $$('.pt', svg).forEach(el => { const m = vis[+el.dataset.i]; const act = () => { if (m.onClick) m.onClick(m); else if (m.go) location.hash = m.go; else if (m.url) window.open(m.url, '_blank', 'noopener'); };
@@ -363,25 +363,25 @@ function nearest(p, n = 6, maxKm = 120) { return PLACES.filter(o => o.id !== p.i
 function heroSVG() {
   const floor = Array.from({ length: 9 }, (_, i) => { const y = 640 + Math.pow(i / 8, 1.8) * 160; return `<line x1="0" y1="${y.toFixed(1)}" x2="1600" y2="${y.toFixed(1)}"/>`; }).join('') + Array.from({ length: 25 }, (_, i) => `<line x1="800" y1="640" x2="${-1600 + i * 200}" y2="800"/>`).join('');
   return `<svg viewBox="0 0 1600 800" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><defs>
-  <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#06040f"/><stop offset=".5" stop-color="#170a35"/><stop offset=".8" stop-color="#4a0f5e"/><stop offset="1" stop-color="#8a1a6e"/></linearGradient>
-  <linearGradient id="sunG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe76a"/><stop offset=".5" stop-color="#ff7ab8"/><stop offset="1" stop-color="#ff3ec8"/></linearGradient>
-  <radialGradient id="haze" cx=".5" cy=".78" r=".55"><stop offset="0" stop-color="#ff3ec8" stop-opacity=".55"/><stop offset=".5" stop-color="#9b5cff" stop-opacity=".18"/><stop offset="1" stop-color="#9b5cff" stop-opacity="0"/></radialGradient>
+  <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#020a10"/><stop offset=".5" stop-color="#04202c"/><stop offset=".8" stop-color="#0b4a5a"/><stop offset="1" stop-color="#c77a1a"/></linearGradient>
+  <linearGradient id="sunG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff3b0"/><stop offset=".5" stop-color="#ffa62b"/><stop offset="1" stop-color="#ffc72c"/></linearGradient>
+  <radialGradient id="haze" cx=".5" cy=".78" r=".55"><stop offset="0" stop-color="#ffc72c" stop-opacity=".55"/><stop offset=".5" stop-color="#1fe0d0" stop-opacity=".18"/><stop offset="1" stop-color="#1fe0d0" stop-opacity="0"/></radialGradient>
   <mask id="bars"><rect x="560" y="200" width="480" height="440" fill="#fff"/>${Array.from({ length: 8 }, (_, i) => `<rect x="560" y="${440 + i * 18}" width="480" height="${3 + i * 1.6}" fill="#000"/>`).join('')}</mask>
   <filter id="glow" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
   <filter id="soft"><feGaussianBlur stdDeviation="22"/></filter></defs>
   <rect width="1600" height="800" fill="url(#sky)"/><rect width="1600" height="800" fill="url(#haze)"/>
   <g fill="#fff">${Array.from({ length: 70 }, (_, i) => `<circle cx="${(i * 397) % 1600}" cy="${(i * 131) % 420}" r="${i % 5 ? .9 : 1.7}" opacity="${.35 + (i % 4) * .15}"/>`).join('')}</g>
-  <circle cx="800" cy="430" r="210" fill="#ff3ec8" opacity=".4" filter="url(#soft)"/>
+  <circle cx="800" cy="430" r="210" fill="#ffc72c" opacity=".4" filter="url(#soft)"/>
   <circle cx="800" cy="430" r="190" fill="url(#sunG)" mask="url(#bars)"/>
-  <path d="M0 600 C200 540 330 560 470 520 S760 470 900 505 1200 560 1600 515 V640 H0Z" fill="#0d0826" stroke="#9b5cff" stroke-width="2" filter="url(#glow)" opacity=".95"/>
-  <g transform="translate(565 420)" filter="url(#glow)"><path d="M0 220 L40 170 L120 160 L210 120 L330 130 L420 170 L470 220Z" fill="#0a0620" stroke="#ff3ec8" stroke-width="2"/>
-  <path d="M40 200 V142 h22 v-14 h10 v14 h20 v-14 h10 v14 h46 V120 h10 v-12 h10 v12 h10 v-12 h10 v12 h12 v22 h70 v-14 h10 v14 h20 v-14 h10 v14 h60 V130 h10 v-12 h10 v12 h10 v-12 h10 v12 h10 v70Z" fill="#07041a" stroke="#22e6ff" stroke-width="2.5" stroke-linejoin="round"/>
-  <path d="M190 200 v-34 a18 18 0 0 1 36 0 v34" fill="none" stroke="#ffe76a" stroke-width="2.5"/>
-  <g fill="#22e6ff"><rect x="90" y="154" width="6" height="12"/><rect x="300" y="154" width="6" height="12"/><rect x="380" y="146" width="6" height="12"/></g>
+  <path d="M0 600 C200 540 330 560 470 520 S760 470 900 505 1200 560 1600 515 V640 H0Z" fill="#041820" stroke="#1fe0d0" stroke-width="2" filter="url(#glow)" opacity=".95"/>
+  <g transform="translate(565 420)" filter="url(#glow)"><path d="M0 220 L40 170 L120 160 L210 120 L330 130 L420 170 L470 220Z" fill="#03141c" stroke="#ffc72c" stroke-width="2"/>
+  <path d="M40 200 V142 h22 v-14 h10 v14 h20 v-14 h10 v14 h46 V120 h10 v-12 h10 v12 h10 v-12 h10 v12 h12 v22 h70 v-14 h10 v14 h20 v-14 h10 v14 h60 V130 h10 v-12 h10 v12 h10 v-12 h10 v12 h10 v70Z" fill="#021219" stroke="#00d1ff" stroke-width="2.5" stroke-linejoin="round"/>
+  <path d="M190 200 v-34 a18 18 0 0 1 36 0 v34" fill="none" stroke="#fff3b0" stroke-width="2.5"/>
+  <g fill="#00d1ff"><rect x="90" y="154" width="6" height="12"/><rect x="300" y="154" width="6" height="12"/><rect x="380" y="146" width="6" height="12"/></g>
   <path d="M208 40 v52 M190 58 h36" stroke="#fff" stroke-width="4" stroke-linecap="round"/></g>
-  <rect y="640" width="1600" height="160" fill="#06040f"/>
-  <g stroke="#ff3ec8" stroke-width="1.6" opacity=".7" filter="url(#glow)">${floor}</g>
-  <line x1="0" y1="640" x2="1600" y2="640" stroke="#22e6ff" stroke-width="2.5" filter="url(#glow)"/></svg>`;
+  <rect y="640" width="1600" height="160" fill="#020a10"/>
+  <g stroke="#ffc72c" stroke-width="1.6" opacity=".7" filter="url(#glow)">${floor}</g>
+  <line x1="0" y1="640" x2="1600" y2="640" stroke="#00d1ff" stroke-width="2.5" filter="url(#glow)"/></svg>`;
 }
 async function viewHome() {
   setNav('home'); document.title = 'Just One More Lord — Explore the world of the Bible';
@@ -418,7 +418,7 @@ function journeyCard(j) {
   const la0 = Math.min(...pts.map(p => p.lat)), la1 = Math.max(...pts.map(p => p.lat)), lo0 = Math.min(...pts.map(p => p.lon)), lo1 = Math.max(...pts.map(p => p.lon));
   const W = 300, H = 90, k = Math.cos((la0 + la1) / 2 * Math.PI / 180), s = Math.min((W - 20) / Math.max((lo1 - lo0) * k, .01), (H - 20) / Math.max(la1 - la0, .01));
   const ox = (W - (lo1 - lo0) * k * s) / 2, oy = (H - (la1 - la0) * s) / 2, P = p => `${(ox + (p.lon - lo0) * k * s).toFixed(1)},${(H - oy - (p.lat - la0) * s).toFixed(1)}`;
-  return `<button class="jcard" data-go="journey-${j.id}"><svg viewBox="0 0 ${W} ${H}" aria-hidden="true"><polyline points="${pts.map(P).join(' ')}" fill="none" stroke="${j.color}" stroke-width="2.5" stroke-linejoin="round"/>${pts.map(p => `<circle cx="${P(p).split(',')[0]}" cy="${P(p).split(',')[1]}" r="3.5" fill="${j.color}" stroke="#06040f" stroke-width="1.5"/>`).join('')}</svg><h3>${esc(j.n)}</h3><p class="muted small" style="margin:0">${esc(j.ref)} · ${j.stops.length} stages</p></button>`;
+  return `<button class="jcard" data-go="journey-${j.id}"><svg viewBox="0 0 ${W} ${H}" aria-hidden="true"><polyline points="${pts.map(P).join(' ')}" fill="none" stroke="${j.color}" stroke-width="2.5" stroke-linejoin="round"/>${pts.map(p => `<circle cx="${P(p).split(',')[0]}" cy="${P(p).split(',')[1]}" r="3.5" fill="${j.color}" stroke="#020a10" stroke-width="1.5"/>`).join('')}</svg><h3>${esc(j.n)}</h3><p class="muted small" style="margin:0">${esc(j.ref)} · ${j.stops.length} stages</p></button>`;
 }
 
 async function viewPlace(id, focusDisc) {
@@ -481,7 +481,7 @@ async function viewPlace(id, focusDisc) {
   const markers = [{ lat: p.lat, lon: p.lon, label: p.n, sub: p.mn, kind: 'main', size: 18 }];
   const dm = ds.filter(d => d.lat && km(p, d) < 400).map(d => ({ lat: d.lat, lon: d.lon, label: d.n, sub: (STATUS[d.status]?.[0] || '') + ' · ' + d.date, kind: 'disc', onClick: () => $('#d-' + d.id)?.scrollIntoView({ behavior: 'smooth' }) }));
   const nm = near.map(x => ({ lat: x.o.lat, lon: x.o.lon, label: x.o.n, sub: `${x.d.toFixed(0)} km away`, kind: 'near', go: 'place-' + x.o.id }));
-  const relLines = (p.rel || []).map(r => byId[r]).filter(o => o && km(p, o) < 150).map(o => ({ pts: [[p.lat, p.lon], [o.lat, o.lon]], color: '#b49cff', dash: '4 6', weight: 1.5 }));
+  const relLines = (p.rel || []).map(r => byId[r]).filter(o => o && km(p, o) < 150).map(o => ({ pts: [[p.lat, p.lon], [o.lat, o.lon]], color: '#8fb8ff', dash: '4 6', weight: 1.5 }));
   const mp = await makeMap($('#pmap'), { markers, lines: relLines, maxZoom: 13 });
   if (!$('#pmap')) return;
   if (dm.length) mp.add(dm, 'Discoveries'); if (nm.length) mp.add(nm, 'Nearby Bible places');
