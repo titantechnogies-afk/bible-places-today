@@ -1,4 +1,4 @@
-# Bible Places Today
+# Just One More Lord
 
 **Explore the places. Discover the evidence. Walk through biblical history.**
 
@@ -20,6 +20,7 @@ No build step, no server, no paid API keys. It runs on any free static host.
 | **Timeline** | Per-place timeline merging biblical events, rulers, discoveries and excavation dates, filterable by type and by occupying civilisation. |
 | **History** | Biblical and modern names, location today, historical and biblical importance, civilisations and what remains visible. |
 | **Journeys** | Abraham, the Exodus, Jesus' ministry, Paul's three journeys, the voyage to Rome, and Peter and Philip in Acts, drawn as routes with clickable stages. |
+| **Strong's Concordance** | Search an English word ("love", "peace"), a Strong's number (H7965, G26) or a Hebrew/Greek word (shalom, agape) to see the original words, transliteration, pronunciation, Strong's definition, how each is translated, and every verse where it occurs. Every verse opens word by word (interlinear) with the World English Bible text. |
 | **Uncurated places** | Any Wikipedia article or OpenBible.info place gets a live page with map, photos, nearby archaeological sites and verse references. |
 
 ## Project structure
@@ -31,6 +32,8 @@ js/app.js               Router, search, views, map, live data clients
 data/places.js          Curated places (edit to add or correct places)
 data/discoveries.js     Curated archaeological discoveries
 data/journeys.js        Journey routes
+data/concordance/       Strong's lexicon, occurrences and interlinear chapters (generated)
+tools/build_concordance.py  Rebuilds data/concordance from STEPBible-Data + OpenScriptures strongs
 tools/build-gazetteer.mjs  Optional: builds data/gazetteer.json from OpenBible.info
 .github/workflows/pages.yml  One-click GitHub Pages deployment
 ```
@@ -68,6 +71,8 @@ python3 -m http.server 8000
 | bible-api.com | World English Bible text | Public domain |
 | OpenStreetMap / Esri / OpenTopoMap | Map tiles | ODbL / Esri terms / CC BY-SA |
 | OpenBible.info Bible Geocoding Data | Index of all Bible places with verses and coordinates | CC BY 4.0 |
+| STEPBible.org TAHOT & TAGNT (Tyndale House, Cambridge) | Hebrew & Greek text, transliteration, translation, Strong's tags, grammar | CC BY 4.0 |
+| Strong's Hebrew & Greek dictionaries (OpenScriptures edition) | Definitions, pronunciation, KJV renderings, derivations | Public domain text; JSON CC BY-SA |
 
 All of these work without API keys. **Limits to be aware of:** bible-api.com allows about 15 requests per 30 seconds (the app paces bulk loading); Esri imagery tiles are free for non-commercial use with attribution; Wikimedia and Wikidata ask for reasonable request volumes (the app caches responses in the browser for 7 days).
 

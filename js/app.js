@@ -327,11 +327,14 @@ async function openVerse(ref, ctx) {
   const b = openDlg(`<p class="kicker">World English Bible</p><h2>${esc(ref)}</h2>${ctx ? `<p class="muted">${esc(ctx)}</p>` : ''}<div class="vtext" id="vt"><span class="spin"></span>Loading verse text…</div>
     <div class="linkrow"><a class="btn ghost sm" href="${gwLink(ref)}" target="_blank" rel="noopener">Read the chapter in context ↗</a></div>
     ${others.length ? `<h3 style="margin-top:20px">Places in ${esc(ck)}</h3><div class="chips">${others.map(p => `<button class="chip" data-go="place-${p.id}">${esc(p.n)}</button>`).join('')}</div>` : ''}`, 'Bible verse');
+  b.insertAdjacentHTML('beforeend', '<div id="vil" style="margin-top:18px"><p class="muted small"><span class="spin"></span>Loading the Hebrew/Greek…</p></div>');
+  interlinearHTML(ref).then(h => { const e = $('#vil', b); if (e) e.innerHTML = h || ''; }, () => { const e = $('#vil', b); if (e) e.innerHTML = ''; });
   try { const v = await bibleText(ref); $('#vt', b).innerHTML = verseHTML(v); }
   catch (e) { $('#vt', b).innerHTML = `<span class="small muted">${e.status === 429 ? 'The free Bible text service is busy (rate limit). Wait a few seconds and try again, or' : 'Verse text could not be loaded here.'} Use the link below to read ${esc(ref)} in the World English Bible.</span>`; }
 }
 document.addEventListener('click', e => {
   const g = e.target.closest('[data-go]'); if (g) { e.preventDefault(); if (dlg.open) dlg.close(); go(g.dataset.go); return; }
+  const cq = e.target.closest('[data-cq]'); if (cq && !location.hash.includes('concordance')) { e.preventDefault(); try { sessionStorage.setItem('bpt:cq', cq.dataset.cq); } catch {} go('concordance'); return; }
   const v = e.target.closest('[data-verse]'); if (v) { e.preventDefault(); openVerse(v.dataset.verse, v.dataset.ctx); }
 });
 function go(h) { if (location.hash.slice(1) === h) render(); else location.hash = h; }
@@ -369,11 +372,11 @@ function heroSVG() {
   <g fill="#141b28">${[[180,600],[240,612],[1320,600],[1380,590],[1430,606]].map(([x, y]) => `<path d="M${x} ${y} q8 -60 16 0 Z"/><rect x="${x + 6}" y="${y - 2}" width="4" height="14"/>`).join('')}</g></svg>`;
 }
 async function viewHome() {
-  setNav('home'); document.title = 'Bible Places Today — Explore the world of the Bible';
+  setNav('home'); document.title = 'Just One More Lord — Explore the world of the Bible';
   const feat = ['jerusalem','bethlehem','nazareth','capernaum','sea-of-galilee','jericho','ephesus','babylon'].map(id => byId[id]);
   main.innerHTML = `
   <section class="hero"><div class="bg">${heroSVG()}</div><div class="credit" id="heroCredit" hidden></div>
-    <div class="wrap in"><p class="kicker">Bible Places Today</p><h1>Explore the world of the Bible.</h1>
+    <div class="wrap in"><p class="kicker eyebrow">Just One More Lord</p><h1>Explore the world of the Bible.</h1><div class="orn" aria-hidden="true"><span></span><svg viewBox="0 0 24 24"><path d="M12 3v18M6 9h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span></span></div>
     <p class="lede">See the places where biblical history unfolded. Explore the locations today. Discover the archaeological evidence. Walk through history.</p>
     <form class="bigsearch" id="bigSearch" role="search"><label class="sr" for="bq">Search for a Bible place</label><input id="bq" type="search" placeholder="Try Capernaum, Ninevah, Sinai, Ephesus…" spellcheck="false"><button class="btn" type="submit">Search</button></form>
     <div class="chips">${['Jerusalem','Bethlehem','Sea of Galilee','Mount Sinai','Golgotha','Corinth','Nineveh'].map(n => `<button class="chip" data-go="place-${PLACES.find(p => p.n.startsWith(n)).id}">${esc(n)}</button>`).join('')}</div></div></section>
@@ -383,7 +386,9 @@ async function viewHome() {
     <div class="legend5">${Object.entries(STATUS).map(([k, v]) => `<div>${stBadge(k)}<p>${esc(v[1])}</p><p class="small"><b>${DISCS.filter(d => d.status === k).length}</b> entries</p></div>`).join('')}</div></div></section>
   <section class="band"><div class="wrap"><div class="sh"><div><h2>Journeys through Scripture</h2><p>Follow Abraham, the Exodus, Jesus\' ministry, Paul\'s voyages and the apostles across the map.</p></div><button class="btn ghost" data-go="journeys">All journeys</button></div>
     <div class="grid">${JOURNEYS.slice(0, 4).map(journeyCard).join('')}</div></div></section>
-  <section class="band" style="background:var(--bg2)"><div class="wrap"><div class="sh"><div><h2>Browse all ${PLACES.length} places</h2><p>Cities, mountains, seas, regions and journey stops — or search above for any of the 1,300+ places named in the Bible.</p></div></div>
+  <section class="band" style="background:var(--bg2)"><div class="wrap"><div class="sh"><div><h2>Strong's Concordance</h2><p>Look up any English word to find the Hebrew and Greek words behind it, their meanings and every verse where they occur, with a word-by-word view of each verse.</p></div><button class="btn" data-go="concordance">Open the concordance</button></div>
+    <div class="chips">${[['love','אָהַב · ἀγαπάω'],['peace','שָׁלוֹם · εἰρήνη'],['grace','חֵן · χάρις'],['word','דָּבָר · λόγος']].map(([w, o]) => `<button class="chip" data-cq="${w}"><b>${w}</b> <span class="muted">${o}</span></button>`).join('')}</div></div></section>
+  <section class="band"><div class="wrap"><div class="sh"><div><h2>Browse all ${PLACES.length} places</h2><p>Cities, mountains, seas, regions and journey stops — or search above for any of the 1,300+ places named in the Bible.</p></div></div>
     <div class="chips" id="cats" role="group" aria-label="Filter places">${CATS.map(([k, l], i) => `<button class="chip" data-cat="${k}" aria-pressed="${i === 0}">${esc(l)}</button>`).join('')}</div>
     <div class="grid" id="allp" style="margin-top:18px"></div></div></section>`;
   const allp = $('#allp');
@@ -406,7 +411,7 @@ function journeyCard(j) {
 
 async function viewPlace(id, focusDisc) {
   const p = byId[id]; if (!p) return viewNotFound();
-  setNav(''); document.title = `${p.n} — Bible Places Today`;
+  setNav(''); document.title = `${p.n} — Just One More Lord`;
   const ds = discsFor(p.id), js = journeysWith(p.id), near = nearest(p);
   const secs = [['ov','Overview'],['photos','Photographs'],['map','Map'],['bible','Bible references'],['arch','Discoveries'],['time','Timeline'],['hist','History'],['related','Related'],['src','Sources']];
   main.innerHTML = `
@@ -551,7 +556,7 @@ function renderTimeline(box, p, ds) {
 }
 
 async function viewAtlas() {
-  setNav('atlas'); document.title = 'Atlas — Bible Places Today';
+  setNav('atlas'); document.title = 'Atlas — Just One More Lord';
   main.innerHTML = `<section class="band"><div class="wrap"><div class="sh"><div><h1>Atlas of Bible places</h1><p>All ${PLACES.length} curated places on one map. Select a marker to open its page. Filter by theme below.</p></div></div>
     <div class="chips" id="acats" style="margin:0 0 14px">${CATS.map(([k, l], i) => `<button class="chip" data-cat="${k}" aria-pressed="${i === 0}">${esc(l)}</button>`).join('')}</div>
     <div class="mapbox tall" id="amap"></div><p class="small muted" style="margin-top:10px">Marker colour: gold = certain or probable location; blue = disputed or traditional location.</p></div></section>`;
@@ -561,12 +566,12 @@ async function viewAtlas() {
 }
 
 function viewJourneys() {
-  setNav('journeys'); document.title = 'Biblical journeys — Bible Places Today';
+  setNav('journeys'); document.title = 'Biblical journeys — Just One More Lord';
   main.innerHTML = `<section class="band"><div class="wrap"><div class="sh"><div><h1>Journeys through Scripture</h1><p>Each route links the places in the order Scripture describes. Lines show sequence, not the exact roads or sea lanes travelled.</p></div></div><div class="grid">${JOURNEYS.map(journeyCard).join('')}</div></div></section>`;
 }
 async function viewJourney(id) {
   const j = JOURNEYS.find(x => x.id === id); if (!j) return viewNotFound();
-  setNav('journeys'); document.title = `${j.n} — Bible Places Today`;
+  setNav('journeys'); document.title = `${j.n} — Just One More Lord`;
   const stops = j.stops.map((s, i) => ({ p: byId[s[0]], ref: s[1], note: s[2], i })).filter(s => s.p);
   main.innerHTML = `<section class="band"><div class="wrap"><div class="crumbs"><button data-go="journeys">Journeys</button> › ${esc(j.ref)}</div><h1>${esc(j.n)}</h1><p class="lead" style="max-width:70ch">${esc(j.intro)}</p>
     <div class="jlayout" style="margin-top:20px"><div class="mapbox tall" id="jmap"></div><ol class="stops" id="stops">${stops.map(s => `<li><button data-i="${s.i}"><span class="n">${s.i + 1}</span><span><b>${esc(s.p.n)}</b><span>${esc(s.ref)}${s.note ? ' — ' + esc(s.note) : ''}</span></span></button></li>`).join('')}</ol></div>
@@ -588,7 +593,7 @@ async function viewJourney(id) {
 }
 
 function viewDiscoveries() {
-  setNav('discoveries'); document.title = 'Archaeological discoveries — Bible Places Today';
+  setNav('discoveries'); document.title = 'Archaeological discoveries — Just One More Lord';
   const kinds = [...new Set(DISCS.map(d => d.kind))].sort();
   main.innerHTML = `<section class="band"><div class="wrap"><div class="sh"><div><h1>Archaeological discoveries</h1><p>${DISCS.length} documented finds, each graded for how securely it relates to the biblical account. Archaeology can confirm places, people and customs; it rarely proves theological claims, and this catalogue does not present it as doing so.</p></div></div>
     <div class="filters"><label class="sr" for="fq">Filter discoveries</label><input id="fq" type="search" placeholder="Filter by name, place, verse…">
@@ -611,7 +616,7 @@ function viewDiscoveries() {
 async function doSearch(q) { q = String(q || '').trim(); if (!q) return; state.lastQuery = q; try { sessionStorage.setItem('bpt:q', q); } catch {} $('#q').value = q; hideSugg(); go('search'); }
 async function viewSearch() {
   setNav(''); let q = state.lastQuery; if (!q) { try { q = sessionStorage.getItem('bpt:q') || ''; } catch {} }
-  document.title = `Search: ${q} — Bible Places Today`;
+  document.title = `Search: ${q} — Just One More Lord`;
   const r = searchAll(q);
   const strong = r.places.filter(x => x.s >= 70);
   main.innerHTML = `<section class="band"><div class="wrap"><p class="kicker">Search</p><h1>${esc(q || 'Search')}</h1>
@@ -631,7 +636,7 @@ async function viewSearch() {
   wr.innerHTML = w.length ? w.map(x => `<button class="ritem" data-go="w-${encodeURIComponent(x.title)}"><div><b>${esc(x.title)}</b><span>${esc(x.snippet)}</span></div><span class="tag">Wikipedia</span></button>`).join('') : `<p class="empty">${state.live ? 'No Wikipedia results.' : 'Wikipedia search needs a live connection.'}</p>`;
 }
 async function viewWiki(title) {
-  setNav(''); document.title = `${title} — Bible Places Today`;
+  setNav(''); document.title = `${title} — Just One More Lord`;
   main.innerHTML = `<section class="phero"><div class="bg" id="pbg"></div><div class="wrap in"><div class="crumbs"><button data-go="search">Search</button> › Live page</div><h1>${esc(title)}</h1><p class="sub" id="wsub"><span class="spin"></span>Loading from Wikipedia…</p></div></section>
    <section class="sec"><div class="wrap two"><div><p class="notice warn">This page is assembled live from Wikipedia, Wikimedia Commons and Wikidata. It has not been curated, so check claims against the sources.</p><div id="wtext" style="margin-top:14px"></div></div><div><div class="mapbox" id="wmap" style="height:340px"></div><p class="small muted" id="wcoord"></p></div></div></section>
    <section class="sec"><div class="wrap"><h2>Photographs</h2><div id="gal" style="margin-top:14px"></div></div></section>
@@ -658,7 +663,7 @@ async function viewGaz(id) {
   setNav(''); main.innerHTML = '<div class="loading"><span class="spin"></span>Loading the OpenBible.info index…</div>';
   try { await loadGazetteer(); } catch { main.innerHTML = '<section class="band"><div class="wrap"><p class="empty">The OpenBible.info index is unavailable here.</p></div></section>'; return; }
   const g = state.gaz.find(x => x.i === id); if (!g) return viewNotFound();
-  document.title = `${g.f} — Bible Places Today`;
+  document.title = `${g.f} — Just One More Lord`;
   const c = g.ll ? { lat: g.ll[0], lon: g.ll[1] } : null;
   const near = c ? PLACES.map(o => ({ o, d: km(c, o) })).filter(x => x.d < 80).sort((a, b) => a.d - b.d).slice(0, 8) : [];
   main.innerHTML = `<section class="phero" style="min-height:300px"><div class="bg" id="pbg"></div><div class="wrap in"><div class="crumbs"><button data-go="search">Search</button> › OpenBible.info index</div><h1>${esc(g.f)}</h1><p class="sub">${esc(g.t)}${g.a?.length ? ' · also ' + esc(g.a.join(', ')) : ''}</p></div></section>
@@ -675,15 +680,16 @@ async function viewGaz(id) {
   } else $('#gal').innerHTML = '<p class="empty">No location to search around.</p>';
 }
 function viewAbout() {
-  setNav('about'); document.title = 'About & sources — Bible Places Today';
+  setNav('about'); document.title = 'About & sources — Just One More Lord';
   const nc = DISCS.reduce((a, d) => (a[d.status] = (a[d.status] || 0) + 1, a), {});
   main.innerHTML = `<section class="band"><div class="wrap prose"><h1>About and sources</h1>
-  <p class="lead">Bible Places Today brings together what each biblical place looks like now, where it is, what has been excavated there, and how those finds relate to the biblical text — without overstating what the evidence proves.</p>
+  <p class="lead">Just One More Lord brings together what each biblical place looks like now, where it is, what has been excavated there, and how those finds relate to the biblical text — without overstating what the evidence proves.</p>
   <h3>How the information is built</h3><ul>
   <li><b>Curated core.</b> ${PLACES.length} places, ${DISCS.length} discoveries and ${JOURNEYS.length} journeys were written for this site with coordinates, verse references, timelines and evidence grades (${Object.entries(nc).map(([k, v]) => `${v} ${STATUS[k][0].toLowerCase()}`).join(', ')}). Each discovery links to its Wikipedia article, whose footnotes cite the excavation reports and scholarly publications.</li>
   <li><b>Photographs</b> come live from Wikimedia Commons: images geotagged near each site plus images matching its name. Only freely licensed Commons files are shown, with author and licence.</li>
   <li><b>Maps</b> use Leaflet with OpenStreetMap, Esri World Imagery (satellite) and OpenTopoMap tiles. Nearby archaeological sites are queried live from Wikidata. Street-level imagery links to Mapillary and Google Street View.</li>
   <li><b>Scripture</b> is the World English Bible (public domain), fetched from bible-api.com when you select a reference.</li>
+  <li><b>Strong's Concordance.</b> Every Hebrew and Greek word of the Bible, with transliteration, English translation, grammar and Strong's number, comes from STEPBible.org's Translators Amalgamated Hebrew OT and Greek NT (Tyndale House, Cambridge; CC BY 4.0). Definitions are from Strong's dictionaries (1890/1894, public domain; OpenScriptures edition, CC BY-SA). Greek words found only in some manuscripts are marked.</li>
   <li><b>Any other place.</b> The search covers every curated name and spelling variant with fuzzy matching, the OpenBible.info index of about 1,300 places named in the Bible (CC BY 4.0, loaded on request), and Wikipedia.</li></ul>
   <h3>Evidence grades</h3><ul>${Object.entries(STATUS).map(([k, v]) => `<li>${stBadge(k)} — ${esc(v[1])}</li>`).join('')}</ul>
   <p>Relation to Scripture is marked separately: <b>direct</b> (names a biblical person, place or event, or is the place itself), <b>indirect</b> (illuminates an account without naming it) or <b>contextual</b> (background to the biblical world).</p>
@@ -692,6 +698,135 @@ function viewAbout() {
   <h3>Corrections</h3><p>Errors in a verse reference, a date or an attribution should be reported with a source. In the source code, every place and discovery lives in plain JavaScript files under <code>data/</code>, so corrections are easy to make.</p></div></section>`;
 }
 function viewNotFound() { main.innerHTML = `<section class="band"><div class="wrap"><h1>Not found</h1><p>That page does not exist. <button class="inl" data-go="home">Return home</button>.</p></div></section>`; }
+
+
+/* ---------------- Strong's concordance (STEPBible TAHOT/TAGNT + Strong's dictionary) ---------------- */
+const CONC = 'data/concordance/';
+const conc = { p: null, lex: null, books: null, byName: {}, byCode: {}, starts: [], occ: {}, text: {} };
+const ALIAS = { 'psalm': 'psalms', 'song of songs': 'song of solomon', 'canticles': 'song of solomon' };
+async function getLocal(path) { if (conc.text[path]) return conc.text[path]; const r = await fetch(CONC + path); if (!r.ok) throw new Error('Not found: ' + path); const j = await r.json(); conc.text[path] = j; return j; }
+function loadConc() {
+  if (!conc.p) conc.p = Promise.all(['lex-h.json', 'lex-g.json', 'books.json'].map(f => fetch(CONC + f).then(r => { if (!r.ok) throw new Error('Concordance data missing'); return r.json(); })))
+    .then(([h, g, books]) => {
+      conc.lex = Object.assign({}, h, g); conc.books = books; let acc = 0;
+      books.forEach((b, i) => { const [code, name, counts] = b; const row = { i, code, name, counts, start: acc }; acc += counts.reduce((a, n) => a + n, 0); conc.byName[name.toLowerCase()] = row; conc.byCode[code] = row; conc.starts.push(row); });
+      conc.keys = Object.keys(conc.lex); return conc;
+    }).catch(e => { conc.p = null; throw e; });
+  return conc.p;
+}
+function vidToRef(vid) {
+  let lo = 0, hi = conc.starts.length - 1; while (lo < hi) { const m = (lo + hi + 1) >> 1; if (conc.starts[m].start <= vid) lo = m; else hi = m - 1; }
+  const b = conc.starts[lo]; let r = vid - b.start, c = 0; while (c < b.counts.length && r >= b.counts[c]) { r -= b.counts[c]; c++; }
+  return { book: b, ch: c + 1, v: r + 1, ref: `${b.name} ${c + 1}:${r + 1}` };
+}
+function parseRef(ref) {
+  const m = String(ref).replace(/–/g, '-').match(/^\s*(.+?)\s+(\d+)(?::(\d+)(?:\s*-\s*(\d+)(?::(\d+))?)?)?\s*$/); if (!m) return null;
+  const nm = m[1].toLowerCase().replace(/\s+/g, ' '); const b = conc.byName[ALIAS[nm] || nm] || conc.byName[nm.replace(/^(i{1,3})\s/, (x, r) => r.length + ' ')]; if (!b) return null;
+  const ch = +m[2], v1 = m[3] ? +m[3] : 1; let v2 = m[3] ? (m[5] ? 999 : (m[4] ? +m[4] : v1)) : 999;
+  return { book: b, ch, v1, v2 };
+}
+const isHeb = k => k[0] === 'H';
+const lexOf = k => conc.lex?.[k];
+const origSpan = (t, k) => `<span class="${isHeb(k) ? 'heb' : 'grk'}" lang="${isHeb(k) ? 'he' : 'el'}">${esc(t)}</span>`;
+const linkStrongs = txt => esc(txt).replace(/\b([HG])(\d{1,4})\b/g, (m, l, n) => `<button class="inl" data-go="strong-${l}${+n}">${l}${+n}</button>`);
+const foldLat = s => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯʼʻʾʿ'’ʼʽᵉ-ᶿ-]/g, '').replace(/[^a-z]/g, '');
+const foldOrig = s => String(s || '').normalize('NFD').replace(/[̀-֑ͯ-ׇ]/g, '').replace(/[^Ͱ-Ͽἀ-῿א-ת]/g, '').toLowerCase();
+function concSearch(raw) {
+  const q = raw.trim(); if (!q) return [];
+  const sm = q.match(/^([hg])\s*0*(\d{1,4})$/i); if (sm) { const k = sm[1].toUpperCase() + (+sm[2]); return lexOf(k) ? [{ k, s: 1000 }] : []; }
+  const ql = q.toLowerCase().replace(/[^a-z' ]/g, ' ').trim(), STOPW = /^(the|a|an|of|to|in|and|for|with|by|on|at|from|my|his|her|your|our|their|is|be)$/, qw = ql.split(/\s+/).filter(w => w && !STOPW.test(w)), qlat = foldLat(q), qo = foldOrig(q);
+  const out = [];
+  for (const k of conc.keys) {
+    const L = conc.lex[k]; let s = 0;
+    if (qo && foldOrig(L[0]) === qo) s += 900;
+    if (qlat.length >= 3) { const x = foldLat(L[1]); if (x === qlat) s += 800; else if (x.startsWith(qlat) || (qlat.length >= 4 && dl(qlat, x) <= 1)) s += 400; }
+    if (qw.length) {
+      const tot = L[9].reduce((a, x) => a + x[1], 0) || 1;
+      for (const [w, n] of L[9]) { for (const t of qw) { if (w === t) s += 60 + 120 * n / tot; else if (t.length >= 3 && w.startsWith(t) && w.length - t.length <= 3) s += 20 + 60 * n / tot; } }
+      if (qw.length > 1) for (const [p, n] of L[8]) if (p === ql) s += 200 + n;
+      const kd = (L[5] + ' ' + L[3]).toLowerCase(); for (const t of qw) if (new RegExp('\\b' + t.replace(/[^a-z']/g, '') + '\\b').test(kd)) s += 25;
+    }
+    if (s) out.push({ k, s: s + 8 * Math.log10(1 + L[7]) });
+  }
+  return out.sort((a, b) => b.s - a.s);
+}
+function strongCard(k, { full = false } = {}) {
+  const L = lexOf(k); if (!L) return '';
+  const [lemma, xlit, pron, gloss, def, kjv, deriv, n, phr, wds] = L;
+  return `<article class="scard"><div class="shead"><div><p class="kicker">Strong's ${isHeb(k) ? 'Hebrew' : 'Greek'} ${esc(k)}</p><div class="lemma">${origSpan(lemma, k)}</div><p class="xl"><b>${esc(xlit)}</b>${pron ? ` · <span class="muted">${esc(pron)}</span>` : ''}${gloss ? ` · “${esc(gloss)}”` : ''}</p></div>
+    <div class="scount"><b>${n.toLocaleString()}</b><span>occurrence${n === 1 ? '' : 's'}</span></div></div>
+    ${def ? `<p><span class="muted small">Meaning (Strong's):</span> ${linkStrongs(def)}</p>` : ''}
+    ${phr?.length ? `<p class="small"><span class="muted">Translated as:</span> ${phr.slice(0, full ? 8 : 5).map(([w, c]) => `<span class="tag">${esc(w)} <b>${c}</b></span>`).join(' ')}</p>` : ''}
+    ${full && kjv ? `<p class="small"><span class="muted">KJV renderings (Strong's):</span> ${esc(kjv)}</p>` : ''}
+    ${full && deriv ? `<p class="small"><span class="muted">Origin:</span> ${linkStrongs(deriv)}</p>` : ''}
+    ${full ? '' : `<div class="linkrow"><button class="btn sm" data-go="strong-${k}">Meaning & all ${n.toLocaleString()} verses →</button></div>`}</article>`;
+}
+async function viewConcordance() {
+  setNav('concordance'); document.title = "Strong's Concordance — Just One More Lord";
+  let q = ''; try { q = sessionStorage.getItem('bpt:cq') || ''; } catch {}
+  main.innerHTML = `<section class="band"><div class="wrap"><div class="sh"><div><h1>Strong's Concordance</h1><p>Search an English word to find the Hebrew and Greek words behind it, what they mean and every verse where they occur. You can also search a Strong's number (H7965, G26) or a Hebrew or Greek word (shalom, agape).</p></div></div>
+    <form class="bigsearch" id="cform" role="search" style="max-width:760px"><label class="sr" for="cq">Search the concordance</label><input id="cq" type="search" placeholder="love, peace, grace, H7965, logos…" value="${esc(q)}" spellcheck="false"><button class="btn" type="submit">Search</button></form>
+    <div class="chips">${['love', 'peace', 'grace', 'faith', 'mercy', 'word', 'spirit', 'H7965', 'G26', 'logos'].map(w => `<button class="chip" data-cq="${w}">${w}</button>`).join('')}</div>
+    <div class="filters" style="margin-top:18px"><label class="sr" for="clang">Language</label><select id="clang"><option value="">Hebrew and Greek</option><option value="H">Hebrew (Old Testament)</option><option value="G">Greek (New Testament)</option></select><span class="small muted" id="ccount"></span></div>
+    <div id="cres" class="slist"><p class="muted"><span class="spin"></span>Loading the concordance…</p></div></div></section>`;
+  try { await loadConc(); } catch { $('#cres').innerHTML = '<p class="empty">The concordance data could not be loaded.</p>'; return; }
+  const run = (submitted) => { const v = $('#cq').value.trim(); try { sessionStorage.setItem('bpt:cq', v); } catch {}
+    if (!v) { $('#cres').innerHTML = `<p class="muted">Type a word above. The concordance covers ${conc.keys.length.toLocaleString()} Hebrew and Greek words and every word of the Bible.</p>`; $('#ccount').textContent = ''; return; }
+    const lang = $('#clang').value; const r = concSearch(v).filter(x => !lang || x.k[0] === lang);
+    if (submitted && r.length === 1 && r[0].s >= 1000) { go('strong-' + r[0].k); return; }
+    $('#ccount').textContent = r.length ? `${r.length} Hebrew/Greek word${r.length === 1 ? '' : 's'} found` : '';
+    $('#cres').innerHTML = r.slice(0, 40).map(x => strongCard(x.k)).join('') || `<p class="empty">No Hebrew or Greek word is translated “${esc(v)}”. Try a shorter or related word.</p>`; };
+  $('#cform').onsubmit = e => { e.preventDefault(); run(true); };
+  $('#clang').onchange = run;
+  main.querySelector('.chips').onclick = e => { const b = e.target.closest('[data-cq]'); if (b) { $('#cq').value = b.dataset.cq; run(true); } };
+  run();
+}
+async function loadOcc(k) { const shard = `occ/${k[0]}-${Math.floor(+k.slice(1) / 250)}.json`; const d = await getLocal(shard); return d[k] || []; }
+async function viewStrong(k) {
+  k = k.toUpperCase().replace(/^([HG])0*/, '$1'); setNav('concordance');
+  main.innerHTML = `<section class="band"><div class="wrap"><div class="crumbs"><button data-go="concordance">Concordance</button> › ${esc(k)}</div><div id="sc"><p class="muted"><span class="spin"></span>Loading…</p></div>
+    <h2 style="margin:30px 0 8px">Every occurrence</h2><p class="muted small" id="occnote"></p><div class="filters"><label class="sr" for="obk">Book</label><select id="obk"><option value="">All books</option></select><label class="sr" for="oen">Rendering</label><select id="oen"><option value="">Any translation</option></select></div><div id="occ"></div></div></section>`;
+  try { await loadConc(); } catch { $('#sc').innerHTML = '<p class="empty">The concordance data could not be loaded.</p>'; return; }
+  const L = lexOf(k); if (!L) { $('#sc').innerHTML = `<p class="empty">${esc(k)} is not a Strong's number in this concordance.</p>`; return; }
+  document.title = `${k} ${L[1]} — Strong's Concordance`;
+  $('#sc').innerHTML = strongCard(k, { full: true });
+  const occ = (await loadOcc(k)).map(([vid, e]) => ({ ...vidToRef(vid), e, vid }));
+  const books = [...new Map(occ.map(o => [o.book.code, o.book])).values()];
+  const ens = [...new Set(occ.map(o => o.e.toLowerCase()))].map(e => [e, occ.filter(o => o.e.toLowerCase() === e).length]).sort((a, b) => b[1] - a[1]).slice(0, 40);
+  $('#obk').innerHTML += books.map(b => `<option value="${b.code}">${esc(b.name)} (${occ.filter(o => o.book.code === b.code).length})</option>`).join('');
+  $('#oen').innerHTML += ens.map(([e, c]) => `<option value="${esc(e)}">${esc(e)} (${c})</option>`).join('');
+  $('#occnote').textContent = `${occ.length.toLocaleString()} occurrences in ${books.length} book${books.length === 1 ? '' : 's'}. The English shown is how this word is translated in that verse (STEPBible). Select a verse to see it word by word with the World English Bible text.`;
+  let limit = 400;
+  const draw = () => {
+    const bk = $('#obk').value, en = $('#oen').value; const list = occ.filter(o => (!bk || o.book.code === bk) && (!en || o.e.toLowerCase() === en));
+    let html = '', cur = null;
+    for (const o of list.slice(0, limit)) { if (o.book.code !== cur) { if (cur) html += '</div>'; cur = o.book.code; html += `<h3 class="obk">${esc(o.book.name)}</h3><div class="occs">`; }
+      html += `<button class="occ" data-il="${esc(o.ref)}" data-k="${k}"><b>${o.ch}:${o.v}</b> ${esc(o.e)}</button>`; }
+    if (cur) html += '</div>';
+    if (list.length > limit) html += `<div class="linkrow"><button class="btn ghost sm" id="more">Show more (${(list.length - limit).toLocaleString()} left)</button></div>`;
+    $('#occ').innerHTML = html || '<p class="empty">No occurrences for this filter.</p>';
+    $('#more')?.addEventListener('click', () => { limit += 800; draw(); });
+  };
+  $('#obk').onchange = $('#oen').onchange = () => { limit = 400; draw(); }; draw();
+}
+async function interlinearHTML(ref, hl) {
+  await loadConc(); const p = parseRef(ref); if (!p) return '';
+  const data = await getLocal(`text/${p.book.code}.${p.ch}.json`);
+  const verses = data.filter(([v]) => v >= p.v1 && v <= p.v2).slice(0, 12); if (!verses.length) return '';
+  const heb = p.book.i < 39;
+  return `<div class="ilin">${verses.map(([v, rows]) => `<div class="ilv"><p class="kicker">${esc(p.book.name)} ${p.ch}:${v} · ${heb ? 'Hebrew' : 'Greek'} word by word</p><div class="words${heb ? ' rtl' : ''}">${rows.map(r => {
+    const nums = r[3].split('/').filter(Boolean); const main = (nums.find(x => x.startsWith('{')) || '').replace(/[{}]/g, '');
+    const L = lexOf(main);
+    return `<div class="w${main && main === hl ? ' hl' : ''}${r[5] ? ' var' : ''}"${r[5] ? ' title="Not in the NA28 critical text (found in other manuscripts such as the Textus Receptus)"' : ''}><div class="o ${heb ? 'heb' : 'grk'}" lang="${heb ? 'he' : 'el'}">${esc(r[0])}</div><div class="t">${esc(r[1])}</div><div class="e">${esc(r[2])}</div>${main && L ? `<button class="sn" data-go="strong-${main}" title="${esc(L[1] + ' — ' + (L[3] || ''))}">${main}</button>` : ''}<div class="m">${esc(r[4])}</div></div>`; }).join('')}</div></div>`).join('')}
+    <p class="small muted">Hebrew and Greek text with transliteration, translation and Strong's numbers: STEPBible.org (Tyndale House, CC BY 4.0). Select a Strong's number for its meaning and every occurrence.</p></div>`;
+}
+async function openInterlinear(ref, hl) {
+  const b = openDlg(`<p class="kicker">Interlinear · World English Bible</p><h2>${esc(ref)}</h2><div class="vtext" id="ivt"><span class="spin"></span>Loading verse text…</div><div id="iil" style="margin-top:16px"><p class="muted"><span class="spin"></span>Loading Hebrew/Greek…</p></div>
+    <div class="linkrow"><a class="btn ghost sm" href="${gwLink(ref)}" target="_blank" rel="noopener">Read the chapter in context ↗</a></div>`, 'Verse word by word');
+  bibleText(ref).then(v => { const e = $('#ivt', b); if (e) e.innerHTML = verseHTML(v); }, () => { const e = $('#ivt', b); if (e) e.innerHTML = '<span class="small muted">English text not available right now; the word-by-word translation is below.</span>'; });
+  try { const h = await interlinearHTML(ref, hl); const e = $('#iil', b); if (e) e.innerHTML = h || '<p class="empty">No interlinear text for this reference.</p>'; } catch { const e = $('#iil', b); if (e) e.innerHTML = '<p class="empty">Interlinear data could not be loaded.</p>'; }
+}
+document.addEventListener('click', e => { const il = e.target.closest('[data-il]'); if (il) { e.preventDefault(); openInterlinear(il.dataset.il, il.dataset.k); } });
 
 /* ---------------- suggestions ---------------- */
 const sugg = $('#sugg'); let suggFor = null, suggSel = -1, suggItems = [];
@@ -714,14 +849,17 @@ function showSugg(inp) {
     ...r.discs.slice(0, 3).map(x => ({ sc: x.s - 1, go: 'disc-' + x.d.id, t: x.d.n, s: byId[x.d.place]?.n, k: 'Discovery' })),
     ...r.gaz.slice(0, 4).map(x => ({ sc: x.s - 2, go: 'og-' + x.g.i, t: x.g.f, s: x.g.t, k: 'All Bible places' }))].sort((a, b) => b.sc - a.sc);
   if (items.length && items[0].sc >= 70) items = items.filter(x => x.sc >= 50);
-  suggItems = [...items.slice(0, 8),
+  const sn = q.match(/^([hg])\s*0*(\d{1,4})$/i);
+  if (!sn && /^[a-z' ]{3,30}$/i.test(q) && (items[0]?.sc || 0) < 80) items = [{ conc: q, t: `“${q}” in Hebrew and Greek`, s: "Strong's Concordance: original words and meanings", k: 'Concordance' }, ...items.filter(x => x.sc >= 60).slice(0, 4)];
+  suggItems = [...(sn ? [{ go: 'strong-' + sn[1].toUpperCase() + (+sn[2]), t: `Strong's ${sn[1].toUpperCase()}${+sn[2]}`, s: 'Meaning and every occurrence', k: 'Concordance' }] : []), ...items.slice(0, 8),
+    ...(!sn && /^[a-z' ]{3,30}$/i.test(q) && (items[0]?.sc || 0) >= 80 ? [{ conc: q, t: `“${q}” in Hebrew and Greek`, s: "Strong's Concordance: original words and meanings", k: 'Concordance' }] : []),
     { search: q, t: `Search everywhere for “${q}”`, s: 'Atlas, full Bible index and Wikipedia', k: '↵' }];
   if (inp.id === 'q') { const f = inp.closest('form'); f.appendChild(sugg); } else { inp.closest('form').style.position = 'relative'; inp.closest('form').appendChild(sugg); }
   sugg.innerHTML = suggItems.map((it, i) => `<button type="button" role="option" aria-selected="false" data-n="${i}"><span><span class="t">${esc(it.t)}</span>${it.s ? `<br><span class="s">${esc(it.s)}</span>` : ''}</span><span class="k">${esc(it.k)}</span></button>`).join('');
   sugg.hidden = false; suggSel = -1;
 }
 sugg.addEventListener('mousedown', e => e.preventDefault());
-sugg.addEventListener('click', e => { const b = e.target.closest('[data-n]'); if (!b) return; const it = suggItems[+b.dataset.n]; hideSugg(); if (it.search) doSearch(it.search); else { suggFor.value = ''; go(it.go); } });
+sugg.addEventListener('click', e => { const b = e.target.closest('[data-n]'); if (!b) return; const it = suggItems[+b.dataset.n]; hideSugg(); if (it.conc) { try { sessionStorage.setItem('bpt:cq', it.conc); } catch {} suggFor.value = ''; go('concordance'); } else if (it.search) doSearch(it.search); else { suggFor.value = ''; go(it.go); } });
 $('#topSearch').addEventListener('submit', e => { e.preventDefault(); doSearch($('#q').value); });
 attachSuggest($('#q'));
 
@@ -739,6 +877,8 @@ async function render() {
     else if (h === 'discoveries') viewDiscoveries();
     else if (h === 'search') await viewSearch();
     else if (h === 'about') viewAbout();
+    else if (h === 'concordance') await viewConcordance();
+    else if (h.startsWith('strong-')) await viewStrong(h.slice(7));
     else if (h.startsWith('w-')) await viewWiki(h.slice(2));
     else if (h.startsWith('og-')) await viewGaz(h.slice(3));
     else if (byId[h]) await viewPlace(h);
