@@ -330,9 +330,12 @@ html{scrollbar-color:#1a5a6a #031019;scrollbar-width:thin}
 
 /* hero — cinematic photograph of the cross */
 .hero{min-height:min(90vh,840px);background:#020a10}
-.hero .bg img{filter:contrast(1.08) saturate(1.05) brightness(.92);object-position:70% 40%;transform:scale(1.04);animation:kenburns 30s ease-in-out infinite alternate}
+.hero .bg img{filter:contrast(1.08) saturate(1.05) brightness(.92);object-position:50% 26%;transform:scale(1.04);animation:kenburns 30s ease-in-out infinite alternate}
 @keyframes kenburns{to{transform:scale(1.12) translate(-1.5%,-1%)}}
-.hero .bg::after{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;background:radial-gradient(ellipse at 70% 40%,transparent 35%,rgba(0,0,0,.55) 100%),linear-gradient(90deg,rgba(2,10,16,.78) 0%,rgba(2,10,16,.35) 45%,transparent 70%)}
+.hero .bg img{position:relative;z-index:1}
+.hero .bg::before{content:"";position:absolute;inset:-40px;z-index:0;background:var(--hero-img,none) center/cover;filter:blur(28px) brightness(.55) saturate(1.1)}
+@media(min-aspect-ratio:1/1){.hero .bg img{object-fit:contain;object-position:78% 50%;animation:none;transform:none}}
+.hero .bg::after{content:"";position:absolute;inset:0;z-index:2;pointer-events:none;background:radial-gradient(ellipse at 70% 40%,transparent 35%,rgba(0,0,0,.55) 100%),linear-gradient(90deg,rgba(2,10,16,.78) 0%,rgba(2,10,16,.35) 45%,transparent 70%)}
 .hero::after{background:linear-gradient(180deg,rgba(2,10,16,.2) 0%,rgba(2,10,16,.35) 40%,rgba(2,10,16,.97) 100%);z-index:1}
 .hero .in{z-index:2}
 .hero h1{font-size:clamp(46px,8.2vw,100px);font-weight:800;letter-spacing:-.045em;max-width:13ch;color:#fff;text-shadow:0 0 10px rgba(255,255,255,.35),0 0 40px rgba(0,209,255,.35);animation:ignite 1.6s ease-out both}

@@ -391,8 +391,8 @@ function heroSVG() {
   <path d="M0 720 C300 680 600 700 900 690 S1400 700 1600 680 V800 H0Z" fill="#070402"/>
   <rect width="1600" height="800" fill="url(#vig)"/></svg>`;
 }
-/* hero photograph of the cross: a self-hosted file first (img/hero-cross.jpg), else a dramatic cross photo from Wikimedia Commons */
-const HERO_FILE = 'img/hero-cross.jpg';
+/* hero picture: a self-hosted file first (img/hero.webp), else a dramatic cross photo from Wikimedia Commons */
+const HERO_FILE = 'img/hero.webp', HERO_CREDIT = 'Image: @wallpaper_233 (TikTok)';
 async function heroCrossImage() {
   const local = await new Promise(r => { const i = new Image(); i.onload = () => r(i.naturalWidth > 0); i.onerror = () => r(false); i.src = HERO_FILE; });
   if (local) return { src: HERO_FILE, local: true };
@@ -436,8 +436,8 @@ async function viewHome() {
   attachSuggest($('#bq'));
   fillCardImages($('#feat'));
   const hb = $('.hero .bg'), im = await heroCrossImage();
-  if (im && hb) { const img = new Image(); img.alt = 'The cross'; img.onload = () => { img.classList.add('on'); $('.hero .bg svg')?.remove(); }; img.src = im.src; hb.prepend(img);
-    if (!im.local) { const c = $('#heroCredit'); c.hidden = false; c.innerHTML = 'Photo: ' + credit(im); } }
+  if (im && hb) { const img = new Image(); img.alt = im.local ? 'Jesus walking ahead of his flock of sheep across a sunlit field' : 'The cross'; img.onload = () => { img.classList.add('on'); $('.hero .bg svg')?.remove(); }; img.src = im.src; hb.prepend(img); hb.style.setProperty('--hero-img', `url("${im.src}")`);
+    const c = $('#heroCredit'); c.hidden = false; c.innerHTML = im.local ? esc(HERO_CREDIT) : 'Photo: ' + credit(im); }
 }
 function journeyCard(j) {
   const pts = j.stops.map(s => byId[s[0]]).filter(Boolean);
