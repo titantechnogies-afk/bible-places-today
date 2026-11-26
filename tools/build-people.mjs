@@ -45,3 +45,23 @@ index.sort((a, b) => b[5] - a[5]);
 fs.writeFileSync('data/people/index.json', JSON.stringify(index));
 for (const [L, m] of Object.entries(shards)) fs.writeFileSync(`data/people/${L}.json`, JSON.stringify(m));
 console.log(`People: ${index.length} profiles in ${Object.keys(shards).length} files`);
+
+// ---- All Bible places (with coordinates) and Bible events, from the same dataset
+const sites = [], sshards = {};
+const pplInVerse = {}; // place -> people counts
+for (const pl of places) {
+  const vs = arr(pl.verses).map(id => V[id]).filter(Boolean).sort((a, b) => vkey(a.osisRef) - vkey(b.osisRef)); const pc = {};
+  for (const v of vs) for (const pid of arr(v.people)) pc[pid] = (pc[pid] || 0) + 1;
+  const lat = +pl.latitude || +pl.openBibleLat || null, lon = +pl.longitude || +pl.openBibleLong || null; const name = pl.displayTitle || pl.kjvName || pl.esvName; if (!name) continue;
+  const L = (name[0] || 'X').toUpperCase().replace(/[^A-Z]/, 'X');
+  (sshards[L] ||= {})[pl.slug] = { n: name, lat, lon, v: vs.map(v => v.osisRef), p: Object.entries(pc).sort((a, b) => b[1] - a[1]).slice(0, 20).map(([id, c]) => [...(mini(id) || []), c]).filter(x => x.length === 3), d: clean(pl.dictText).slice(0, 4000), t: pl.featureType || '' };
+  sites.push([pl.slug, name, lat, lon, vs.length, L]);
+}
+fs.mkdirSync('data/sites', { recursive: true }); fs.writeFileSync('data/sites/index.json', JSON.stringify(sites));
+for (const [L, m] of Object.entries(sshards)) fs.writeFileSync(`data/sites/${L}.json`, JSON.stringify(m));
+const evOut = events.map(e => { const vs = arr(e.verses).map(id => V[id]).filter(Boolean).sort((a, b) => vkey(a.osisRef) - vkey(b.osisRef));
+  const locs = arr(e.locations).map(id => PL[id]).filter(Boolean).map(p => [p.slug, p.displayTitle || p.kjvName, +p.latitude || null, +p.longitude || null]);
+  return [e.title, yr(e.startDate), e.duration || '', vs.length ? refOf(vs[0].osisRef) + (vs.length > 1 ? '-' + (vs[vs.length - 1].osisRef.split('.').slice(1).join(':') === vs[0].osisRef.split('.').slice(1).join(':') ? '' : '') : '') : '', locs, arr(e.participants).map(mini).filter(Boolean).slice(0, 12), e.sortKey || 0]; })
+  .filter(e => e[0]).sort((a, b) => a[6] - b[6]);
+fs.writeFileSync('data/events.json', JSON.stringify(evOut));
+console.log(`Places: ${sites.length} (${sites.filter(s => s[2]).length} with coordinates); events: ${evOut.length}`);

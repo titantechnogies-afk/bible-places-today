@@ -5,3 +5,7 @@ data/xrefs/
 img/places/
 og/
 data/people/
+data/topics/
+data/dict/
+data/sites/
+data/events.json

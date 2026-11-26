@@ -427,7 +427,7 @@ async function viewHome() {
   const feat = ['jerusalem','bethlehem','nazareth','capernaum','sea-of-galilee','jericho','ephesus','babylon'].map(id => byId[id]);
   main.innerHTML = `
   <section class="hero"><div class="bg">${heroSVG()}</div><div class="credit" id="heroCredit" hidden></div>
-    <div class="wrap in"><p class="kicker eyebrow">Just One More Lord</p><h1>Explore the world of <span class="neon-txt">the Bible.</span></h1><div class="orn" aria-hidden="true"><span></span><svg viewBox="0 0 24 24"><path d="M12 3v18M6 9h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span></span></div>
+    <div class="wrap in"><p class="kicker eyebrow">Just One More Lord</p><img class="herologo" src="img/logo.png" alt="Just One More Lord" width="475" height="597"><h1>Explore the world of <span class="neon-txt">the Bible.</span></h1><div class="orn" aria-hidden="true"><span></span><svg viewBox="0 0 24 24"><path d="M12 3v18M6 9h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span></span></div>
     <p class="lede">See the places where biblical history unfolded. Explore the locations today. Discover the archaeological evidence. Walk through history.</p>
     <form class="bigsearch" id="bigSearch" role="search"><label class="sr" for="bq">Search for a Bible place</label><input id="bq" type="search" placeholder="Try Capernaum, Ninevah, Sinai, Ephesus…" spellcheck="false"><button class="btn" type="submit">Search</button></form>
     <div class="chips">${['Jerusalem','Bethlehem','Sea of Galilee','Mount Sinai','Golgotha','Corinth','Nineveh'].map(n => `<button class="chip" data-go="place-${PLACES.find(p => p.n.startsWith(n)).id}">${esc(n)}</button>`).join('')}</div></div></section>
@@ -947,7 +947,7 @@ function verseTools(ref) {
     <button class="pill${saved ? ' on' : ''}" data-act="save" aria-pressed="${saved}">${ICON.star(saved)}<span>${saved ? 'Saved' : 'Save verse'}</span></button>
     <span class="hlrow" role="group" aria-label="Highlight colour">${HLC.map(([c, l]) => `<button class="hl-dot hl-${c}${MY.hl[ref] === c ? ' on' : ''}" data-hl="${c}" aria-label="Highlight ${l}" aria-pressed="${MY.hl[ref] === c}"></button>`).join('')}<button class="hl-dot hl-none" data-hl="" aria-label="Remove highlight">×</button></span>
     <button class="pill" data-act="share">${ICON.share}<span>Share</span></button>
-    <button class="pill" data-act="read">Read chapter</button><button class="pill" data-act="cmp">Compare translations</button><button class="pill" data-act="mem">Memorise</button></div>
+    <button class="pill" data-act="read">Read chapter</button><button class="pill" data-act="cmp">Compare translations</button><button class="pill" data-act="mem">Memorise</button><button class="pill" data-act="cmt">Commentary</button><button class="pill" data-act="pic">Make a picture</button><button class="pill" data-act="les">Add to lesson</button></div>
     <label class="notebox"><span class="kicker">My note</span><textarea rows="2" placeholder="Write a thought, prayer or question…" data-note>${esc(MY.notes[ref]?.t || '')}</textarea></label>`;
 }
 function wireVerseTools(box, ref, getText) {
@@ -963,12 +963,16 @@ function wireVerseTools(box, ref, getText) {
     if (a === 'share') { const txt = await getText?.(); shareIt({ title: ref, text: `“${(txt || '').slice(0, 240)}” — ${ref} (WEB)`, hash: 'read-' + readHash(ref) }); }
     if (a === 'read') { if (dlg.open) dlg.close(); go('read-' + readHash(ref)); }
     if (a === 'mem') addMemory(ref, (await getText?.()) || '');
+    if (a === 'les') lessonAdd({ k: 'verse', ref, t: (await getText?.()) || '' });
+    if (a === 'pic') { if (dlg.open) dlg.close(); go('versepic-' + encodeURIComponent(ref)); }
+    if (a === 'cmt') { const old = $('.cmtbox', box); if (old) { old.remove(); return; } await loadConc(); const pr = parseRef(ref); if (!pr) return; const c = document.createElement('div'); c.className = 'cmtbox'; c.innerHTML = `<div class="linkrow">${commPicker()}</div><div class="cmtin"><p class="small muted"><span class="spin"></span>Loading commentary…</p></div>`; t.after(c);
+      const load = async () => { $('.cmtin', c).innerHTML = await commentaryHTML(pr.book.i, pr.ch, pr.v1); }; $('#commSel', c).onchange = e => { localStorage.setItem('jom:comm', e.target.value); load(); }; load(); }
     if (a === 'cmp') { const old = $('.cmpbox', box); if (old) { old.remove(); return; } const c = document.createElement('div'); c.className = 'cmpbox'; c.innerHTML = '<p class="muted small"><span class="spin"></span>Loading translations…</p>'; t.after(c); c.innerHTML = await compareHTML(ref); }
   };
   const ta = $('[data-note]', box); let tm;
   ta.oninput = () => { clearTimeout(tm); tm = setTimeout(() => { const v = ta.value.trim(); if (v) MY.notes[ref] = { t: v, d: Date.now() }; else delete MY.notes[ref]; saveMy();
     $$(`.rverse[data-ref="${CSS.escape(ref)}"]`).forEach(x => x.classList.toggle('noted', !!v)); checkBadges(); }, 400); };
-  addXrefs(box, ref);
+  addXrefs(box, ref); addDictChips(box, () => { const v = getText?.(); return typeof v === 'string' ? v : ''; });
 }
 function readHash(ref) { const p = conc.books ? parseRef(ref) : null; if (p) return `${p.book.code}.${p.ch}${/:\d/.test(ref) ? '.' + p.v1 : ''}`; const m = String(ref).match(/^(.+?)\s+(\d+)(?::(\d+))?/); return m ? `${m[1].replace(/\s+/g, '_')}.${m[2]}${m[3] ? '.' + m[3] : ''}` : ''; }
 
@@ -1006,7 +1010,7 @@ async function viewRead(arg) {
     <div class="readlayout"><article class="reader"><p class="kicker" id="rsrc">World English Bible</p><h1>${esc(b.name)} <span class="neon-txt">${ch}</span></h1>
       <p class="small muted">Tap any verse for its Hebrew or Greek words, related verses, to highlight it, save it or add a note.</p>${ttsBar(next)}<div id="rtext"><p class="muted"><span class="spin"></span>Loading the chapter…</p></div>
       <div class="linkrow"><button class="btn ghost sm" ${prev ? `data-go="read-${prev}"` : 'disabled'}>← Previous</button><button class="btn sm" ${next ? `data-go="read-${next}"` : 'disabled'}>Next chapter →</button></div></article>
-      <aside class="readside"><h2>Places in this chapter</h2><div class="mapbox" id="rmap" style="height:320px"></div><div class="chips" id="rplaces"></div></aside></div></div></section>`;
+      <aside class="readside"><details class="cmtpanel"><summary><h2 style="display:inline">Commentary</h2></summary><div class="linkrow">${commPicker()}</div><div id="rcmt"></div></details><h2>Places in this chapter</h2><div class="mapbox" id="rmap" style="height:320px"></div><div class="chips" id="rplaces"></div></aside></div></div></section>`;
   $('#rbk').onchange = e => go(`read-${e.target.value}.1`); $('#rch').onchange = e => go(`read-${b.code}.${e.target.value}`);
   const ct = await chapterText(b, ch); const ref = v => `${b.name} ${ch}:${v}`;
   $('#rtr').onchange = e => { localStorage.setItem('jom:tr', e.target.value); localStorage.setItem('jom:ws', '0'); viewRead(`${b.code}.${ch}`); };
@@ -1016,6 +1020,7 @@ async function viewRead(arg) {
   $('#rtext').innerHTML = ct.verses.map(x => `<span class="rverse${MY.verses[ref(x.v)] ? ' saved' : ''}${MY.notes[ref(x.v)] ? ' noted' : ''}" data-ref="${esc(ref(x.v))}" data-hl="${MY.hl[ref(x.v)] || ''}" id="v${x.v}" tabindex="0" role="button"><sup>${x.v}</sup>${esc(x.t)} </span>`).join('');
   $('#rtext').onclick = e => { const v = e.target.closest('.rverse'); if (v) openVerse(v.dataset.ref); };
   wireTTS(); track('readCh', `${b.name} ${ch}`);
+  { const det = $('.cmtpanel'); const load = async () => { $('#rcmt').innerHTML = '<p class="small muted"><span class="spin"></span>Loading…</p>'; $('#rcmt').innerHTML = await commentaryHTML(b.i, ch); }; det.addEventListener('toggle', () => { if (det.open && !$('#rcmt').dataset.l) { $('#rcmt').dataset.l = 1; load(); } }); $('#commSel', det).onchange = e => { localStorage.setItem('jom:comm', e.target.value); load(); }; }
   if (localStorage.getItem('jom:ws') === '1') { $('#rsrc').textContent = `Word study · ${b.i < 39 ? 'Hebrew' : 'Greek'} with literal English`; $('.ttsbar')?.remove(); $('#rtext').innerHTML = await wordStudyHTML(b, ch); $('#rtext').onclick = null; }
   $('#rtext').onkeydown = e => { if ((e.key === 'Enter' || e.key === ' ') && e.target.classList.contains('rverse')) { e.preventDefault(); openVerse(e.target.dataset.ref); } };
   if (hv) { const el = $('#v' + hv); if (el) { el.classList.add('flash'); el.scrollIntoView({ block: 'center' }); } }
@@ -1056,13 +1061,14 @@ function viewLibrary() {
 }
 function placeTools(p) {
   const on = !!MY.places[p.id];
-  return `<div class="ptools"><button class="pill${on ? ' on' : ''}" id="savePlace" aria-pressed="${on}">${ICON.star(on)}<span>${on ? 'Saved' : 'Save place'}</span></button><button class="pill" id="sharePlace">${ICON.share}<span>Share</span></button><button class="pill" data-go="quiz-${p.id}">Quiz</button><button class="pill" data-go="study-${p.id}">Group study</button><button class="pill" data-go="present-place-${p.id}">Present</button><button class="pill" data-go="embed">Add to a website</button></div>`;
+  return `<div class="ptools"><button class="pill${on ? ' on' : ''}" id="savePlace" aria-pressed="${on}">${ICON.star(on)}<span>${on ? 'Saved' : 'Save place'}</span></button><button class="pill" id="sharePlace">${ICON.share}<span>Share</span></button><button class="pill" data-go="quiz-${p.id}">Quiz</button><button class="pill" data-go="study-${p.id}">Group study</button><button class="pill" data-go="present-place-${p.id}">Present</button><button class="pill" id="lessPlace">Add to lesson</button><button class="pill" data-go="embed">Add to a website</button></div>`;
 }
 function enhancePlace(id) {
   const p = byId[id]; const host = $('.phero .in'); if (!p || !host || $('.ptools', host)) return; track('visited', id);
   const li = localImg(id), pb = $('#pbg'); if (li && pb && !$('img', pb)) pb.innerHTML = `<img src="${esc(li.src)}" alt="${esc(p.n)} today">`;
   host.insertAdjacentHTML('beforeend', placeTools(p));
   $('#savePlace').onclick = e => { if (MY.places[p.id]) delete MY.places[p.id]; else MY.places[p.id] = Date.now(); saveMy(); const on = !!MY.places[p.id]; const b = e.currentTarget; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); b.innerHTML = `${ICON.star(on)}<span>${on ? 'Saved' : 'Save place'}</span>`; toast(on ? 'Saved to your library' : 'Removed from your library'); };
+  $('#lessPlace').onclick = () => lessonAdd({ k: 'place', ref: p.id, t: p.n });
   $('#sharePlace').onclick = () => shareIt({ title: `${p.n} — Just One More Lord`, text: `${p.n}: ${p.sum || ''}`.slice(0, 220), hash: 'place-' + p.id });
 }
 
@@ -1342,7 +1348,7 @@ async function viewFly(id) {
 function homeMore() {
   const host = $('#feat')?.closest('.band'); if (!host || $('.moretiles')) return;
   const T = [['read', 'Read the Bible', 'Every chapter, with its places on a map and the Hebrew & Greek behind each verse.'], ['timeline', 'Bible timeline', 'Empires, kings, prophets and events from Abraham to Revelation.'], ['family', 'Family tree', 'The line from Adam to Jesus, with the twelve tribes and more.'],
-    ['fly-' + (JOURNEYS.find(j => j.id === 'apostles') || JOURNEYS[0])?.id, '3D fly-overs', 'Fly over the real terrain of the journeys of Abraham, Moses, Jesus and Paul.'], ['kingdoms', 'Kingdom maps', 'See the borders change from David to the Romans.'], ['distance', 'How far was it?', 'Distances and walking days between Bible places.'], ['kids', 'Kids\' corner', 'Stories, a fun quiz and pictures to colour.'], ['plans', 'Reading plans', 'John in 21 days, Acts with Paul, Psalms of hope and journey plans.'], ['quiz', 'Quiz', 'Test yourself and challenge a friend.'], ['near', 'Near me', 'Find Bible places close to where you are.'], ['library', 'My library', 'Your saved places, verses, highlights and notes.'], ['people', 'People of the Bible', 'Look up anyone in the Bible: family, age, map, journeys and every verse.'], ['chronology', 'From Adam to today', 'Lifespans from Adam to Jesus and the age of mankind in the Bible.'], ['memory', 'Scripture memory', 'Learn verses by heart with a few minutes\' practice a day.'], ['devotionals', 'Devotionals', 'Short reflections and prayers from the Bible lands.'], ['feasts', 'Feasts & holy days', 'Passover, Pentecost, Tabernacles and Easter — dates for the year ahead.'], ['teachings', 'Teachings', 'Watch Andrew Wommack and Dan Mohler from their official channels.'], ['prayer', 'Prayer', 'A private prayer journal and a shared prayer wall.'], ['community', 'Friends & community', 'Invite friends, read plans together and join the conversation.'], ['embed', 'For churches', 'Put any Bible place or journey on your church or school website.'], ['devnotes', 'Developer notes', 'What\'s new, what\'s next, and a place for your feedback.']];
+    ['fly-' + (JOURNEYS.find(j => j.id === 'apostles') || JOURNEYS[0])?.id, '3D fly-overs', 'Fly over the real terrain of the journeys of Abraham, Moses, Jesus and Paul.'], ['kingdoms', 'Kingdom maps', 'See the borders change from David to the Romans.'], ['distance', 'How far was it?', 'Distances and walking days between Bible places.'], ['kids', 'Kids\' corner', 'Stories, a fun quiz and pictures to colour.'], ['plans', 'Reading plans', 'John in 21 days, Acts with Paul, Psalms of hope and journey plans.'], ['quiz', 'Quiz', 'Test yourself and challenge a friend.'], ['near', 'Near me', 'Find Bible places close to where you are.'], ['library', 'My library', 'Your saved places, verses, highlights and notes.'], ['study', 'Study tools', 'Commentaries, topical Bible, dictionary, prophecy and the four Gospels side by side.'], ['daily', 'Daily challenge', 'One Bible question a day — keep your streak going.'], ['versepic', 'Verse pictures', 'Make a verse picture on a photo of a real Bible place.'], ['groups', 'Church groups', 'Read the same plan and pray together as a church.'], ['places', 'Every Bible place', 'All 1,300 Bible places on one map, plus the events map.'], ['people', 'People of the Bible', 'Look up anyone in the Bible: family, age, map, journeys and every verse.'], ['chronology', 'From Adam to today', 'Lifespans from Adam to Jesus and the age of mankind in the Bible.'], ['memory', 'Scripture memory', 'Learn verses by heart with a few minutes\' practice a day.'], ['devotionals', 'Devotionals', 'Short reflections and prayers from the Bible lands.'], ['feasts', 'Feasts & holy days', 'Passover, Pentecost, Tabernacles and Easter — dates for the year ahead.'], ['teachings', 'Teachings', 'Watch Andrew Wommack and Dan Mohler from their official channels.'], ['prayer', 'Prayer', 'A private prayer journal and a shared prayer wall.'], ['community', 'Friends & community', 'Invite friends, read plans together and join the conversation.'], ['embed', 'For churches', 'Put any Bible place or journey on your church or school website.'], ['devnotes', 'Developer notes', 'What\'s new, what\'s next, and a place for your feedback.']];
   host.insertAdjacentHTML('afterend', `<section class="band moretiles"><div class="wrap"><div class="sh"><div><h2>More ways to explore</h2><p>Tools for personal study, families, churches and travellers — free, and they work on your phone.</p></div></div>
     <div class="tiles">${T.map(([h, t, d]) => `<button class="tile" data-go="${h}"><b>${t}</b><span>${d}</span></button>`).join('')}</div></div></section>`);
 }
@@ -1372,6 +1378,8 @@ function viewCommunity() {
   const friends = Object.values(MY.friends || {});
   main.innerHTML = `<section class="band"><div class="wrap"><div class="sh"><div><p class="kicker">Grow together</p><h1>Community</h1><p>Invite friends, study the same plan together, and talk with other readers. Everything personal stays on your phone; comments use free GitHub sign-in.</p></div></div>
     <div class="commgrid">
+      <div class="panel"><h2>Church groups</h2><p class="small muted">Create or join a group: read the same plan, see progress and share prayer requests.</p><div class="linkrow"><button class="btn" data-go="groups">Open groups</button></div></div>
+      <div id="alertsSlot"></div>
       <div class="panel"><h2>Prayer</h2><p class="small muted">Keep a private prayer journal and pray with others on the prayer wall.</p><div class="linkrow"><button class="btn" data-go="prayer">Open prayer</button></div></div>
       <div class="panel"><h2>Your name</h2><p class="small muted">Shown on the invitations you send.</p><div class="filters"><label class="sr" for="mynm">Your first name</label><input id="mynm" type="text" maxlength="40" placeholder="Your first name" value="${esc(myName())}" style="flex:1"><button class="btn sm" id="mynmS">Save</button></div></div>
       <div class="panel"><h2>Invite a friend</h2><p class="small muted">Send a personal invitation by WhatsApp, SMS or email.</p><div class="linkrow"><button class="btn" id="invite">${ICON.share} Invite a friend</button>${CFG.whatsappGroup ? `<a class="btn ghost" href="${esc(CFG.whatsappGroup)}" target="_blank" rel="noopener">Join our WhatsApp community</a>` : ''}</div></div>
@@ -1386,7 +1394,7 @@ function viewCommunity() {
   $('#invite').onclick = () => shareIt({ title: 'Just One More Lord', text: `${nm()} invites you to explore the places of the Bible on Just One More Lord — maps, photos, a Bible reader and more. Free, no sign-up.`, hash: `friend-${encodeURIComponent(nm())}` });
   $('#tinv').onclick = () => { const j = ALLPLANS.find(x => x.id === $('#tplan').value); if (!MY.plans[j.id]) { MY.plans[j.id] = { done: [], start: Date.now() }; saveMy(); }
     shareIt({ title: `Study ${j.n} with me`, text: `${nm()} invites you to read “${j.n}” together on Just One More Lord. Tap to start the same plan:`, hash: `friend-${encodeURIComponent(nm())}-${j.id}` }); };
-  giscus($('#cmm'), 'community');
+  alertsPanel().then(h => { const el = $('#alertsSlot'); if (el) el.outerHTML = h; }); giscus($('#cmm'), 'community');
 }
 function acceptInvite(arg) { // #friend-<name>[-<planId>]
   const parts = String(arg).split('-'); let plan = null; if (parts.length > 1 && ALLPLANS.find(j => j.id === parts[parts.length - 1])) plan = parts.pop();
@@ -1401,6 +1409,7 @@ function acceptInvite(arg) { // #friend-<name>[-<planId>]
 
 /* developer notes: what's new, what's next, and a feedback thread */
 const DEVNOTES = [
+  ['2026-11-26', 'Study tools and church groups', ['New logo and app icon', 'Commentary on every chapter (Matthew Henry, JFB, Clarke, Gill, Keil-Delitzsch, Tyndale)', 'Topical Bible: 5,000 topics', 'Bible dictionary and the meaning of names', 'Prophecy and fulfilment', 'Gospel harmony', 'Every Bible place (1,300) and a map of 500 events', 'Bible finds in museums', 'Verse picture maker', 'Lesson builder', 'Daily challenge', 'Church groups', 'Daily verse alerts']],
   ['2026-11-26', 'People of the Bible', ['Look up any of 3,000+ people: family, dates and age, birthplace and place of death, a map of where they lived, journeys, life events, biography and every verse', 'Hebrew and Greek spelling of names', '“From Adam to today”: lifespans from Adam to Jesus and the age of mankind by traditional Bible chronology']],
   ['2026-11-25', 'Profiles, memory verses and a year in the Bible', ['Free profiles with sign-up and sync across devices', 'The whole Bible in a year plan', 'Scripture memory with daily practice', 'Devotionals from 13 Bible places', 'Feasts and holy days for the year ahead', 'A photograph for every place, and a share picture for every place', 'Faster loading', 'Privacy policy and app-store preparation']],
   ['2026-11-25', 'Kingdom maps, distances, kids\' corner and languages', ['Kingdom maps for six eras, from David and Solomon to the time of Jesus', '“How far was it?” — distances and walking days, and totals for every journey', 'Kids\' corner: stories read aloud, a fun quiz and pictures to colour', '360° views of places where a panorama is available', 'Save a journey for offline travel', 'Menus in Afrikaans, isiZulu and isiXhosa (help us improve them!)']],
@@ -2056,7 +2065,7 @@ async function viewPerson(slug) {
     d.w.length && ['Wrote', d.w.join(', ')], ['Mentioned', `${d.vc} verse${d.vc === 1 ? '' : 's'}${first ? ` · first in ${first}` : ''}${last && last !== first ? `, last in ${last}` : ''}`], (d.y0 != null) && ['Appears in history', d.y0 === d.y1 ? pyr(d.y0) : `${pyr(d.y0)} – ${pyr(d.y1)}`]].filter(Boolean);
   main.innerHTML = `<section class="phero person"><div class="wrap in"><div class="crumbs"><button data-go="people">People of the Bible</button> › ${esc(d.n)}</div><p class="kicker">${esc(d.gr[0] || (d.g === 'Female' ? 'Woman of the Bible' : d.g === 'Male' ? 'Man of the Bible' : 'Named in the Bible'))}</p>
       <h1>${esc(name)}</h1><p class="sub">${d.a.length ? 'Also called ' + esc(d.a.slice(0, 5).join(', ')) : ''}</p>
-      <div class="ptools"><button class="pill" id="pshare">${ICON.share}<span>Share</span></button><button class="pill" id="porig">Hebrew / Greek name</button></div><div id="porigbox"></div></div></section>
+      <div class="ptools"><button class="pill" id="pshare">${ICON.share}<span>Share</span></button><button class="pill" id="porig">Hebrew / Greek name</button><button class="pill" id="pless">Add to lesson</button></div><div id="porigbox"></div></div></section>
     <section class="sec"><div class="wrap"><div class="facts pfacts">${facts.map(([k, v]) => `<div><span>${esc(k)}</span><b>${esc(v)}</b></div>`).join('')}</div>
       ${d.b != null || d.x != null ? '<p class="small muted">Dates follow a traditional Bible chronology and are approximate; scholars differ, especially for the earliest periods.</p>' : ''}</div></section>
     ${fam.length ? `<section class="sec"><div class="wrap"><h2>Family</h2><div class="famgrid">${fam.map(([k, list]) => `<div class="panel"><p class="kicker">${k}</p><div class="chips">${list.map(link).join('')}</div></div>`).join('')}</div></div></section>` : ''}
@@ -2071,6 +2080,7 @@ async function viewPerson(slug) {
     <section class="sec"><div class="wrap"><h2>Every verse that mentions ${esc(d.n)} <span class="small muted">(${vrefs.length})</span></h2><div class="chips" id="pverses">${vrefs.slice(0, 40).map(r => `<button class="chip xr" data-verse="${esc(r)}">${esc(r)}</button>`).join('')}</div>
       ${vrefs.length > 40 ? `<button class="btn ghost sm" id="pmore" style="margin-top:10px">Show all ${vrefs.length}</button>` : ''}</div></section>
     <section class="sec"><div class="wrap"><p class="small muted">Profile data: <a href="https://theographic.netlify.app/" target="_blank" rel="noopener">Theographic Bible Metadata</a> by Robert Rouse (CC BY-SA 4.0) and Easton's Bible Dictionary (1897, public domain). Places are shown where the dataset has coordinates.</p></div></section>`;
+  $('#pless').onclick = () => lessonAdd({ k: 'person', ref: slug, t: name });
   $('#pmore')?.addEventListener('click', e => { $('#pverses').innerHTML = vrefs.map(r => `<button class="chip xr" data-verse="${esc(r)}">${esc(r)}</button>`).join(''); e.target.remove(); });
   $('#pshare').onclick = () => shareIt({ title: `${name} — People of the Bible`, text: `${name}: ${(d.bio || d.ea).slice(0, 180)}…`, hash: 'person-' + slug });
   $('#porig').onclick = async () => { const box = $('#porigbox'); box.innerHTML = '<p class="small muted"><span class="spin"></span>Looking in the Hebrew and Greek lexicons…</p>';
@@ -2111,6 +2121,312 @@ async function viewChronology() {
       <p class="small muted">Dates before about 1000 BC are approximate and debated. Birth and death years and ages come from Theographic Bible Metadata (CC BY-SA 4.0), which derives them from the ages given in Scripture.</p></div></div></section>`;
 }
 
+/* ======================================================================================
+   STUDY TOOLS: commentaries, topical Bible, Bible dictionary, prophecy & fulfilment, Gospel harmony.
+   ====================================================================================== */
+const USFM = ['GEN','EXO','LEV','NUM','DEU','JOS','JDG','RUT','1SA','2SA','1KI','2KI','1CH','2CH','EZR','NEH','EST','JOB','PSA','PRO','ECC','SNG','ISA','JER','LAM','EZK','DAN','HOS','JOL','AMO','OBA','JON','MIC','NAM','HAB','ZEP','HAG','ZEC','MAL','MAT','MRK','LUK','JHN','ACT','ROM','1CO','2CO','GAL','EPH','PHP','COL','1TH','2TH','1TI','2TI','TIT','PHM','HEB','JAS','1PE','2PE','1JN','2JN','3JN','JUD','REV'];
+const COMMS = [['matthew-henry', 'Matthew Henry (1706)'], ['jamieson-fausset-brown', 'Jamieson, Fausset & Brown (1871)'], ['adam-clarke', 'Adam Clarke (1832)'], ['john-gill', 'John Gill (1763)'], ['keil-delitzsch', 'Keil & Delitzsch (OT, 1891)'], ['tyndale', 'Tyndale Open Study Notes']];
+const curComm = () => { const c = localStorage.getItem('jom:comm'); return COMMS.some(x => x[0] === c) ? c : 'matthew-henry'; };
+const flat = x => typeof x === 'string' ? x : Array.isArray(x) ? x.map(flat).join(' ') : x && typeof x === 'object' ? (x.text != null ? flat(x.text) : x.content != null ? flat(x.content) : x.lineBreak ? '\n' : '') : '';
+async function commentaryChapter(bookIdx, ch, id = curComm()) {
+  const url = `https://bible.helloao.org/api/c/${id}/${USFM[bookIdx]}/${ch}.json`;
+  const j = await getJSON(url, { timeout: 15000 }); const c = j?.chapter || j;
+  const out = []; if (c?.introduction) out.push({ v: 0, t: flat(c.introduction) });
+  for (const it of c?.content || []) { if (it.type === 'verse' || it.number != null) { const t = flat(it.content).replace(/\s+\n/g, '\n').trim(); if (t) out.push({ v: +it.number || 0, t }); } else if (it.type === 'heading') out.push({ v: -1, t: flat(it.content) }); }
+  return out;
+}
+async function commentaryHTML(bookIdx, ch, verse) {
+  try { const items = await commentaryChapter(bookIdx, ch); if (!items.length) throw 0;
+    let use = items; if (verse) { const before = items.filter(x => x.v > 0 && x.v <= verse); const at = before.length ? before[before.length - 1].v : null; use = items.filter(x => x.v === at); if (!use.length) use = items.filter(x => x.v === 0); }
+    return use.map(x => x.v === -1 ? `<h4>${esc(x.t)}</h4>` : `<div class="cmnt">${x.v > 0 ? `<b class="cv">v. ${x.v}</b>` : ''}${x.t.split(/\n+/).map(p => `<p>${esc(p)}</p>`).join('')}</div>`).join('');
+  } catch { return `<p class="small muted">The commentary could not be loaded (it needs an internet connection). <a href="https://www.ccel.org/study/${encodeURIComponent((conc.starts?.[bookIdx]?.name || '') + ' ' + ch)}" target="_blank" rel="noopener">Read it on CCEL ↗</a></p>`; }
+}
+const commPicker = () => `<label class="sr" for="commSel">Commentary</label><select id="commSel" class="commsel">${COMMS.map(([k, n]) => `<option value="${k}"${k === curComm() ? ' selected' : ''}>${esc(n)}</option>`).join('')}</select>`;
+
+/* ---------- topical Bible (Nave's) ---------- */
+let TIDX = null; const TSH = {};
+async function topicIndex() { if (TIDX) return TIDX; try { TIDX = await (await fetch('data/topics/index.json')).json(); } catch { TIDX = []; } return TIDX; }
+async function topicData(subj) { const row = (await topicIndex()).find(r => r[0] === subj); if (!row) return null; if (!TSH[row[2]]) TSH[row[2]] = fetch(`data/topics/${row[2]}.json`).then(r => r.json()).catch(() => ({})); return (await TSH[row[2]])[subj]; }
+const tcase = s => s.toLowerCase().replace(/(^|[\s(-])([a-z])/g, (m, a, b) => a + b.toUpperCase());
+function topicMatches(q, idx, n = 30) { q = q.trim().toUpperCase(); if (!q) return []; const sc = r => r[0] === q ? 100 : r[0].startsWith(q) ? 60 : r[0].includes(q) ? 30 : 0;
+  return idx.map(r => [r, sc(r)]).filter(x => x[1]).sort((a, b) => b[1] - a[1] || b[0][1] - a[0][1]).slice(0, n).map(x => x[0]); }
+const POPULAR_TOPICS = ['LOVE', 'FAITH', 'PRAYER', 'FORGIVENESS', 'HOPE', 'PEACE', 'JOY', 'FEAR', 'GRACE', 'SALVATION', 'HEALING', 'MARRIAGE', 'CHILDREN', 'WISDOM', 'HUMILITY', 'PATIENCE', 'REPENTANCE', 'HOLY SPIRIT', 'HEAVEN', 'WORSHIP', 'GIVING', 'FRIENDSHIP'];
+async function viewTopics(q) {
+  setNav('read'); document.title = 'Topical Bible — Just One More Lord';
+  main.innerHTML = `<section class="band"><div class="wrap"><div class="sh"><div><p class="kicker">Nave's Topical Bible</p><h1>Find what the Bible says about…</h1><p>Over 5,000 topics with 100,000 verses, arranged by Orville Nave. Search a subject — love, anxiety, money, marriage, leadership — and open every verse.</p></div></div>
+    <form class="bigsearch" id="tform" role="search" style="max-width:640px"><label class="sr" for="tq">Topic</label><input id="tq" type="search" placeholder="Search a topic…" value="${esc(q || '')}" autocomplete="off"><button class="btn" type="submit">Search</button></form><div id="tres" style="margin-top:18px"></div></div></section>`;
+  const idx = await topicIndex(); if (!idx.length) { $('#tres').innerHTML = '<p class="empty">The topical Bible is added the next time the site is published.</p>'; return; }
+  const show = v => { const m = topicMatches(v, idx); $('#tres').innerHTML = v.trim() ? (m.length ? `<div class="rlist">${m.map(r => `<button class="ritem" data-go="topic-${encodeURIComponent(r[0])}"><div><b>${esc(tcase(r[0]))}</b></div><span class="tag">${r[1]} verses</span></button>`).join('')}</div>` : '<p class="empty">No topic found. Try a simpler word.</p>')
+    : `<h2 class="libh" style="margin-top:4px">Popular topics</h2><div class="chips">${POPULAR_TOPICS.filter(t => idx.some(r => r[0] === t)).map(t => `<button class="chip" data-go="topic-${encodeURIComponent(t)}">${esc(tcase(t))}</button>`).join('')}</div>`; };
+  let tm; $('#tq').oninput = e => { clearTimeout(tm); tm = setTimeout(() => show(e.target.value), 150); }; $('#tform').onsubmit = e => { e.preventDefault(); show($('#tq').value); }; show(q || '');
+}
+async function viewTopic(subj) {
+  setNav('read'); subj = decodeURIComponent(subj); const lines = await topicData(subj); document.title = `${tcase(subj)} — Topical Bible`;
+  if (!lines) { main.innerHTML = `<section class="band"><div class="wrap"><h1>Topic not found</h1><p><button class="inl" data-go="topics">Search topics</button></p></div></section>`; return; }
+  const total = lines.reduce((s, l) => s + l[2].length, 0);
+  main.innerHTML = `<section class="band"><div class="wrap"><div class="crumbs"><button data-go="topics">Topical Bible</button> › ${esc(tcase(subj))}</div><h1>${esc(tcase(subj))}</h1><p class="muted">${total} verses in Nave's Topical Bible. Tap a verse to read it.</p>
+    <div class="linkrow"><button class="btn ghost sm" id="tshare">${ICON.share} Share</button><button class="btn ghost sm" id="tsermon">Add to my lesson</button></div>
+    <div class="topic">${lines.map(([ind, label, refs, see]) => see ? `<p class="tsee${ind ? ' ind' : ''}">See: ${see.map(s => `<button class="inl" data-go="topic-${encodeURIComponent(s.toUpperCase().replace(/[.,]$/, ''))}">${esc(tcase(s))}</button>`).join(', ')}</p>`
+      : `<div class="tline${ind ? ' ind' : ''}">${label ? `<b>${esc(label)}</b>` : ''}${refs.length ? `<div class="chips">${refs.map(r => `<button class="chip xr" data-verse="${esc(r)}">${esc(r)}</button>`).join('')}</div>` : ''}</div>`).join('')}</div>
+    <p class="small muted">Nave's Topical Bible (public domain); digital edition from Bible-Data by Brady Stephenson (CC BY 4.0).</p></div></section>`;
+  $('#tshare').onclick = () => shareIt({ title: `What the Bible says about ${tcase(subj)}`, text: `${total} verses on ${tcase(subj)}`, hash: 'topic-' + encodeURIComponent(subj) });
+  $('#tsermon').onclick = () => lessonAdd({ k: 'topic', t: tcase(subj), ref: subj });
+}
+
+/* ---------- Bible dictionary (Easton's + Hitchcock's names) ---------- */
+let DIDX = null; const DSH = {};
+async function dictIndex() { if (DIDX) return DIDX; try { DIDX = await (await fetch('data/dict/index.json')).json(); } catch { DIDX = []; } return DIDX; }
+async function dictEntry(term) { const k = term.toLowerCase(); const row = (await dictIndex()).find(r => r[0].toLowerCase() === k); if (!row) return null; if (!DSH[row[1]]) DSH[row[1]] = fetch(`data/dict/${row[1]}.json`).then(r => r.json()).catch(() => ({})); return (await DSH[row[1]])[k]; }
+function dictHTML(e) { return `${e.h ? `<p class="dmean"><span class="kicker">Name meaning (Hitchcock)</span><br>${esc(e.h)}</p>` : ''}${e.e.map((t, i) => `<div class="dent">${e.e.length > 1 ? `<p class="kicker">${i + 1}.</p>` : ''}${t.split(/\n+/).map(p => `<p>${esc(p)}</p>`).join('')}</div>`).join('')}`; }
+async function viewDictionary(q) {
+  setNav('read'); document.title = 'Bible dictionary — Just One More Lord';
+  main.innerHTML = `<section class="band"><div class="wrap"><div class="sh"><div><p class="kicker">Easton's Bible Dictionary · Hitchcock's Bible Names</p><h1>Bible dictionary</h1><p>Nearly 5,000 entries: people, places, customs, objects and ideas of the Bible, plus the meaning of 2,600 Bible names.</p></div></div>
+    <form class="bigsearch" id="dform" role="search" style="max-width:640px"><label class="sr" for="dq">Word</label><input id="dq" type="search" placeholder="Look up a word, e.g. Ark, Tabernacle, Pharisee…" value="${esc(q || '')}" autocomplete="off"><button class="btn" type="submit">Look up</button></form><div id="dres" style="margin-top:18px"></div></div></section>`;
+  const idx = await dictIndex(); if (!idx.length) { $('#dres').innerHTML = '<p class="empty">The dictionary is added the next time the site is published.</p>'; return; }
+  const show = v => { v = v.trim().toLowerCase(); const m = v ? idx.filter(r => r[0].toLowerCase().startsWith(v)).slice(0, 40).concat(v.length > 2 ? idx.filter(r => !r[0].toLowerCase().startsWith(v) && r[0].toLowerCase().includes(v)).slice(0, 20) : []) : [];
+    $('#dres').innerHTML = v ? (m.length ? `<div class="chips">${m.map(r => `<button class="chip" data-go="dict-${encodeURIComponent(r[0])}">${esc(r[0])}</button>`).join('')}</div>` : '<p class="empty">Not found.</p>')
+      : `<div class="chips">${['Ark of the covenant', 'Atonement', 'Baptism', 'Covenant', 'Grace', 'Pharisees', 'Passover', 'Sabbath', 'Tabernacle', 'Temple', 'Messiah', 'Redemption'].map(t => `<button class="chip" data-go="dict-${encodeURIComponent(t)}">${t}</button>`).join('')}</div>`; };
+  let tm; $('#dq').oninput = e => { clearTimeout(tm); tm = setTimeout(() => show(e.target.value), 150); }; $('#dform').onsubmit = e => { e.preventDefault(); const v = $('#dq').value.trim(); if (idx.some(r => r[0].toLowerCase() === v.toLowerCase())) go('dict-' + encodeURIComponent(v)); else show(v); }; show(q || '');
+}
+async function viewDictEntry(term) {
+  setNav('read'); term = decodeURIComponent(term); const e = await dictEntry(term); document.title = `${term} — Bible dictionary`;
+  if (!e) { main.innerHTML = `<section class="band"><div class="wrap"><h1>${esc(term)}</h1><p class="empty">No dictionary entry. <button class="inl" data-go="dictionary">Search the dictionary</button></p></div></section>`; return; }
+  const pidx = await peopleIndex(); const person = pidx.find(r => normName(r[1]) === normName(e.t)); const place = placeByName(e.t); const topic = (await topicIndex()).find(r => r[0] === e.t.toUpperCase());
+  main.innerHTML = `<section class="band"><div class="wrap prose"><div class="crumbs"><button data-go="dictionary">Bible dictionary</button> › ${esc(e.t)}</div><h1>${esc(e.t)}</h1>
+    <div class="linkrow">${person ? `<button class="btn sm" data-go="person-${person[0]}">Person profile</button>` : ''}${place ? `<button class="btn sm" data-go="place-${place.id}">Place page</button>` : ''}${topic ? `<button class="btn ghost sm" data-go="topic-${encodeURIComponent(topic[0])}">Topical verses</button>` : ''}</div>
+    ${dictHTML(e)}<p class="small muted">Easton's Bible Dictionary (1897) and Hitchcock's Bible Names (1869), public domain; digital editions via Theographic (CC BY-SA 4.0) and Bible-Data (CC BY 4.0).</p></div></section>`;
+}
+async function addDictChips(box, getText) { // dictionary words found in a verse
+  let t = ''; for (let i = 0; i < 25 && !(t = getText()); i++) await new Promise(r => setTimeout(r, 200)); if (!t || !box.isConnected) return;
+  const idx = await dictIndex(); if (!idx.length) return; const set = new Map(idx.map(r => [r[0].toLowerCase(), r[0]]));
+  const words = [...new Set(t.replace(/[^A-Za-z' -]/g, ' ').split(/\s+/).filter(w => w.length > 3).map(w => w.replace(/'s$/, '')))]; const hits = [];
+  for (const w of words) { const k = w.toLowerCase(); if (set.has(k) && (/^[A-Z]/.test(w) || !['said', 'came', 'went', 'from', 'that', 'with', 'them', 'they', 'there'].includes(k))) hits.push(set.get(k)); }
+  if (!hits.length) return; const host = document.createElement('div'); host.className = 'xrefs';
+  host.innerHTML = `<p class="kicker">In the dictionary</p><div class="chips">${hits.slice(0, 12).map(h => `<button class="chip xr" data-dict="${esc(h)}">${esc(h)}</button>`).join('')}</div>`;
+  ($('.xrefs', box) || $('.notebox', box) || $('.vtools', box))?.after(host);
+}
+document.addEventListener('click', async e => { const b = e.target.closest('[data-dict]'); if (!b) return; e.preventDefault(); const en = await dictEntry(b.dataset.dict); if (!en) return;
+  openDlg(`<p class="kicker">Bible dictionary</p><h2>${esc(en.t)}</h2>${dictHTML(en)}<div class="linkrow"><button class="btn ghost sm" data-go="dict-${encodeURIComponent(en.t)}">Open full entry</button></div>`, en.t); });
+
+/* ---------- prophecy and fulfilment ---------- */
+function viewProphecy() {
+  setNav('read'); document.title = 'Prophecy and fulfilment — Just One More Lord'; const P = window.JOM_PROPHECY || []; const groups = [...new Set(P.map(p => p[3]))];
+  main.innerHTML = `<section class="band"><div class="wrap"><div class="sh"><div><p class="kicker">Promise and fulfilment</p><h1>Prophecy and fulfilment</h1><p>Old Testament promises and the New Testament passages that point back to them — especially the promises about the Messiah. Tap either side to read and compare.</p></div></div>
+    ${groups.map(g => `<h2 class="libh">${esc(g)}</h2><div class="proph">${P.filter(p => p[3] === g).map(p => `<div class="pro"><b>${esc(p[0])}</b><div class="pro2"><button class="pside" data-verse="${esc(p[1])}"><span class="kicker">Promised</span>${esc(p[1])}</button><span class="parrow">→</span><button class="pside ful" data-verse="${esc(p[2])}"><span class="kicker">Fulfilled</span>${esc(p[2])}</button></div></div>`).join('')}</div>`).join('')}
+    <p class="small muted">${P.length} prophecies. Christians read some of these as direct predictions and others as patterns that find their fullest meaning in Jesus.</p></div></section>`;
+}
+
+/* ---------- Gospel harmony ---------- */
+function viewHarmony(n) {
+  setNav('read'); const G = window.JOM_GOSPELS || [];
+  if (n !== '' && n != null && G[+n]) { const r = G[+n]; document.title = `${r[0]} — Gospel harmony`;
+    const cols = [['Matthew', r[1]], ['Mark', r[2]], ['Luke', r[3]], ['John', r[4]]].filter(c => c[1]);
+    main.innerHTML = `<section class="band"><div class="wrap"><div class="crumbs"><button data-go="harmony">Gospel harmony</button> › ${esc(r[0])}</div><h1>${esc(r[0])}</h1><div class="linkrow">${+n > 0 ? `<button class="btn ghost sm" data-go="harmony-${+n - 1}">← Previous</button>` : ''}${+n < G.length - 1 ? `<button class="btn sm" data-go="harmony-${+n + 1}">Next event →</button>` : ''}</div>
+      <div class="hcols" style="--n:${cols.length}">${cols.map(([g, ref]) => `<article class="hcol"><p class="kicker">${g}</p><h3><button class="vref" data-verse="${esc(ref)}">${esc(ref)}</button></h3><div class="vtext htext" data-ref="${esc(ref)}"><span class="spin"></span></div></article>`).join('')}</div></div></section>`;
+    $$('.htext').forEach(async el => { try { const v = await bibleText(el.dataset.ref); el.innerHTML = verseHTML(v); } catch { el.innerHTML = '<span class="small muted">Needs an internet connection.</span>'; } }); return; }
+  document.title = 'Gospel harmony — Just One More Lord';
+  main.innerHTML = `<section class="band"><div class="wrap"><div class="sh"><div><p class="kicker">The four Gospels side by side</p><h1>Gospel harmony</h1><p>The life of Jesus in order, showing where Matthew, Mark, Luke and John each tell the same event. Tap an event to read all the accounts side by side.</p></div></div>
+    <div class="htable" role="table"><div class="hrow hhead" role="row"><span>Event</span><span>Matthew</span><span>Mark</span><span>Luke</span><span>John</span></div>
+    ${G.map((r, i) => `<button class="hrow" role="row" data-go="harmony-${i}"><span><b>${esc(r[0])}</b></span>${r.slice(1).map(x => `<span class="${x ? 'has' : ''}">${esc(x.replace(/^(Matthew|Mark|Luke|John) /, ''))}</span>`).join('')}</button>`).join('')}</div></div></section>`;
+}
+
+/* ======================================================================================
+   ALL PLACES & EVENTS, MUSEUMS, VERSE PICTURES, LESSON BUILDER, DAILY CHALLENGE, CHURCH GROUPS, DAILY VERSE ALERTS
+   ====================================================================================== */
+let SIDX = null, EVTS = null; const SSH = {};
+async function siteIndex() { if (SIDX) return SIDX; try { SIDX = await (await fetch('data/sites/index.json')).json(); } catch { SIDX = []; } return SIDX; }
+async function siteData(slug) { const r = (await siteIndex()).find(x => x[0] === slug); if (!r) return null; if (!SSH[r[5]]) SSH[r[5]] = fetch(`data/sites/${r[5]}.json`).then(x => x.json()).catch(() => ({})); return (await SSH[r[5]])[slug]; }
+async function eventList() { if (EVTS) return EVTS; try { EVTS = await (await fetch('data/events.json')).json(); } catch { EVTS = []; } return EVTS; }
+const ERA_RANGES = [['All', -5000, 200], ['Creation to Flood', -5000, -2300], ['Patriarchs', -2299, -1550], ['Exodus & conquest', -1549, -1380], ['Judges', -1379, -1051], ['Kings', -1050, -587], ['Exile & return', -586, -400], ['Jesus', -10, 33], ['Early church', 30, 200]];
+async function viewAllPlaces(q) {
+  setNav('atlas'); document.title = 'Every Bible place — Just One More Lord';
+  main.innerHTML = `<section class="band"><div class="wrap"><div class="sh"><div><p class="kicker">Complete gazetteer</p><h1>Every Bible place</h1><p>All 1,300 places named in the Bible that can be located, on one map. The 100 featured places have full pages with photos and archaeology; every place has its verses and the people connected with it.</p></div><div class="linkrow"><button class="btn ghost sm" data-go="atlas">Featured atlas</button><button class="btn sm" data-go="events">Events map</button></div></div>
+    <form class="bigsearch" id="sform" role="search" style="max-width:600px"><label class="sr" for="sq">Place</label><input id="sq" type="search" placeholder="Find a place…" value="${esc(q || '')}"><button class="btn" type="submit">Find</button></form>
+    <div class="mapbox tall" id="smap" style="margin-top:14px"></div><div id="sres" style="margin-top:14px"></div></div></section>`;
+  const idx = await siteIndex(); if (!idx.length) { $('#sres').innerHTML = '<p class="empty">The full place list is added the next time the site is published.</p>'; return; }
+  const draw = v => { v = normName(v); const list = (v ? idx.filter(r => normName(r[1]).includes(v)) : idx).filter(r => r[2]);
+    makeMap($('#smap'), { markers: list.slice(0, v ? 300 : 1300).map(r => { const fp = placeByName(r[1]); return { lat: r[2], lon: r[3], label: r[1], sub: `${r[4]} verse${r[4] === 1 ? '' : 's'}`, kind: fp ? 'place' : 'near', go: fp ? 'place-' + fp.id : 'site-' + r[0] }; }), maxZoom: 10 });
+    $('#sres').innerHTML = v ? `<div class="rlist">${list.slice(0, 40).map(r => `<button class="ritem" data-go="site-${r[0]}"><div><b>${esc(r[1])}</b></div><span class="tag">${r[4]} verses</span></button>`).join('')}</div>` : ''; };
+  $('#sform').onsubmit = e => { e.preventDefault(); draw($('#sq').value); }; draw(q || '');
+}
+async function viewSite(slug) {
+  setNav('atlas'); const d = await siteData(slug); if (!d) return viewNotFound(); const fp = placeByName(d.n); if (fp) { go('place-' + fp.id); return; }
+  document.title = `${d.n} — Bible places`; const vr = d.v.map(osisToRef);
+  main.innerHTML = `<section class="band"><div class="wrap"><div class="crumbs"><button data-go="places">Every Bible place</button> › ${esc(d.n)}</div><h1>${esc(d.n)}</h1><p class="muted">${vr.length} verse${vr.length === 1 ? '' : 's'}${d.lat ? '' : ' · location unknown'}</p>
+    ${d.lat ? '<div class="mapbox" id="sitemap" style="height:340px"></div>' : ''}
+    ${d.p.length ? `<h2 class="libh">People connected with ${esc(d.n)}</h2><div class="chips">${d.p.map(x => `<button class="chip" data-go="person-${esc(x[0])}">${esc(x[1])} · ${x[2]}</button>`).join('')}</div>` : ''}
+    ${d.d ? `<h2 class="libh">From Easton's Bible Dictionary</h2><div class="prose">${d.d.split(/\n+/).map(p => `<p>${esc(p)}</p>`).join('')}</div>` : ''}
+    <h2 class="libh">Verses</h2><div class="chips">${vr.map(r => `<button class="chip xr" data-verse="${esc(r)}">${esc(r)}</button>`).join('')}</div>
+    <p class="small muted">Data: Theographic Bible Metadata (CC BY-SA 4.0), locations from OpenBible.info.</p></div></section>`;
+  if (d.lat) { const near = (await siteIndex()).filter(r => r[2] && r[0] !== slug).map(r => [r, km({ lat: d.lat, lon: d.lon }, { lat: r[2], lon: r[3] })]).sort((a, b) => a[1] - b[1]).slice(0, 8);
+    makeMap($('#sitemap'), { markers: [{ lat: d.lat, lon: d.lon, label: d.n, kind: 'main' }, ...near.map(([r, k]) => ({ lat: r[2], lon: r[3], label: r[1], sub: fmtKm(k), kind: 'near', go: 'site-' + r[0] }))], maxZoom: 10 }); }
+}
+async function viewEvents(era) {
+  setNav('timeline'); document.title = 'Bible events map — Just One More Lord'; const E = await eventList(); const er = ERA_RANGES.find(x => x[0] === decodeURIComponent(era || '')) || ERA_RANGES[0];
+  const list = E.filter(e => e[1] != null ? e[1] >= er[1] && e[1] <= er[2] : er[0] === 'All');
+  main.innerHTML = `<section class="band"><div class="wrap"><div class="sh"><div><p class="kicker">500 events</p><h1>Bible events map</h1><p>Every major event in the Bible, where and when it happened. Choose an era to see its events on the map.</p></div><div class="linkrow"><button class="btn ghost sm" data-go="timeline">Timeline</button><button class="btn ghost sm" data-go="places">Every place</button></div></div>
+    <div class="chips">${ERA_RANGES.map(x => `<button class="chip" data-go="events-${encodeURIComponent(x[0])}" aria-pressed="${x[0] === er[0]}">${esc(x[0])}</button>`).join('')}</div>
+    <div class="jlayout" style="margin-top:14px"><div class="mapbox tall" id="emap"></div><div class="rlist evlist">${list.slice(0, 200).map((e, i) => `<button class="ritem" data-ev="${E.indexOf(e)}"><div><b>${esc(e[0])}</b><span>${e[1] != null ? pyr(e[1]) + ' · ' : ''}${esc(e[4].map(l => l[1]).join(', ') || 'place unknown')}</span></div>${e[3] ? `<span class="tag">${esc(e[3].replace(/-$/, ''))}</span>` : ''}</button>`).join('') || '<p class="empty">No events in this era.</p>'}</div></div>
+    <p class="small muted">Event dates follow a traditional chronology and are approximate. Data: Theographic Bible Metadata (CC BY-SA 4.0).</p></div></section>`;
+  const mk = []; list.forEach(e => e[4].forEach(l => { if (l[2]) mk.push({ lat: l[2], lon: l[3], label: e[0], sub: `${e[1] != null ? pyr(e[1]) + ' · ' : ''}${l[1]}`, kind: 'stop' }); }));
+  makeMap($('#emap'), { markers: mk.slice(0, 400), maxZoom: 9 });
+  $('.evlist').onclick = ev => { const b = ev.target.closest('[data-ev]'); if (!b) return; const e = E[+b.dataset.ev];
+    openDlg(`<p class="kicker">${e[1] != null ? pyr(e[1]) : 'Bible event'}</p><h2>${esc(e[0])}</h2>${e[3] ? `<p><button class="btn sm" data-verse="${esc(e[3].replace(/-$/, ''))}">Read ${esc(e[3].replace(/-$/, ''))}</button></p>` : ''}
+      ${e[4].length ? `<p class="kicker">Where</p><div class="chips">${e[4].map(l => `<button class="chip" data-go="site-${esc(l[0])}">${esc(l[1])}</button>`).join('')}</div>` : ''}${e[5].length ? `<p class="kicker">Who</p><div class="chips">${e[5].map(p => `<button class="chip" data-go="person-${esc(p[0])}">${esc(p[1])}</button>`).join('')}</div>` : ''}`, e[0]); };
+}
+
+/* ---------- where Bible finds are displayed today ---------- */
+const MUSEUMS = [
+  ['Israel Museum, Jerusalem', 31.7725, 35.2044, [['Dead Sea Scrolls (Shrine of the Book)', 'Isaiah 40:8'], ['Tel Dan Stele — "House of David"', '2 Samuel 7:16'], ['Pontius Pilate inscription', 'Luke 23:1'], ['Silver Ketef Hinnom scrolls — the priestly blessing', 'Numbers 6:24-26'], ['Caiaphas ossuary', 'Matthew 26:57']]],
+  ['British Museum, London', 51.5194, -0.1270, [['Cyrus Cylinder', 'Ezra 1:1-3'], ['Lachish reliefs', '2 Kings 18:13-14'], ['Black Obelisk of Shalmaneser III — King Jehu', '2 Kings 10:34'], ['Babylonian Chronicle — fall of Jerusalem', '2 Kings 24:10-12'], ['Lachish letters', 'Jeremiah 34:7']]],
+  ['Louvre, Paris', 48.8606, 2.3376, [['Mesha Stele (Moabite Stone)', '2 Kings 3:4-5'], ['Code of Hammurabi', 'Exodus 21:23-25']]],
+  ['Istanbul Archaeology Museums', 41.0117, 28.9813, [['Siloam inscription — Hezekiah\'s tunnel', '2 Kings 20:20'], ['Temple warning inscription', 'Acts 21:28-29'], ['Gezer calendar', 'Ruth 1:22']]],
+  ['Oriental Institute, Chicago', 41.7893, -87.5975, [['Sennacherib Prism', '2 Kings 18:13'], ['Lamassu from Khorsabad', 'Isaiah 20:1']]],
+  ['Pergamon Museum, Berlin', 52.5212, 13.3967, [['Ishtar Gate of Babylon', 'Daniel 4:30'], ['Altar of Pergamon', 'Revelation 2:13']]],
+  ['Vatican Library, Rome', 41.9049, 12.4547, [['Codex Vaticanus — one of the oldest complete Bibles', '2 Timothy 3:16']]],
+  ['Chester Beatty Library, Dublin', 53.3425, -6.2675, [['Chester Beatty papyri — early New Testament', 'John 20:31']]],
+  ['John Rylands Library, Manchester', 53.4801, -2.2484, [['Rylands Papyrus P52 — oldest known New Testament fragment', 'John 18:31-33']]],
+  ['Egyptian Museum, Cairo', 30.0478, 31.2336, [['Merneptah Stele — earliest mention of "Israel"', 'Genesis 32:28']]]
+];
+function viewMuseums() {
+  setNav('discoveries'); document.title = 'Bible finds in museums — Just One More Lord';
+  main.innerHTML = `<section class="band"><div class="wrap"><div class="sh"><div><p class="kicker">See them for yourself</p><h1>Bible finds in museums</h1><p>Where some of the most important discoveries connected with the Bible are displayed today — with the passage each one relates to.</p></div><div class="linkrow"><button class="btn ghost sm" data-go="discoveries">All discoveries</button></div></div>
+    <div class="mapbox" id="mmap" style="height:380px"></div><div class="kgrid" style="margin-top:16px">${MUSEUMS.map(([n, , , items]) => `<article class="kcard"><h3>${esc(n)}</h3><ul class="mlist">${items.map(([t, r]) => `<li>${esc(t)} <button class="vref sm" data-verse="${esc(r)}">${esc(r)}</button></li>`).join('')}</ul></article>`).join('')}</div>
+    <p class="small muted">Displays change and objects travel on loan — check with the museum before you visit.</p></div></section>`;
+  makeMap($('#mmap'), { markers: MUSEUMS.map(([n, lat, lon, items]) => ({ lat, lon, label: n, sub: items.length + ' Bible-related finds', kind: 'disc' })), maxZoom: 6 });
+}
+
+/* ---------- verse picture maker ---------- */
+async function viewVersePic(ref) {
+  setNav(''); ref = decodeURIComponent(ref || '') || (votd()?.ref || 'John 3:16').replace(/(:\d+)-\d+$/, '$1'); document.title = 'Verse picture — Just One More Lord';
+  const photos = Object.entries(window.JOM_IMAGES || {}).filter(([id]) => byId[id]).slice(0, 60);
+  main.innerHTML = `<section class="band"><div class="wrap"><div class="sh"><div><p class="kicker">Share the Word</p><h1>Verse picture maker</h1><p>Make a picture of a Bible verse on a photo of a real Bible place — for WhatsApp status, Instagram or Facebook.</p></div></div>
+    <div class="vpgrid"><div><canvas id="vpc" width="1080" height="1080" class="vpcanvas" aria-label="Verse picture preview"></canvas></div>
+    <div class="panel authform" style="max-width:none"><label>Verse<input id="vpr" value="${esc(ref)}"></label><label>Text (you can edit it)<textarea id="vpt" rows="4"></textarea></label>
+      <label>Shape<select id="vps"><option value="1080x1080">Square (posts)</option><option value="1080x1920">Tall (status / stories)</option></select></label>
+      <label>Background</label><div class="vpbgs">${['#grad', '#dark', ...photos.map(([id]) => id)].map(b => `<button class="vpbg" data-bg="${esc(b)}" style="${b === '#grad' ? 'background:linear-gradient(135deg,#00d1ff,#ffc72c)' : b === '#dark' ? 'background:#020a10' : `background-image:url('${esc(window.JOM_IMAGES[b].f)}')`}" title="${esc(byId[b]?.n || b)}"></button>`).join('')}</div>
+      <div class="linkrow"><button class="btn" id="vpdl">Download picture</button><button class="btn ghost" id="vpsh">${ICON.share} Share</button></div></div></div></div></section>`;
+  let bg = photos[0]?.[0] || '#grad', img = null;
+  const draw = () => { const c = $('#vpc'), [W, H] = $('#vps').value.split('x').map(Number); c.width = W; c.height = H; const x = c.getContext('2d');
+    if (img) { const r = Math.max(W / img.width, H / img.height); x.drawImage(img, (W - img.width * r) / 2, (H - img.height * r) / 2, img.width * r, img.height * r); x.fillStyle = 'rgba(2,10,16,.55)'; x.fillRect(0, 0, W, H); }
+    else if (bg === '#dark') { x.fillStyle = '#020a10'; x.fillRect(0, 0, W, H); } else { const g = x.createLinearGradient(0, 0, W, H); g.addColorStop(0, '#04324a'); g.addColorStop(1, '#5a3a06'); x.fillStyle = g; x.fillRect(0, 0, W, H); }
+    const txt = $('#vpt').value.trim(), rf = $('#vpr').value.trim(); let fs = 78; const maxW = W - 160; x.textAlign = 'center'; x.fillStyle = '#fff'; x.shadowColor = 'rgba(0,0,0,.6)'; x.shadowBlur = 18;
+    let lines; for (;;) { x.font = `600 ${fs}px "Cormorant Garamond", Georgia, serif`; lines = []; let ln = ''; for (const w of `“${txt}”`.split(/\s+/)) { const t = ln ? ln + ' ' + w : w; if (x.measureText(t).width > maxW && ln) { lines.push(ln); ln = w; } else ln = t; } lines.push(ln); if (lines.length * fs * 1.25 < H * .62 || fs < 34) break; fs -= 4; }
+    const top = H / 2 - lines.length * fs * 1.25 / 2; lines.forEach((l, i) => x.fillText(l, W / 2, top + i * fs * 1.25 + fs * .9));
+    x.font = `700 ${Math.round(fs * .5)}px Sora, sans-serif`; x.fillStyle = '#ffc72c'; x.fillText(rf.toUpperCase(), W / 2, top + lines.length * fs * 1.25 + fs * .9);
+    x.shadowBlur = 0; x.font = '600 30px Sora, sans-serif'; x.fillStyle = 'rgba(255,255,255,.85)'; x.fillText('Just One More Lord' + (bg[0] !== '#' && byId[bg] ? ' · ' + byId[bg].n : ''), W / 2, H - 60); };
+  const setBg = b => { bg = b; $$('.vpbg').forEach(x => x.classList.toggle('on', x.dataset.bg === b)); if (b[0] === '#') { img = null; draw(); return; } const i = new Image(); i.onload = () => { img = i; draw(); }; i.src = window.JOM_IMAGES[b].f; };
+  const loadText = async () => { const r = $('#vpr').value.trim(); try { const v = await bibleText(r); $('#vpt').value = v.verses.map(x => x.t).join(' ') || v.text; } catch { try { $('#vpt').value = await glossVerse(r); } catch {} } draw(); };
+  $('.vpbgs').onclick = e => { const b = e.target.closest('[data-bg]'); if (b) setBg(b.dataset.bg); };
+  $('#vpr').onchange = loadText; $('#vpt').oninput = draw; $('#vps').onchange = draw;
+  const blob = () => new Promise(r => $('#vpc').toBlob(r, 'image/jpeg', .92));
+  $('#vpdl').onclick = async () => { const a = document.createElement('a'); a.href = URL.createObjectURL(await blob()); a.download = `${$('#vpr').value.replace(/[^\w]+/g, '-')}.jpg`; a.click(); };
+  $('#vpsh').onclick = async () => { const f = new File([await blob()], 'verse.jpg', { type: 'image/jpeg' }); if (navigator.canShare?.({ files: [f] })) { try { await navigator.share({ files: [f], title: $('#vpr').value, text: SITE }); } catch {} } else $('#vpdl').click(); };
+  setBg(bg); await loadText();
+}
+
+/* ---------- lesson & sermon builder ---------- */
+if (!Array.isArray(MY.lesson)) MY.lesson = [];
+function lessonAdd(item) { MY.lesson.push({ ...item, id: Date.now().toString(36) }); saveMy(); toast('Added to your lesson'); }
+function viewLesson() {
+  setNav(''); document.title = 'Lesson builder — Just One More Lord'; const L = MY.lesson;
+  const render = it => it.k === 'verse' ? `<button class="vref" data-verse="${esc(it.ref)}">${esc(it.ref)}</button>${it.t ? `<blockquote class="vtext">${esc(it.t)}</blockquote>` : ''}` : it.k === 'place' ? `📍 <button class="inl" data-go="place-${esc(it.ref)}">${esc(it.t)}</button>` : it.k === 'person' ? `👤 <button class="inl" data-go="person-${esc(it.ref)}">${esc(it.t)}</button>` : it.k === 'topic' ? `🏷 <button class="inl" data-go="topic-${encodeURIComponent(it.ref)}">${esc(it.t)}</button>` : it.k === 'head' ? `<h3>${esc(it.t)}</h3>` : `<p>${esc(it.t)}</p>`;
+  main.innerHTML = `<section class="band study"><div class="wrap"><div class="sh noprint"><div><p class="kicker">For preachers, teachers and small groups</p><h1>Lesson builder</h1><p>Collect verses, places, people and notes into an outline. Add verses from any verse window (“Add to lesson”), places and people from their pages, then print, present or share.</p></div></div>
+    <div class="panel noprint" style="max-width:720px"><div class="filters"><input id="lt" placeholder="Lesson title" value="${esc(MY.lessonTitle || '')}" style="flex:1"></div>
+      <div class="filters"><input id="lv" placeholder="Add a verse, e.g. John 3:16" style="flex:1"><button class="btn sm" id="lva">Add verse</button></div>
+      <div class="filters"><input id="ln" placeholder="Add a heading or a note" style="flex:1"><button class="btn ghost sm" id="lha">Heading</button><button class="btn ghost sm" id="lna">Note</button></div></div>
+    <h1 class="onlyprint">${esc(MY.lessonTitle || 'Lesson')}</h1>
+    <ol class="lesson">${L.map((it, i) => `<li data-i="${i}"><div class="lbody">${render(it)}</div><span class="lctl noprint"><button aria-label="Move up" data-m="-1">↑</button><button aria-label="Move down" data-m="1">↓</button><button aria-label="Remove" data-m="x">✕</button></span></li>`).join('') || '<p class="empty">Your lesson is empty.</p>'}</ol>
+    <div class="linkrow noprint"><button class="btn" onclick="print()">Print or save as PDF</button><button class="btn ghost" id="lpres">Present</button><button class="btn ghost" id="lsh">${ICON.share} Share outline</button><button class="btn ghost" id="lclr">Clear</button></div></div></section>`;
+  $('#lt').onchange = e => { MY.lessonTitle = e.target.value; saveMy(); };
+  $('#lva').onclick = async () => { await loadConc(); const p = parseRef($('#lv').value); if (!p) { toast('Type a reference like John 3:16'); return; } const r = `${p.book.name} ${p.ch}${/:/.test($('#lv').value) ? ':' + p.v1 + (p.v2 !== p.v1 && p.v2 < 999 ? '-' + p.v2 : '') : ''}`; let t = ''; try { const v = await bibleText(r); t = v.verses.map(x => x.t).join(' '); } catch {} lessonAdd({ k: 'verse', ref: r, t }); viewLesson(); };
+  $('#lha').onclick = () => { const t = $('#ln').value.trim(); if (t) { lessonAdd({ k: 'head', t }); viewLesson(); } }; $('#lna').onclick = () => { const t = $('#ln').value.trim(); if (t) { lessonAdd({ k: 'note', t }); viewLesson(); } };
+  $('.lesson').onclick = e => { const b = e.target.closest('[data-m]'); if (!b) return; const i = +b.closest('li').dataset.i; if (b.dataset.m === 'x') L.splice(i, 1); else { const j = i + +b.dataset.m; if (j >= 0 && j < L.length) [L[i], L[j]] = [L[j], L[i]]; } saveMy(); viewLesson(); };
+  $('#lclr').onclick = () => { if (confirm('Clear this lesson?')) { MY.lesson = []; saveMy(); viewLesson(); } };
+  $('#lsh').onclick = () => shareIt({ title: MY.lessonTitle || 'Bible lesson', text: `${MY.lessonTitle || 'Bible lesson'}\n` + L.map(it => it.k === 'verse' ? '• ' + it.ref : it.k === 'head' ? '\n' + it.t : it.k === 'note' ? '  ' + it.t : '• ' + it.t).join('\n') });
+  $('#lpres').onclick = () => { const slides = L.filter(it => it.k === 'verse' || it.k === 'head'); if (!slides.length) return;
+    let i = 0; document.body.insertAdjacentHTML('beforeend', `<div class="deck" id="deck"><div class="slides"><section class="slide"><div class="sin" id="ls"></div></section></div><div class="dctl"><button id="dprev">←</button><span id="dnum"></span><button id="dnext">→</button><button id="dx">✕</button></div></div>`);
+    const show = () => { const it = slides[i]; $('#ls').innerHTML = it.k === 'head' ? `<h1>${esc(it.t)}</h1>` : `<blockquote class="pv${(it.t || '').length > 200 ? ' long' : ''}">${esc(it.t || '')}</blockquote><p class="pvref">${esc(it.ref)}</p>`; $('#dnum').textContent = `${i + 1} / ${slides.length}`; };
+    $('#dnext').onclick = () => { i = Math.min(slides.length - 1, i + 1); show(); }; $('#dprev').onclick = () => { i = Math.max(0, i - 1); show(); }; $('#dx').onclick = () => $('#deck').remove(); show(); };
+}
+
+/* ---------- daily challenge ---------- */
+if (!MY.daily || typeof MY.daily !== 'object') MY.daily = {};
+function dailyQuestion() { const pool = PLACES.filter(p => p.v?.length).flatMap(p => questionsFor(p)); const d = dayIndex(); const q = pool[((d * 2654435761) >>> 0) % pool.length];
+  const seeded = (a, s) => a.map((x, i) => [x, ((s + i) * 9301 + 49297) % 233280]).sort((x, y) => x[1] - y[1]).map(x => x[0]); return { ...q, opts: seeded([q.a, ...q.o.slice(0, 3)], d) }; }
+function dailyStreak() { let n = 0; const d = new Date(); for (;;) { const k = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; if (!MY.daily[k]?.ok) { if (n === 0 && k === today()) { d.setDate(d.getDate() - 1); continue; } break; } n++; d.setDate(d.getDate() - 1); } return n; }
+function viewDaily() {
+  setNav('quiz'); document.title = 'Daily challenge — Just One More Lord'; const q = dailyQuestion(), done = MY.daily[today()];
+  main.innerHTML = `<section class="band"><div class="wrap quizwrap"><p class="kicker">Daily challenge · ${new Date().toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' })}</p><h1>One question a day</h1><p class="muted">Everyone gets the same question today. Correct-answer streak: <b>🔥 ${dailyStreak()}</b></p>
+    <h2 class="qq">${esc(q.q)}</h2><div class="qopts">${q.opts.map((o, k) => `<button class="qopt${done ? (o === q.a ? ' right' : o === done.pick ? ' wrong' : '') : ''}" data-k="${k}" ${done ? 'disabled' : ''}>${esc(o)}</button>`).join('')}</div>
+    <div id="qfb">${done ? `<p class="notice">${done.ok ? 'You got today\'s question right!' : `Today's answer was <b>${esc(q.a)}</b>.`} Come back tomorrow for a new one.</p>` : ''}</div>
+    <div class="linkrow"><button class="btn ghost" id="dsh">${ICON.share} Challenge a friend</button><button class="btn ghost" data-go="quiz">Full quiz</button>${GROUP_ON() ? '<button class="btn ghost" data-go="groups">My group\'s scores</button>' : ''}</div></div></section>`;
+  if (!done) $('.qopts').onclick = e => { const b = e.target.closest('.qopt'); if (!b) return; const pick = q.opts[+b.dataset.k]; MY.daily[today()] = { ok: pick === q.a, pick }; saveMy(); track(); groupReport(); viewDaily(); };
+  $('#dsh').onclick = () => shareIt({ title: 'Daily Bible challenge', text: `Today's Bible question: ${q.q}`, hash: 'daily' });
+}
+
+/* ---------- church groups (Supabase) ---------- */
+const GROUP_ON = () => sbOn() && signedIn();
+const code6 = () => Array.from(crypto.getRandomValues(new Uint8Array(6)), b => 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[b % 32]).join('');
+async function myGroups() { return await sbFetch(`/rest/v1/group_members?user_id=eq.${AUTH.user.id}&select=group_id,role,groups(id,name,code,plan_id,owner)`); }
+async function groupReport() { if (!GROUP_ON()) return; try { const gs = await myGroups(); const stats = { streak: streak(), chapters: Object.keys(MY.readCh).length, daily: dailyStreak(), plans: Object.fromEntries(Object.entries(MY.plans).map(([k, v]) => [k, (v.done || []).length])) };
+  await Promise.all(gs.map(g => sbFetch(`/rest/v1/group_members?group_id=eq.${g.group_id}&user_id=eq.${AUTH.user.id}`, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ name: AUTH.profile?.name || MY.name || 'Member', stats, updated_at: new Date().toISOString() }) }))); } catch {} }
+async function viewGroups(id) {
+  setNav('community'); document.title = 'Church groups — Just One More Lord';
+  if (!sbOn()) { main.innerHTML = `<section class="band"><div class="wrap quizwrap"><h1>Church groups</h1><p class="lead">Groups need accounts to be switched on.</p></div></section>`; return; }
+  if (!signedIn()) { main.innerHTML = `<section class="band"><div class="wrap quizwrap"><p class="kicker">Church groups</p><h1>Read and pray together</h1><p class="lead">Create a group for your church, cell group, youth or family. Members join with a code, read the same plan, see each other's progress and share prayer requests.</p><div class="linkrow"><button class="btn" data-go="profile">Sign in or create a free account</button></div></div></section>`; return; }
+  main.innerHTML = `<section class="band"><div class="wrap"><p class="muted"><span class="spin"></span>Loading your groups…</p></div></section>`;
+  try { await groupReport(); const gs = await myGroups();
+    if (id) { const g = gs.find(x => x.group_id === id)?.groups; if (!g) { go('groups'); return; }
+      const [mem, prs] = await Promise.all([sbFetch(`/rest/v1/group_members?group_id=eq.${id}&select=user_id,name,role,stats,updated_at`), sbFetch(`/rest/v1/group_prayers?group_id=eq.${id}&select=id,name,text,created_at,user_id&order=created_at.desc&limit=50`)]);
+      const plan = ALLPLANS.find(j => j.id === g.plan_id); const owner = g.owner === AUTH.user.id;
+      main.innerHTML = `<section class="band"><div class="wrap"><div class="crumbs"><button data-go="groups">My groups</button> › ${esc(g.name)}</div><h1>${esc(g.name)}</h1>
+        <div class="linkrow"><span class="tag">Join code: <b>${esc(g.code)}</b></span><button class="btn ghost sm" id="ginv">${ICON.share} Invite</button>${plan ? `<button class="btn sm" data-go="plan-${plan.id}">Group plan: ${esc(plan.n)}</button>` : ''}</div>
+        ${owner ? `<div class="filters" style="margin-top:12px"><label class="sr" for="gplan">Group plan</label><select id="gplan"><option value="">— choose a reading plan for the group —</option>${ALLPLANS.map(j => `<option value="${j.id}"${j.id === g.plan_id ? ' selected' : ''}>${esc(j.n)}</option>`).join('')}</select></div>` : ''}
+        <h2 class="libh">Members (${mem.length})</h2><div class="rlist">${mem.sort((a, b) => (b.stats?.chapters || 0) - (a.stats?.chapters || 0)).map(m => { const st = m.stats || {}; const pd = plan ? (st.plans?.[plan.id] || 0) : null;
+          return `<div class="ritem"><div><b>${esc(m.name || 'Member')}${m.role === 'leader' ? ' · leader' : ''}</b><span>🔥 ${st.streak || 0}-day streak · ${st.chapters || 0} chapters read · daily challenge ${st.daily || 0}${pd != null ? ` · plan ${pd}/${plan.stops.length}` : ''}</span></div></div>`; }).join('')}</div>
+        <h2 class="libh">Prayer requests</h2><div class="filters"><input id="gpr" placeholder="Share a prayer request with the group" style="flex:1"><button class="btn sm" id="gpra">Post</button></div>
+        <ul class="plist">${prs.map(p => `<li><p>${esc(p.text)}</p><span class="small muted">${esc(p.name || '')} · ${new Date(p.created_at).toLocaleDateString()}</span>${p.user_id === AUTH.user.id || owner ? ` <button class="inl" data-del="${p.id}">delete</button>` : ''}</li>`).join('') || '<li class="emptyli"><p class="muted">No prayer requests yet.</p></li>'}</ul>
+        <div class="linkrow"><button class="btn ghost sm" id="gleave">Leave group</button></div></div></section>`;
+      $('#ginv').onclick = () => shareIt({ title: `Join ${g.name}`, text: `Join our group "${g.name}" on Just One More Lord. Open the app → Community → Church groups → Join, and enter the code ${g.code}`, hash: 'groups' });
+      $('#gplan')?.addEventListener('change', async e => { await sbFetch(`/rest/v1/groups?id=eq.${id}`, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ plan_id: e.target.value || null }) }); if (e.target.value && !MY.plans[e.target.value]) { MY.plans[e.target.value] = { done: [], start: Date.now() }; saveMy(); } toast('Group plan updated'); viewGroups(id); });
+      $('#gpra').onclick = async () => { const t = $('#gpr').value.trim(); if (!t) return; await sbFetch('/rest/v1/group_prayers', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ group_id: id, user_id: AUTH.user.id, name: AUTH.profile?.name || MY.name || 'Member', text: t.slice(0, 600) }) }); viewGroups(id); };
+      $('.plist').onclick = async e => { const b = e.target.closest('[data-del]'); if (b && confirm('Delete this request?')) { await sbFetch(`/rest/v1/group_prayers?id=eq.${b.dataset.del}`, { method: 'DELETE' }); viewGroups(id); } };
+      $('#gleave').onclick = async () => { if (!confirm('Leave this group?')) return; await sbFetch(`/rest/v1/group_members?group_id=eq.${id}&user_id=eq.${AUTH.user.id}`, { method: 'DELETE' }); go('groups'); };
+      if (plan && !MY.plans[plan.id]) { MY.plans[plan.id] = { done: [], start: Date.now() }; saveMy(); }
+      return; }
+    main.innerHTML = `<section class="band"><div class="wrap"><div class="sh"><div><p class="kicker">Church groups</p><h1>My groups</h1><p>Read the same plan, encourage each other and pray together.</p></div></div>
+      ${gs.length ? `<div class="rlist">${gs.map(x => `<button class="ritem" data-go="group-${x.group_id}"><div><b>${esc(x.groups?.name || 'Group')}</b><span>${x.role === 'leader' ? 'Leader' : 'Member'} · code ${esc(x.groups?.code || '')}</span></div></button>`).join('')}</div>` : '<p class="empty">You are not in a group yet.</p>'}
+      <div class="commgrid" style="margin-top:18px"><div class="panel"><h2>Join a group</h2><div class="filters"><input id="gcode" placeholder="6-letter code" maxlength="6" style="flex:1;text-transform:uppercase"><button class="btn sm" id="gjoin">Join</button></div></div>
+      <div class="panel"><h2>Start a group</h2><div class="filters"><input id="gname" placeholder="e.g. Grace Church youth" maxlength="60" style="flex:1"><button class="btn sm" id="gnew">Create</button></div></div></div></div></section>`;
+    $('#gjoin').onclick = async () => { try { const r = await sbFetch('/rest/v1/rpc/join_group', { method: 'POST', body: JSON.stringify({ p_code: $('#gcode').value.trim().toUpperCase(), p_name: AUTH.profile?.name || MY.name || 'Member' }) }); toast('Welcome to the group!'); go('group-' + r); } catch (e) { toast(/not found/i.test(e.message) ? 'No group has that code' : e.message); } };
+    $('#gnew').onclick = async () => { const n = $('#gname').value.trim(); if (!n) return; try { const r = await sbFetch('/rest/v1/rpc/create_group', { method: 'POST', body: JSON.stringify({ p_name: n, p_code: code6(), p_member_name: AUTH.profile?.name || MY.name || 'Leader' }) }); toast('Group created'); go('group-' + r); } catch (e) { toast(e.message); } };
+  } catch (e) { main.innerHTML = `<section class="band"><div class="wrap"><h1>Church groups</h1><p class="empty">Groups are not set up in the database yet (the site owner needs to run the groups part of <code>supabase/setup.sql</code>). ${esc(e.message)}</p></div></section>`; }
+}
+
+/* ---------- daily verse alerts (on-device notifications while the app is installed) ---------- */
+async function alertsPanel() {
+  const ok = 'Notification' in window; const on = localStorage.getItem('jom:alert') === '1';
+  return `<div class="panel"><h2>Daily verse alert</h2><p class="small muted">${ok ? 'Shows the verse of the day as a notification each morning when you open the installed app, and through your phone\'s calendar reminder (on the home page) at a fixed time.' : 'This device does not support notifications — use the calendar reminder on the home page instead.'}</p>${ok ? `<button class="btn sm" id="alertBtn">${on ? 'Turn off' : 'Turn on'} verse alerts</button>` : ''}</div>`;
+}
+async function showDailyAlert() {
+  if (localStorage.getItem('jom:alert') !== '1' || !('Notification' in window) || Notification.permission !== 'granted') return; if (localStorage.getItem('jom:alertDay') === today()) return;
+  const x = votd(); if (!x) return; let t = ''; try { const v = await bibleText(x.ref); t = v.verses.map(y => y.t).join(' '); } catch {}
+  const reg = await navigator.serviceWorker?.getRegistration(); const opts = { body: (t ? `“${t.slice(0, 160)}” ` : '') + `— ${x.ref}`, icon: 'icons/icon-192.png', badge: 'icons/icon-192.png', tag: 'votd', data: { url: SITE + '#place-' + x.p.id } };
+  try { reg ? await reg.showNotification('Verse of the day', opts) : new Notification('Verse of the day', opts); localStorage.setItem('jom:alertDay', today()); } catch {}
+}
+document.addEventListener('click', async e => { if (!e.target.closest('#alertBtn')) return; const on = localStorage.getItem('jom:alert') === '1';
+  if (on) { localStorage.setItem('jom:alert', '0'); toast('Verse alerts off'); } else { const p = await Notification.requestPermission(); if (p === 'granted') { localStorage.setItem('jom:alert', '1'); localStorage.removeItem('jom:alertDay'); toast('Verse alerts on'); showDailyAlert(); } else toast('Notifications were not allowed'); }
+  e.target.closest('#alertBtn').textContent = (localStorage.getItem('jom:alert') === '1' ? 'Turn off' : 'Turn on') + ' verse alerts'; });
+setTimeout(showDailyAlert, 3000);
+
+function viewStudyHub() {
+  setNav('read'); document.title = 'Study tools — Just One More Lord';
+  const T = [['read', 'Bible reader', 'Five translations, listen aloud, word study and commentary on every chapter.'], ['topics', 'Topical Bible', '5,000 topics and 100,000 verses (Nave\'s).'], ['dictionary', 'Bible dictionary', 'Easton\'s dictionary and the meaning of 2,600 names.'], ['people', 'People of the Bible', '3,000+ profiles with family, maps and every verse.'],
+    ['concordance', 'Hebrew & Greek concordance', 'Strong\'s numbers and every occurrence.'], ['prophecy', 'Prophecy and fulfilment', '44 promises and where they were fulfilled.'], ['harmony', 'Gospel harmony', 'The four Gospels side by side, event by event.'], ['places', 'Every Bible place', '1,300 places on one map.'], ['events', 'Events map', '500 events by era.'], ['museums', 'Bible finds in museums', 'Where to see the discoveries today.'], ['lesson', 'Lesson builder', 'Build, print and present a sermon or lesson.'], ['versepic', 'Verse pictures', 'Share a verse on a photo of a Bible place.']];
+  main.innerHTML = `<section class="band"><div class="wrap"><div class="sh"><div><p class="kicker">Everything for deeper study</p><h1>Study tools</h1></div></div><div class="tiles">${T.map(([h, t, d]) => `<button class="tile" data-go="${h}"><b>${t}</b><span>${d}</span></button>`).join('')}</div></div></section>`;
+}
+
 /* ---------------- router ---------------- */
 async function render() {
   const h = decodeURIComponent(location.hash.slice(1) || 'home');
@@ -2122,7 +2438,7 @@ async function render() {
     else if (h === 'atlas') await viewAtlas();
     else if (h === 'journeys') viewJourneys();
     else if (h.startsWith('journey-')) { await viewJourney(h.slice(8)); const jj = h.slice(8); $('main h1')?.insertAdjacentHTML('afterend', `<div class="linkrow"><button class="btn sm" data-go="fly-${jj}">3D fly-over</button><button class="btn ghost sm" data-go="plan-${jj}">Reading plan</button><button class="btn ghost sm" data-go="present-journey-${jj}">Present</button><button class="btn ghost sm" id="tpack">Save for offline travel</button><span class="tag">≈ ${fmtKm(journeyKm(JOURNEYS.find(x => x.id === jj) || { stops: [] }))} in a straight line</span></div>`); $('#tpack')?.addEventListener('click', e => travelPack(JOURNEYS.find(x => x.id === jj), e.currentTarget)); }
-    else if (h === 'discoveries') viewDiscoveries();
+    else if (h === 'discoveries') { await viewDiscoveries(); $('main h1')?.insertAdjacentHTML('afterend', '<div class="linkrow"><button class="btn ghost sm" data-go="museums">Where to see Bible finds today</button></div>'); }
     else if (h === 'search') { await viewSearch(); let q = state.lastQuery; if (!q) { try { q = sessionStorage.getItem('bpt:q') || ''; } catch {} } addAnswers(q); addPeopleAnswers(q); }
     else if (h === 'about') { viewAbout(); $('main .wrap')?.insertAdjacentHTML('afterbegin', `<div class="panel aboutpeople"><p class="kicker">People of the Bible</p><h2>Look up anyone in the Bible</h2><p>Family, dates and age, where they lived and died on a map, journeys, life events and every verse — for over 3,000 people.</p><form class="bigsearch" id="apf" role="search"><label class="sr" for="apq">Name</label><input id="apq" type="search" placeholder="Type a name, e.g. Moses"><button class="btn" type="submit">Look up</button></form><p class="small"><button class="inl" data-go="chronology">From Adam to today: the age of mankind in the Bible</button></p></div>`); $('#apf')?.addEventListener('submit', e => { e.preventDefault(); go('people-' + encodeURIComponent($('#apq').value.trim())); }); }
     else if (h === 'concordance') await viewConcordance();
@@ -2136,6 +2452,22 @@ async function render() {
     else if (h === 'community') viewCommunity();
     else if (h === 'prayer') viewPrayer();
     else if (h === 'memory') viewMemory();
+    else if (h === 'topics' || h.startsWith('topics-')) await viewTopics(decodeURIComponent(h.slice(7)));
+    else if (h.startsWith('topic-')) await viewTopic(h.slice(6));
+    else if (h === 'dictionary') await viewDictionary('');
+    else if (h.startsWith('dict-')) await viewDictEntry(h.slice(5));
+    else if (h === 'prophecy') viewProphecy();
+    else if (h === 'harmony' || h.startsWith('harmony-')) viewHarmony(h.slice(8));
+    else if (h === 'places') await viewAllPlaces('');
+    else if (h.startsWith('site-')) await viewSite(h.slice(5));
+    else if (h === 'events' || h.startsWith('events-')) await viewEvents(h.slice(7));
+    else if (h === 'museums') viewMuseums();
+    else if (h === 'versepic' || h.startsWith('versepic-')) await viewVersePic(h.slice(9));
+    else if (h === 'lesson') viewLesson();
+    else if (h === 'daily') viewDaily();
+    else if (h === 'groups') await viewGroups('');
+    else if (h.startsWith('group-')) await viewGroups(h.slice(6));
+    else if (h === 'study') viewStudyHub();
     else if (h === 'people' || h.startsWith('people-')) await viewPeople(decodeURIComponent(h.slice(7)));
     else if (h.startsWith('person-')) await viewPerson(h.slice(7));
     else if (h === 'chronology') await viewChronology();

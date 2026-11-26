@@ -2,8 +2,8 @@
    App files: served from cache, refreshed in the background. Bible/concordance data: cached on first use.
    Live sources (Wikipedia, Commons, Bible text, map tiles): network first, cached copy when offline. */
 const V = 'jom-v9';
-const SHELL = ['./', 'index.html', 'css/style.css', 'js/app.js', 'data/places.js', 'data/discoveries.js', 'data/journeys.js', 'data/story.js', 'js/config.js',
-  'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/favicon-32.png', 'img/hero.webp',
+const SHELL = ['./', 'index.html', 'css/style.css', 'js/app.js', 'data/places.js', 'data/discoveries.js', 'data/journeys.js', 'data/story.js', 'data/study.js', 'js/config.js',
+  'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/favicon-32.png', 'img/hero.webp', 'img/logo.png', 'img/logo-sm.png',
   'data/concordance/books.json'];
 const LIMITS = { [V + '-img']: 400, [V + '-live']: 600 };
 self.addEventListener('install', e => { e.waitUntil(caches.open(V + '-shell').then(c => c.addAll(SHELL)).then(() => self.skipWaiting())); });
@@ -18,7 +18,7 @@ self.addEventListener('fetch', e => {
   const u = new URL(req.url);
   if (u.origin === location.origin) {
     if (req.mode === 'navigate') return e.respondWith(networkFirst(V + '-shell', new Request('index.html')).then(r => r.ok ? r : caches.match('index.html')));
-    if (u.pathname.includes('/data/concordance/') || u.pathname.includes('/data/xrefs/')) return e.respondWith(cacheFirst(V + '-bible', req));
+    if (u.pathname.includes('/data/concordance/') || u.pathname.includes('/data/xrefs/') || /\/data\/(people|topics|dict|sites)\//.test(u.pathname)) return e.respondWith(cacheFirst(V + '-bible', req));
     if (/\.(js|css|html|webmanifest)$/.test(u.pathname) || u.pathname.endsWith('/')) return e.respondWith(networkFirst(V + '-shell', req));
     return e.respondWith(staleWhileRevalidate(V + '-shell', req));
   }
