@@ -28,7 +28,7 @@ Deno.serve(async (req) => {
   const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
   const body = await req.json().catch(() => ({}));
   const day = Math.floor(Date.now() / 864e5); const [ref, text] = VERSES[day % VERSES.length];
-  const payload = JSON.stringify({ title: body.title || "Verse of the day · " + ref, body: body.body || text, url: body.url || SITE + "#home", tag: "votd" });
+  const payload = JSON.stringify({ title: body.title || "Verse of the day · " + ref, body: body.body || text, url: body.url || SITE + "#read-" + ref.replace(/^(.+?)\s+(\d+):(\d+).*$/, (_, b, c, v) => b.replace(/\s+/g, "_") + "." + c + "." + v), tag: "votd" });
   const { data: subs } = await sb.from("push_subscriptions").select("endpoint,keys");
   let sent = 0, removed = 0;
   for (const s of subs || []) {

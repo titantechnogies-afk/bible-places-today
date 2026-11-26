@@ -2685,6 +2685,7 @@ async function viewNotifications() {
   $$('[data-np]').forEach(c => c.onchange = () => { MY.nprefs[c.dataset.np] = c.checked ? 1 : 0; saveMy(); });
   main.querySelector('.rlist').onclick = e => { const b = e.target.closest('[data-nid]'); if (!b) return; const x = L.find(y => y.id === b.dataset.nid); if (!x) return; x.r = 1; saveMy(); bellUpdate(); if (x.go) go(x.go); else viewNotifications(); };
 }
+navigator.serviceWorker?.addEventListener('message', e => { const g = e.data && e.data.go; if (g && location.hash !== g) location.hash = g; else if (g) render(); });
 bellBtn(); setTimeout(dailyChecks, 2500); setTimeout(pushResync, 4000); document.addEventListener('visibilitychange', () => { if (!document.hidden) dailyChecks(); });
 
 /* ---------- site-owner tool: make phone-notification keys in the browser (the private key never leaves this device) ---------- */

@@ -41,6 +41,13 @@ self.addEventListener('push', e => {
   e.waitUntil(self.registration.showNotification(d.title || 'Just One More Lord', { body: d.body || '', icon: 'icons/app-192.png', badge: 'icons/app-192.png', tag: d.tag || 'jom', data: { url: d.url || './' } }));
 });
 self.addEventListener('notificationclick', e => {
-  e.notification.close(); const url = e.notification.data && e.notification.data.url || './';
-  e.waitUntil(clients.matchAll({ type: 'window', includeUncontrolled: true }).then(ws => { for (const w of ws) if ('focus' in w) { w.navigate ? w.navigate(url) : null; return w.focus(); } return clients.openWindow(url); }));
+  e.notification.close(); const n = e.notification; let url = (n.data && n.data.url) || './';
+  const m = n.tag === 'votd' && /#home$|\/$/.test(url) && String(n.title || '').match(/·\s*(.+?)\s+(\d+):(\d+)/);
+  if (m) url = url.replace(/#.*$/, '') + '#read-' + m[1].replace(/\s+/g, '_') + '.' + m[2] + '.' + m[3];
+  const hash = url.includes('#') ? url.slice(url.indexOf('#')) : '';
+  e.waitUntil(clients.matchAll({ type: 'window', includeUncontrolled: true }).then(ws => {
+    const w = ws.find(x => 'focus' in x);
+    if (w) { w.postMessage({ go: hash }); return w.focus(); }
+    return clients.openWindow(url);
+  }));
 });
