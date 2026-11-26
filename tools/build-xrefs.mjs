@@ -14,11 +14,17 @@ if (!file) {
 const ref = s => { const m = s.match(/^(\w+)\.(\d+)\.(\d+)$/); if (!m || idx[m[1]] == null) return null; return { b: idx[m[1]], c: +m[2], v: +m[3] }; };
 const fmt = (a, z) => { const n = books[a.b][1]; if (!z) return `${n} ${a.c}:${a.v}`; if (z.b !== a.b) return `${n} ${a.c}:${a.v}`; return z.c === a.c ? `${n} ${a.c}:${a.v}-${z.v}` : `${n} ${a.c}:${a.v}-${z.c}:${z.v}`; };
 const out = books.map(() => ({})); let n = 0;
+const chStart = []; { let k = 0; for (const b of books) { chStart.push(k); k += b[2].length; } }
+const gi = r => chStart[r.b] + r.c - 1; const pairs = new Map();
 for (const line of fs.readFileSync(file, 'utf8').split('\n')) {
   const [from, to, votes] = line.split('\t'); if (!to || !/^\-?\d+$/.test(votes || '')) continue;
   const f = ref(from); const [t1, t2] = to.split('-'); const a = ref(t1), z = t2 ? ref(t2) : null; if (!f || !a || +votes < 0) continue;
   (out[f.b][`${f.c}:${f.v}`] ||= []).push([fmt(a, z), +votes]); n++;
+  const x = gi(f), y = gi(a); if (x !== y && +votes > 0) { const key = x < y ? x * 2000 + y : y * 2000 + x; pairs.set(key, (pairs.get(key) || 0) + +votes); }
 }
 fs.mkdirSync('data/xrefs', { recursive: true }); let kept = 0;
 out.forEach((m, i) => { for (const k in m) { m[k] = m[k].sort((x, y) => y[1] - x[1]).slice(0, 12).map(x => x[0]); kept += m[k].length; } fs.writeFileSync(`data/xrefs/${books[i][0]}.json`, JSON.stringify(m)); });
 console.log(`Cross-references: read ${n}, kept ${kept} in ${books.length} files`);
+// chapter-to-chapter arcs for the cross-reference rainbow: [fromChapter, toChapter, weight] (strongest 7000)
+const arcs = [...pairs].sort((p, q) => q[1] - p[1]).slice(0, 7000).map(([k, w]) => [Math.floor(k / 2000), k % 2000, w]);
+fs.writeFileSync('data/xrefs/arcs.json', JSON.stringify(arcs)); console.log(`Arcs: ${arcs.length}`);

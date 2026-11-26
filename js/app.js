@@ -1012,11 +1012,11 @@ async function viewRead(arg) {
       <label class="sr" for="rch">Chapter</label><select id="rch">${b.counts.map((_, i) => `<option value="${i + 1}"${i + 1 === ch ? ' selected' : ''}>Chapter ${i + 1}</option>`).join('')}</select>
       <label class="sr" for="rtr">Translation</label><select id="rtr">${TRANS.map(([k, n]) => `<option value="${k}"${k === curTr() ? ' selected' : ''}>${k.toUpperCase()} · ${esc(n)}</option>`).join('')}</select>
       ${readModeBar()}<button class="btn ghost sm" data-go="books-${b.i}">About ${esc(b.name)}</button>
-      <button class="btn sm" id="rgl">✝ Grace lens</button>
+      <button class="btn sm" id="rgl">✝ Grace lens</button><button class="btn ghost sm" data-go="parallel-${b.code}.${ch}">Parallel</button>
       <button class="btn ghost sm" id="rws" aria-pressed="${localStorage.getItem('jom:ws') === '1'}">Word study</button>
       <span class="grow"></span><button class="btn ghost sm" ${prev ? `data-go="read-${prev}"` : 'disabled'} aria-label="Previous chapter">←</button><button class="btn ghost sm" ${next ? `data-go="read-${next}"` : 'disabled'} aria-label="Next chapter">→</button></div>
     <div class="readlayout"><article class="reader"><p class="kicker" id="rsrc">World English Bible</p><h1>${esc(b.name)} <span class="neon-txt">${ch}</span></h1>
-      <p class="small muted">Tap any verse for its Hebrew or Greek words, related verses, to highlight it, save it or add a note.</p>${ttsBar(next)}<div id="rtext"><p class="muted"><span class="spin"></span>Loading the chapter…</p></div>
+      ${writtenLine(b.i)}<p class="small muted">Tap any verse for its Hebrew or Greek words, related verses, to highlight it, save it or add a note.</p>${ttsBar(next)}<div id="rtext"><p class="muted"><span class="spin"></span>Loading the chapter…</p></div>
       <div class="linkrow"><button class="btn ghost sm" ${prev ? `data-go="read-${prev}"` : 'disabled'}>← Previous</button><button class="btn sm" ${next ? `data-go="read-${next}"` : 'disabled'}>Next chapter →</button></div></article>
       <aside class="readside"><details class="gracepanel" open><summary><h2 style="display:inline">Grace lens</h2></summary><div id="rgrace"></div></details><details class="cmtpanel"><summary><h2 style="display:inline">Commentary</h2></summary><div class="linkrow">${commPicker()}</div><div id="rcmt"></div></details><h2>Places in this chapter</h2><div class="mapbox" id="rmap" style="height:320px"></div><div class="chips" id="rplaces"></div></aside></div></div></section>`;
   $('#rgrace').innerHTML = graceHTML(b, ch); $('#rgl').onclick = () => { const g = $('.gracepanel'); g.open = true; g.scrollIntoView({ behavior: 'smooth', block: 'start' }); }; if (localStorage.getItem('jom:gopen') === '0') $('.gracepanel').open = false; $('.gracepanel').addEventListener('toggle', e => localStorage.setItem('jom:gopen', e.target.open ? '1' : '0'));
@@ -1052,7 +1052,7 @@ function viewLibrary() {
     <div class="linkrow"><button class="btn ghost sm" id="bk">Download backup</button><label class="btn ghost sm" for="rs">Restore backup</label><input id="rs" type="file" accept="application/json" hidden></div></div>
     <div class="statrow">${[[pl.length, 'places'], [vs.length, 'verses'], [hls.length, 'highlights'], [ns.length, 'notes'], [plans.length, 'plans']].map(([n, l]) => `<div><b>${n}</b><span>${l}</span></div>`).join('')}</div>
     <h2 class="libh">My progress</h2>${progressHTML()}
-    <div class="linkrow" style="margin-top:14px"><button class="btn sm" data-go="memory">Scripture memory (${Object.keys(MY.mem || {}).length})</button><button class="btn ghost sm" data-go="prayer">Prayer journal</button><button class="btn ghost sm" data-go="plan-year">Bible in a year</button></div>
+    <div class="linkrow" style="margin-top:14px"><button class="btn sm" data-go="memory">Scripture memory (${Object.keys(MY.mem || {}).length})</button><button class="btn ghost sm" data-go="prayer">Prayer journal</button><button class="btn ghost sm" data-go="plan-year">Bible in a year</button><button class="btn ghost sm" data-go="progress">My Bible progress map</button></div>
     <h2 class="libh">Saved places</h2>${pl.length ? `<div class="grid" id="libp">${pl.map(placeCard).join('')}</div>` : '<p class="empty">Tap “Save place” on any place page.</p>'}
     <h2 class="libh">Saved verses</h2>${vs.length ? `<div class="rlist">${vs.map(([r, x]) => vbtn(r, x.t ? `<span>${esc(x.t.slice(0, 160))}${x.t.length > 160 ? '…' : ''}</span>` : '')).join('')}</div>` : '<p class="empty">Tap any verse, then “Save verse”.</p>'}
     <h2 class="libh">Highlights</h2>${hls.length ? `<div class="chips">${hls.map(([r, c]) => `<button class="chip hlchip hl-${c}" data-verse="${esc(r)}">${esc(r)}</button>`).join('')}</div>` : '<p class="empty">No highlights yet.</p>'}
@@ -2435,7 +2435,7 @@ document.addEventListener('click', async e => { if (!e.target.closest('#alertBtn
 function viewStudyHub() {
   setNav('read'); document.title = 'Study tools — Just One More Lord';
   const T = [['books', 'Books of the Bible', 'Introductions to all 66 books.'], ['tabernacle', 'Tabernacle & Temple', 'Interactive plan: how each part points to Jesus.'], ['jerusalem', 'Jerusalem through time', 'The city from David to Jesus.'], ['learn', 'Learn Hebrew & Greek', 'Alphabets, top 100 words, flashcards.'], ['read', 'Bible reader', 'Five translations, listen aloud, word study and commentary on every chapter.'], ['topics', 'Topical Bible', '5,000 topics and 100,000 verses (Nave\'s).'], ['dictionary', 'Bible dictionary', 'Easton\'s dictionary and the meaning of 2,600 names.'], ['people', 'People of the Bible', '3,000+ profiles with family, maps and every verse.'],
-    ['grace', 'Grace lens', 'Read every passage through the finished work of Jesus.'], ['concordance', 'Hebrew & Greek concordance', 'Strong\'s numbers and every occurrence.'], ['prophecy', 'Prophecy and fulfilment', '44 promises and where they were fulfilled.'], ['harmony', 'Gospel harmony', 'The four Gospels side by side, event by event.'], ['places', 'Every Bible place', '1,300 places on one map.'], ['events', 'Events map', '500 events by era.'], ['museums', 'Bible finds in museums', 'Where to see the discoveries today.'], ['lesson', 'Lesson builder', 'Build, print and present a sermon or lesson.'], ['versepic', 'Verse pictures', 'Share a verse on a photo of a Bible place.']];
+    ['grace', 'Grace lens', 'Read every passage through the finished work of Jesus.'], ['search-adv', 'Advanced search', 'Search all 31,102 verses by word, phrase, book or Strong\'s number.'], ['parallel', 'Parallel Bible', 'Two or three translations side by side.'], ['rainbow', 'Cross-reference rainbow', 'See the 7,000 strongest links between chapters.'], ['written', 'When was it written?', 'All 66 books on one timeline.'], ['concordance', 'Hebrew & Greek concordance', 'Strong\'s numbers and every occurrence.'], ['prophecy', 'Prophecy and fulfilment', '44 promises and where they were fulfilled.'], ['harmony', 'Gospel harmony', 'The four Gospels side by side, event by event.'], ['places', 'Every Bible place', '1,300 places on one map.'], ['events', 'Events map', '500 events by era.'], ['museums', 'Bible finds in museums', 'Where to see the discoveries today.'], ['lesson', 'Lesson builder', 'Build, print and present a sermon or lesson.'], ['versepic', 'Verse pictures', 'Share a verse on a photo of a Bible place.']];
   main.innerHTML = `<section class="band"><div class="wrap"><div class="sh"><div><p class="kicker">Everything for deeper study</p><h1>Study tools</h1></div></div><div class="tiles">${T.map(([h, t, d]) => `<button class="tile" data-go="${h}"><b>${t}</b><span>${d}</span></button>`).join('')}</div></div></section>`;
 }
 
@@ -2786,6 +2786,92 @@ function netBanner() { let b = document.getElementById('netb'); if (navigator.on
 addEventListener('online', netBanner); addEventListener('offline', netBanner); netBanner();
 let lastPull = 0; function syncOnOpen() { if (!sbOn() || !signedIn() || !navigator.onLine || Date.now() - lastPull < 6e5) return; lastPull = Date.now(); pullProfile(); }
 setTimeout(syncOnOpen, 3000); document.addEventListener('visibilitychange', () => { if (!document.hidden) syncOnOpen(); });
+
+/* ---------- deeper study: parallel Bible, advanced search, cross-reference rainbow, when written, progress map ---------- */
+const PTRANS = () => { try { const a = JSON.parse(localStorage.getItem('jom:par') || 'null'); if (Array.isArray(a) && a.length) return a; } catch {} return ['web', 'kjv', 'bbe']; };
+async function viewParallel(arg) {
+  setNav('read'); await loadConc(); let [code, ch] = String(arg || MY.last || 'Jhn.1').split('.'); const b = conc.byCode[code] || conc.byCode.Jhn; ch = Math.min(Math.max(+ch || 1, 1), b.counts.length);
+  const tr = PTRANS(); document.title = `${b.name} ${ch} side by side — Just One More Lord`; const books = conc.starts;
+  const prev = ch > 1 ? `${b.code}.${ch - 1}` : (b.i > 0 ? `${books[b.i - 1].code}.${books[b.i - 1].counts.length}` : null), next = ch < b.counts.length ? `${b.code}.${ch + 1}` : (b.i < 65 ? `${books[b.i + 1].code}.1` : null);
+  const sel = (i) => `<select data-pt="${i}" aria-label="Translation ${i + 1}">${i ? '<option value="">—</option>' : ''}${TRANS.map(([k, n]) => `<option value="${k}"${tr[i] === k ? ' selected' : ''}>${k.toUpperCase()} · ${esc(n)}</option>`).join('')}</select>`;
+  main.innerHTML = `<section class="band"><div class="wrap"><p class="kicker">Parallel Bible</p><h1>${esc(b.name)} <span class="neon-txt">${ch}</span> side by side</h1>
+    <div class="readbar"><select id="pbk" aria-label="Book">${books.map(x => `<option value="${x.code}"${x.code === b.code ? ' selected' : ''}>${esc(x.name)}</option>`).join('')}</select><select id="pch" aria-label="Chapter">${b.counts.map((_, i) => `<option${i + 1 === ch ? ' selected' : ''}>${i + 1}</option>`).join('')}</select>${[0, 1, 2].map(sel).join('')}
+      <span class="grow"></span><button class="btn ghost sm" ${prev ? `data-go="parallel-${prev}"` : 'disabled'} aria-label="Previous chapter">←</button><button class="btn ghost sm" ${next ? `data-go="parallel-${next}"` : 'disabled'} aria-label="Next chapter">→</button><button class="btn ghost sm" data-go="read-${b.code}.${ch}">Single</button></div>
+    <div id="ptext"><p class="muted"><span class="spin"></span>Loading translations…</p></div></div></section>`;
+  $('#pbk').onchange = e => go(`parallel-${e.target.value}.1`); $('#pch').onchange = e => go(`parallel-${b.code}.${e.target.value}`);
+  $$('[data-pt]').forEach(x => x.onchange = () => { const a = $$('[data-pt]').map(y => y.value).filter(Boolean); localStorage.setItem('jom:par', JSON.stringify([...new Set(a)])); viewParallel(`${b.code}.${ch}`); });
+  const cols = []; for (const t of tr) { try { const v = await bibleText(`${b.name} ${ch}`, t); cols.push([t, Object.fromEntries(v.verses.map(x => [x.v, x.t]))]); } catch { cols.push([t, null]); } }
+  const n = b.counts[ch - 1]; if (!$('#ptext')) return;
+  $('#ptext').innerHTML = `<div class="ptable" style="--pc:${cols.length}"><div class="prow phead">${cols.map(([t, m]) => `<div>${t.toUpperCase()}${m ? '' : ' <span class="small muted">(needs a connection)</span>'}</div>`).join('')}</div>
+    ${Array.from({ length: n }, (_, i) => i + 1).map(v => `<div class="prow" id="pv${v}">${cols.map(([t, m]) => `<div><span class="ptl">${t.toUpperCase()}</span><sup>${v}</sup>${m?.[v] ? esc(m[v]) : '<span class="small muted">not available right now</span>'}</div>`).join('')}</div>`).join('')}</div>`;
+}
+let WEBALL = null;
+async function webAll() { if (!WEBALL) WEBALL = fetch('data/web/all.json').then(r => { if (!r.ok) throw new Error('The search data is not available yet.'); return r.json(); }).catch(e => { WEBALL = null; throw e; }); return WEBALL; }
+async function viewAdvSearch(q0) {
+  setNav('study'); await loadConc(); document.title = 'Advanced Bible search — Just One More Lord'; q0 = decodeURIComponent(q0 || '');
+  main.innerHTML = `<section class="band"><div class="wrap"><p class="kicker">Search every verse</p><h1>Advanced Bible search</h1>
+    <form id="asf" class="panel asearch"><input id="asq" type="search" placeholder="Words, a phrase, or a Strong's number like G26 or H2617" value="${esc(q0)}" aria-label="Search the Bible">
+      <div class="linkrow"><select id="asm" aria-label="Match"><option value="all">All the words</option><option value="phrase">Exact phrase</option><option value="any">Any of the words</option></select>
+      <select id="ass" aria-label="Where"><option value="">Whole Bible</option><option value="ot">Old Testament</option><option value="nt">New Testament</option><option value="gos">The Gospels</option><option value="ep">Letters (Romans–Jude)</option>${conc.starts.map(x => `<option value="b${x.i}">${esc(x.name)}</option>`).join('')}</select><button class="btn sm">Search</button></div>
+      <p class="small muted">World English Bible, all 31,102 verses, works offline once downloaded. For Hebrew and Greek words, type a Strong's number (H… or G…).</p></form>
+    <div id="asr"></div></div></section>`;
+  const run = async () => { const q = $('#asq').value.trim(); if (!q) return; if (/^[HG]\d{1,5}$/i.test(q)) { go('strong-' + q.toUpperCase()); return; }
+    $('#asr').innerHTML = '<p class="muted"><span class="spin"></span>Searching 31,102 verses…</p>'; let all; try { all = await webAll(); } catch (e) { $('#asr').innerHTML = `<p class="empty">${esc(e.message)}</p>`; return; }
+    const m = $('#asm').value, sc = $('#ass').value, ql = norm(q), words = ql.split(' ').filter(Boolean);
+    const inScope = c => { const i = conc.byCode[c].i; return !sc || (sc === 'ot' ? i < 39 : sc === 'nt' ? i >= 39 : sc === 'gos' ? i >= 39 && i <= 42 : sc === 'ep' ? i >= 44 && i <= 64 : i === +sc.slice(1)); };
+    const test = t => { const n = ' ' + norm(t) + ' '; return m === 'phrase' ? n.includes(' ' + ql + ' ') : m === 'any' ? words.some(w => n.includes(' ' + w + ' ')) : words.every(w => n.includes(' ' + w + ' ')); };
+    const hits = all.filter(([c, , , t]) => inScope(c) && test(t)); const per = {}; hits.forEach(([c]) => per[c] = (per[c] || 0) + 1);
+    const re = new RegExp('(' + (m === 'phrase' ? [q] : q.split(/\s+/)).map(w => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|') + ')', 'gi');
+    $('#asr').innerHTML = `<h2>${hits.length.toLocaleString()} verse${hits.length === 1 ? '' : 's'}</h2>${hits.length ? `<div class="chips">${Object.entries(per).map(([c, k]) => `<button class="chip" data-asb="${c}">${esc(conc.byCode[c].name)} · ${k}</button>`).join('')}</div>` : '<p class="empty">No verses found. Try "Any of the words" or fewer words.</p>'}
+      <div class="rlist" id="ashits">${hits.slice(0, 400).map(([c, ch, v, t]) => `<button class="ritem" data-go="read-${c}.${ch}.${v}" data-c="${c}"><div><b>${esc(conc.byCode[c].name)} ${ch}:${v}</b><span>${esc(t).replace(re, '<mark>$1</mark>')}</span></div></button>`).join('')}</div>${hits.length > 400 ? '<p class="small muted">Showing the first 400 — tap a book above or narrow the search.</p>' : ''}`;
+    $$('[data-asb]').forEach(x => x.onclick = () => { $('#ass').value = 'b' + conc.byCode[x.dataset.asb].i; run(); });
+    history.replaceState(null, '', '#search-' + encodeURIComponent(q)); };
+  $('#asf').onsubmit = e => { e.preventDefault(); run(); }; if (q0) run();
+}
+function chStarts() { const out = []; let k = 0; for (const b of conc.starts) { out.push(k); k += b.counts.length; } return [out, k]; }
+async function viewRainbow() {
+  setNav('study'); await loadConc(); document.title = 'Cross-reference rainbow — Just One More Lord'; const [st, total] = chStarts();
+  main.innerHTML = `<section class="band"><div class="wrap"><p class="kicker">One story, connected</p><h1>The cross-reference rainbow</h1>
+    <p class="lead">Every bar along the bottom is one of the 1,189 chapters of the Bible. Every arc joins two chapters that quote or echo each other: the 7,000 strongest of 340,000 links. Tap anywhere along the bar to see a chapter's connections.</p>
+    <div class="rbwrap"><canvas id="rbc" role="img" aria-label="Arcs connecting chapters of the Bible that refer to each other"></canvas></div>
+    <div class="linkrow small muted"><span>Genesis</span><span class="grow"></span><span>Malachi | Matthew</span><span class="grow"></span><span>Revelation</span></div><div id="rbinfo"><p class="muted">Loading the connections…</p></div>
+    <p class="small muted">Cross-references: OpenBible.info (CC BY). Inspired by Chris Harrison and Christoph Römhild's visualisation.</p></div></section>`;
+  let arcs; try { const r = await fetch(xrefBase() + 'arcs.json'); if (!r.ok) throw 0; arcs = await r.json(); } catch { $('#rbinfo').innerHTML = '<p class="empty">The connection data is not available yet.</p>'; return; }
+  const cv = $('#rbc'), ctx = cv.getContext('2d'); const bookOf = g => { let i = st.length - 1; while (st[i] > g) i--; return i; }; let sel = -1;
+  const draw = () => { const W = cv.clientWidth, H = Math.round(W * 0.5), dpr = devicePixelRatio || 1; cv.width = W * dpr; cv.height = H * dpr; cv.style.height = H + 'px'; ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, W, H);
+    const base = H - 14, x = g => (g + 0.5) / total * W, mx = Math.max(...arcs.map(a => a[2]));
+    ctx.lineWidth = 0.6;
+    for (const [a, z, w] of arcs) { const on = sel >= 0 && (a === sel || z === sel); if (sel >= 0 && !on) continue; const d = Math.abs(z - a) / total; ctx.strokeStyle = `hsla(${Math.round(280 - d * 280)},95%,${on ? 70 : 58}%,${on ? 0.9 : Math.min(0.55, 0.08 + w / mx)})`; const xa = x(a), xz = x(z), r = Math.abs(xz - xa) / 2; ctx.beginPath(); ctx.arc((xa + xz) / 2, base, r, Math.PI, 0); ctx.stroke(); }
+    if (sel >= 0) { ctx.globalAlpha = .12; for (const [a, z, w] of arcs) { if (a === sel || z === sel) continue; } ctx.globalAlpha = 1; }
+    conc.starts.forEach((b, i) => { ctx.fillStyle = i < 39 ? (i % 2 ? '#0e7f9a' : '#16b6d8') : (i % 2 ? '#c99a1e' : '#ffc72c'); for (let c = 0; c < b.counts.length; c++) { const g = st[i] + c; const h = 4 + Math.min(10, b.counts[c] / 8); ctx.fillRect(x(g) - W / total / 2, base + 2, Math.max(1, W / total - 0.2), h); } });
+    if (sel >= 0) { ctx.fillStyle = '#fff'; ctx.fillRect(x(sel) - 1.5, base - 6, 3, 22); } };
+  const name = g => { const i = bookOf(g); return `${conc.starts[i].name} ${g - st[i] + 1}`; }, code = g => { const i = bookOf(g); return `${conc.starts[i].code}.${g - st[i] + 1}`; };
+  const pick = g => { sel = g; draw(); const links = arcs.filter(a => a[0] === g || a[1] === g).map(a => [a[0] === g ? a[1] : a[0], a[2]]).sort((p, q) => q[1] - p[1]);
+    $('#rbinfo').innerHTML = `<h2>${esc(name(g))}</h2><p class="small muted">${links.length ? `Strongest connections (${links.length}):` : 'No strong connections in the top 7,000 — try a nearby chapter.'}</p><div class="chips">${links.slice(0, 24).map(([o]) => `<button class="chip" data-go="read-${code(o)}">${esc(name(o))}</button>`).join('')}</div><div class="linkrow"><button class="btn sm" data-go="read-${code(g)}">Read ${esc(name(g))}</button></div>`; };
+  cv.onclick = e => { const r = cv.getBoundingClientRect(); pick(Math.max(0, Math.min(total - 1, Math.floor((e.clientX - r.left) / r.width * total)))); };
+  draw(); addEventListener('resize', draw, { once: true }); $('#rbinfo').innerHTML = '<p class="muted">Tap the coloured bar or an arc\'s end to explore. Blue = Old Testament, gold = New Testament.</p>';
+}
+function xrefBase() { return 'data/xrefs/'; }
+function writtenYear(dt) { const seg = String(dt).split('(')[0]; const m = seg.match(/(\d{1,4})/); if (!m) return null; const n = +m[1]; return /BC/.test(seg) ? -n : n; }
+function writtenLine(i) { const x = BINTRO[i]; if (!x) return ''; return `<p class="small muted wline">✍ Written ${esc(x[2].split('(')[0].trim())} · ${esc(x[1])} · to ${esc(x[3])} <button class="inl" data-go="written">When was each book written?</button></p>`; }
+function viewWritten() {
+  setNav('study'); document.title = 'When was each book written? — Just One More Lord';
+  const rows = BINTRO.map((x, i) => ({ i, n: x[0], au: x[1], dt: x[2], to: x[3], y: writtenYear(x[2]) })).filter(r => r.y != null).sort((a, b) => a.y - b.y);
+  const lo = Math.min(...rows.map(r => r.y)), hi = Math.max(...rows.map(r => r.y)); const pct = y => ((y - lo) / (hi - lo) * 100).toFixed(2);
+  main.innerHTML = `<section class="band"><div class="wrap"><p class="kicker">The story behind the books</p><h1>When was each book written?</h1>
+    <p class="lead">All 66 books in the order they were probably written, from Moses to John on Patmos, about 1,500 years by some 40 authors, one message: Jesus. Dates are approximate and follow common evangelical reference works; scholars debate many of them.</p>
+    <div class="wtl">${rows.map(r => `<button class="wrow" data-go="books-${r.i}"><span class="wn">${esc(r.n)}</span><span class="wbar"><i style="left:${pct(r.y)}%" class="${r.i < 39 ? 'ot' : 'nt'}"></i></span><span class="wd">${esc(r.dt.split('(')[0].trim())}</span></button>`).join('')}</div>
+    <div class="linkrow small muted"><span>${Math.abs(lo)} BC</span><span class="grow"></span><span>AD ${hi}</span></div></div></section>`;
+}
+function viewProgress() {
+  setNav('library'); document.title = 'My Bible progress — Just One More Lord'; const read = MY.readCh || {};
+  const isRead = (b, c) => !!(read[`${b.name} ${c}`] || (b.name === 'Psalms' && read[`Psalm ${c}`])); let done = 0, total = 0;
+  const html = conc.starts.map(b => { let k = 0; const cells = b.counts.map((_, c) => { const r = isRead(b, c + 1); total++; if (r) { done++; k++; } return `<button class="pc${r ? ' on' : ''}" data-go="read-${b.code}.${c + 1}" aria-label="${esc(b.name)} ${c + 1}${r ? ', read' : ''}"></button>`; }).join('');
+    return `<div class="pbook${k === b.counts.length ? ' full' : ''}"><div class="pbh"><b>${esc(b.name)}</b><span>${k}/${b.counts.length}</span></div><div class="pcells">${cells}</div></div>`; }).join('');
+  main.innerHTML = `<section class="band"><div class="wrap"><p class="kicker">Every chapter you have read</p><h1>My Bible progress</h1>
+    <div class="statrow"><div><b>${done}</b><span>of ${total} chapters</span></div><div><b>${(done / total * 100).toFixed(1)}%</b><span>of the Bible</span></div><div><b>${conc.starts.filter(b => b.counts.every((_, c) => isRead(b, c + 1))).length}</b><span>books finished</span></div></div>
+    <p class="small muted">Each square is a chapter; it lights up when you open it in the Bible reader. Tap any square to read it.</p><div class="pgrid">${html}</div></div></section>`;
+}
 /* ---------------- router ---------------- */
 async function render() {
   const h = decodeURIComponent(location.hash.slice(1) || 'home');
@@ -2842,6 +2928,11 @@ async function render() {
     else if (h === 'chronology') await viewChronology();
     else if (h === 'profile') viewProfile();
     else if (h === 'settings') viewSettings();
+    else if (h.startsWith('parallel')) await viewParallel(h.slice(9));
+    else if (h === 'search-adv' || h.startsWith('search-')) await viewAdvSearch(h === 'search-adv' ? '' : h.slice(7));
+    else if (h === 'rainbow') await viewRainbow();
+    else if (h === 'written') viewWritten();
+    else if (h === 'progress') { await loadConc(); viewProgress(); }
     else if (h === 'devotionals') viewDevotionals();
     else if (h === 'feasts') viewFeasts();
     else if (h === 'teachings' || h.startsWith('teachings-')) viewTeachings(h.slice(10));
