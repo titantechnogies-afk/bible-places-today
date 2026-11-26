@@ -833,3 +833,12 @@ html.embed body{background:#020a10}html.embed main{min-height:0}
 :root[data-read=paper] .readside .muted,:root[data-read=sepia] .readside .muted{color:var(--rmut)}
 :root[data-read=paper] .readside h2,:root[data-read=sepia] .readside h2{color:var(--rfg)}
 @media(max-width:480px){.brand .bw{display:none}.tools .tbtn{width:42px;height:42px}}
+/* Grace lens */
+.gracepanel{margin:0 0 18px;padding:12px 14px;border-radius:12px;background:linear-gradient(160deg,rgba(255,199,44,.1),rgba(0,229,255,.06));border:1px solid rgba(255,199,44,.45);box-shadow:0 0 18px rgba(255,199,44,.12)}
+.gracepanel summary{cursor:pointer}.gracepanel h3{margin:14px 0 4px;font-size:1rem}
+.gtag{display:inline-block;margin:10px 0 4px;padding:3px 10px;border-radius:999px;font-size:.78rem;font-weight:700;color:#05141c;background:var(--gold,#ffc72c)}
+.gnote{margin:12px 0;padding:10px 12px;border-left:3px solid var(--gold,#ffc72c);background:rgba(5,20,28,.45);border-radius:0 10px 10px 0}
+.gnote h3{margin:2px 0 4px}.gnote p{margin:4px 0}.gnote .kicker{margin:0}
+.gq{padding-left:20px}.gq li{margin:3px 0}
+.gfind{width:100%;margin:14px 0;padding:12px 14px;border-radius:12px;border:1px solid rgba(255,199,44,.4);background:rgba(5,20,28,.6);color:inherit;font:inherit}
+html[data-read=light] .gnote,html[data-read=sepia] .gnote{background:rgba(255,199,44,.08)}
