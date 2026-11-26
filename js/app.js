@@ -163,11 +163,16 @@ function findRefs(txt) {
 }
 async function bibleText(ref, tr = 'web') {
   const key = tr + ':' + ref; const c = store.get(key); if (c) return c;
+  if (tr === 'web') { try { const v = await webLocal(ref); if (v) return v; } catch {} }
   if (!(await isLive())) throw new Error('offline');
   const j = await getJSON('https://bible-api.com/' + encodeURIComponent(ref.replace(/–/g, '-').toLowerCase()) + '?translation=' + tr, { cache: false, timeout: 15000 });
   const v = { ref: j.reference || ref, verses: (j.verses || []).map(x => ({ c: x.chapter, v: x.verse, t: String(x.text || '').trim() })), text: j.text };
   store.set(key, v, 90); return v;
 }
+const WEBC = {};
+async function webChapter(code, ch) { const k = code + '.' + ch; if (!WEBC[k]) WEBC[k] = fetch(`data/web/${k}.json`).then(r => { if (!r.ok) throw new Error('no local text'); return r.json(); }).catch(e => { delete WEBC[k]; throw e; }); return WEBC[k]; }
+async function webLocal(ref) { await loadConc(); const p = parseRef(ref); if (!p) return null; const rows = await webChapter(p.book.code, p.ch);
+  const vs = rows.filter(([v]) => v >= p.v1 && v <= p.v2).map(([v, t]) => ({ c: p.ch, v, t })); if (!vs.length) return null; return { ref, verses: vs, text: vs.map(x => x.t).join(' '), local: 1 }; }
 function verseHTML(v) { return v.verses.length ? v.verses.map(x => `<sup>${x.v}</sup>${esc(x.t)} `).join('') : esc(v.text); }
 
 /* ---------------- search ---------------- */
@@ -1053,15 +1058,15 @@ function viewLibrary() {
     <h2 class="libh">Highlights</h2>${hls.length ? `<div class="chips">${hls.map(([r, c]) => `<button class="chip hlchip hl-${c}" data-verse="${esc(r)}">${esc(r)}</button>`).join('')}</div>` : '<p class="empty">No highlights yet.</p>'}
     <h2 class="libh">Notes</h2>${ns.length ? `<div class="rlist">${ns.map(([r, x]) => vbtn(r, `<span>${esc(x.t.slice(0, 220))}</span>`)).join('')}</div>` : '<p class="empty">No notes yet.</p>'}
     <h2 class="libh">Reading plans</h2>${plans.length ? `<div class="rlist">${plans.map(([j, d]) => `<button class="ritem" data-go="plan-${j.id}"><div><b>${esc(j.n)}</b><span>${(d.done || []).length} of ${j.stops.length} days done</span></div><span class="tag">${Math.round(100 * (d.done || []).length / j.stops.length)}%</span></button>`).join('')}</div>` : '<p class="empty">Start a plan from the <button class="inl" data-go="plans">Plans</button> page.</p>'}
-    <h2 class="libh">Offline Bible</h2><p class="muted">Save the full Hebrew and Greek Bible with its word-by-word English (about 35 MB) so the reader and concordance work without signal.</p>
+    <h2 class="libh">Offline Bible</h2><p class="muted">Save the whole English Bible (World English Bible) plus the Hebrew and Greek with word-by-word English (about 45 MB), so the reader, search and concordance work without signal.</p>
     <div class="linkrow"><button class="btn sm" id="offl">Save the Bible for offline use</button><span class="small muted" id="offp"></span></div></div></section>`;
   fillCardImages($('#libp') || main);
   $('#bk').onclick = () => { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(MY, null, 1)], { type: 'application/json' })); a.download = `just-one-more-lord-backup-${new Date().toISOString().slice(0, 10)}.json`; a.click(); };
   $('#rs').onchange = async e => { try { const d = JSON.parse(await e.target.files[0].text()); for (const k of ['places', 'verses', 'notes', 'hl', 'plans', 'quiz']) Object.assign(MY[k], d[k] || {}); if (Array.isArray(d.prayers)) MY.prayers = [...MY.prayers, ...d.prayers.filter(p => !MY.prayers.some(x => x.id === p.id))]; saveMy(); toast('Backup restored'); viewLibrary(); } catch { toast('That file is not a valid backup'); } };
   $('#offl').onclick = async () => { const reg = await navigator.serviceWorker?.ready; if (!reg?.active) { toast('Offline saving needs the installed site — open it online first'); return; }
-    await loadConc(); const files = ['lex-h.json', 'lex-g.json']; conc.starts.forEach(b => b.counts.forEach((_, i) => files.push(`text/${b.code}.${i + 1}.json`)));
+    await loadConc(); const files = ['lex-h.json', 'lex-g.json']; conc.starts.forEach(b => b.counts.forEach((_, i) => files.push(`text/${b.code}.${i + 1}.json`))); const webs = []; conc.starts.forEach(b => b.counts.forEach((_, i) => webs.push(new URL(`data/web/${b.code}.${i + 1}.json`, location.href).href)));
     const base = new URL(CONC, location.href).href; navigator.serviceWorker.onmessage = m => { if (m.data?.type === 'cache-progress') { $('#offp') && ($('#offp').textContent = m.data.done >= m.data.total ? 'Saved — the Bible now works offline.' : `Saving… ${Math.round(100 * m.data.done / m.data.total)}%`); } };
-    reg.active.postMessage({ type: 'cache-bible', files: files.map(f => base + f) }); $('#offp').textContent = 'Starting…'; };
+    reg.active.postMessage({ type: 'cache-bible', files: [...webs, ...files.map(f => base + f)] }); $('#offp').textContent = 'Starting…'; };
 }
 function placeTools(p) {
   const on = !!MY.places[p.id];
@@ -2671,7 +2676,9 @@ async function pushOn() {
 async function pushSave(sub) { const j = sub.toJSON();
   try { await sbFetch('/rest/v1/push_subscriptions', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ endpoint: j.endpoint, keys: j.keys, user_id: signedIn() ? AUTH.user.id : null }) }, signedIn()); }
   catch (e) { if (e.status !== 409 && !/duplicate/i.test(e.message)) { localStorage.removeItem('jom:pushsaved'); await sub.unsubscribe().catch(() => {}); throw new Error('Could not register this phone: ' + e.message); } }
-  localStorage.setItem('jom:pushsaved', j.endpoint); }
+  localStorage.setItem('jom:pushsaved', j.endpoint); pushHour(j.endpoint).catch(() => {}); }
+const pushLocalHour = () => +(localStorage.getItem('jom:pushhour') ?? 7);
+async function pushHour(endpoint) { if (!endpoint) { const s = await (await navigator.serviceWorker.getRegistration())?.pushManager.getSubscription(); endpoint = s?.endpoint; } if (!endpoint) return; const utc = ((Math.round(pushLocalHour() + new Date().getTimezoneOffset() / 60)) % 24 + 24) % 24; await sbFetch('/rest/v1/rpc/set_push_hour', { method: 'POST', body: JSON.stringify({ p_endpoint: endpoint, p_hour: utc }) }, false); }
 async function pushResync() { try { if ((await pushState()) !== 'on') return; const s = await (await navigator.serviceWorker.getRegistration()).pushManager.getSubscription(); if (s && localStorage.getItem('jom:pushsaved') !== s.endpoint) await pushSave(s); } catch {} }
 async function pushOff() { const reg = await navigator.serviceWorker.getRegistration(); const s = await reg?.pushManager.getSubscription(); if (s) await s.unsubscribe(); localStorage.setItem('jom:alert', '0'); toast('Phone notifications are off'); }
 async function viewNotifications() {
@@ -2679,12 +2686,13 @@ async function viewNotifications() {
   const ps = await pushState(); const L = MY.inbox; const ago = d => { const m = Math.round((Date.now() - d) / 6e4); return m < 60 ? `${m} min ago` : m < 1440 ? `${Math.round(m / 60)} h ago` : new Date(d).toLocaleDateString(); };
   main.innerHTML = `<section class="band"><div class="wrap"><div class="sh"><div><p class="kicker">Stay connected</p><h1>Notifications</h1></div><div class="linkrow">${L.some(x => !x.r) ? '<button class="btn ghost sm" id="nall">Mark all as read</button>' : ''}${L.length ? '<button class="btn ghost sm" id="nclr">Clear</button>' : ''}</div></div>
     <div class="panel"><h2>Phone notifications</h2>${ps === 'unsupported' ? `<p class="small muted">${ios && !standalone ? 'On iPhone, first add the app to your home screen (Safari → Share → Add to Home Screen), then open it from there and come back to this page.' : !PUSHKEY || !sbOn() ? 'Phone notifications are being set up by the site owner.' : 'This browser cannot receive push notifications.'}</p>`
-      : `<p class="small muted">Get the verse of the day on your phone each morning, even when the app is closed.</p><button class="btn sm" id="npush">${ps === 'on' ? 'Turn off phone notifications' : 'Turn on phone notifications'}</button>`}
+      : `<p class="small muted">Get the verse of the day on your phone each morning, even when the app is closed.</p><button class="btn sm" id="npush">${ps === 'on' ? 'Turn off phone notifications' : 'Turn on phone notifications'}</button>${ps === 'on' ? `<label class="tog" style="margin-top:12px">Send my verse at <select id="nhour">${Array.from({ length: 24 }, (_, h) => `<option value="${h}"${h === pushLocalHour() ? ' selected' : ''}>${String(h).padStart(2, '0')}:00</option>`).join('')}</select></label>` : ''}`}
       <h3 style="margin-top:16px">In the app, tell me about</h3>${[['verse', 'Verse of the day'], ['reminders', 'Reading plan, streak, memory verses and daily challenge reminders'], ['badges', 'Badges I earn'], ['groups', 'Prayer requests in my church groups']].map(([k, l]) => `<label class="tog"><input type="checkbox" data-np="${k}" ${MY.nprefs[k] !== 0 ? 'checked' : ''}> ${l}</label>`).join('')}</div>
     <div class="rlist" style="margin-top:18px">${L.map(x => `<button class="ritem nitem${x.r ? '' : ' unread'}" data-nid="${x.id}"><div><b>${esc(x.t)}</b><span>${esc(x.b)}</span></div><span class="tag">${ago(x.d)}</span></button>`).join('') || '<p class="empty">No notifications yet.</p>'}</div></div></section>`;
   $('#nall')?.addEventListener('click', () => { L.forEach(x => x.r = 1); saveMy(); bellUpdate(); viewNotifications(); });
   $('#nclr')?.addEventListener('click', () => { MY.inbox = []; saveMy(); bellUpdate(); viewNotifications(); });
   $('#npush')?.addEventListener('click', async e => { e.target.disabled = true; try { ps === 'on' ? await pushOff() : await pushOn(); } catch (er) { toast(er.message || 'Could not change notifications'); } viewNotifications(); });
+  $('#nhour')?.addEventListener('change', async e => { localStorage.setItem('jom:pushhour', e.target.value); try { await pushHour(); toast(`Your verse will arrive at ${String(e.target.value).padStart(2, '0')}:00`); } catch { toast('Saved on this phone — it will update when you are online'); } });
   $$('[data-np]').forEach(c => c.onchange = () => { MY.nprefs[c.dataset.np] = c.checked ? 1 : 0; saveMy(); });
   main.querySelector('.rlist').onclick = e => { const b = e.target.closest('[data-nid]'); if (!b) return; const x = L.find(y => y.id === b.dataset.nid); if (!x) return; x.r = 1; saveMy(); bellUpdate(); if (x.go) go(x.go); else viewNotifications(); };
 }
@@ -2748,6 +2756,36 @@ function viewGrace() {
     <p class="small muted" style="margin-top:16px">A devotional lens from the finished-work, new covenant grace teaching of teachers such as Andrew Wommack and Richard Olivier. Test everything with Scripture (Acts 17:11).</p></div></section>`;
   $('#gfind').oninput = e => { const q = e.target.value.trim().toLowerCase(); $$('#glist [data-s]').forEach(x => x.hidden = q && !x.dataset.s.includes(q)); };
 }
+
+/* ---------- display & accessibility settings (shares PREF with the Aa panel) ---------- */
+function applyA11y() { const r = document.documentElement; r.dataset.font = PREF.font || ''; r.dataset.spacing = PREF.sp ? '1' : '';
+  if (PREF.font && !document.getElementById('a11yfont')) { const l = document.createElement('link'); l.id = 'a11yfont'; l.rel = 'stylesheet'; l.href = 'https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Lexend:wght@400;600&display=swap'; document.head.appendChild(l); } }
+applyA11y();
+function viewSettings() {
+  setNav(''); document.title = 'Display & accessibility — Just One More Lord'; const pct = () => Math.round((PREF.size || 1) * 100);
+  main.innerHTML = `<section class="band"><div class="wrap quizwrap"><p class="kicker">Make it yours</p><h1>Display &amp; accessibility</h1>
+    <div class="panel"><h2>Text size</h2><div class="linkrow"><button class="btn ghost sm" data-sz="-0.1" aria-label="Smaller text">A−</button><b id="szv" aria-live="polite">${pct()}%</b><button class="btn ghost sm" data-sz="0.1" aria-label="Bigger text">A+</button><button class="btn ghost sm" data-sz="0">Reset</button></div>
+      <h2 style="margin-top:18px">Font</h2><div class="linkrow" role="radiogroup" aria-label="Font">${[['', 'Standard'], ['easy', 'Easy-read (Atkinson Hyperlegible)'], ['lexend', 'Dyslexia-friendly (Lexend)']].map(([k, l]) => `<button class="btn ghost sm" role="radio" data-fnt="${k}" aria-checked="${(PREF.font || '') === k}">${l}</button>`).join('')}</div>
+      <h2 style="margin-top:18px">Reading comfort</h2>
+      ${[['hc', 'High contrast (no glow, stronger text)'], ['rm', 'Reduce motion and animations'], ['sp', 'Extra line and letter spacing']].map(([k, l]) => `<label class="tog"><input type="checkbox" data-a11y="${k}" ${PREF[k] ? 'checked' : ''}> ${l}</label>`).join('')}
+      <h2 style="margin-top:18px">Bible reading colours</h2>${readModeBar()}</div>
+    <p class="small muted" style="margin-top:14px">Saved on this device. Screen readers (VoiceOver and TalkBack) work throughout the app, and the Bible reader can read chapters aloud.</p></div></section>`;
+  const save = () => { savePrefs(); applyA11y(); };
+  $$('[data-sz]').forEach(b => b.onclick = () => { const d = +b.dataset.sz; PREF.size = d ? Math.min(1.6, Math.max(0.8, Math.round(((PREF.size || 1) + d) * 10) / 10)) : 1; save(); $('#szv').textContent = pct() + '%'; });
+  $$('[data-fnt]').forEach(b => b.onclick = () => { PREF.font = b.dataset.fnt; save(); $$('[data-fnt]').forEach(x => x.setAttribute('aria-checked', x === b)); });
+  $$('[data-a11y]').forEach(c => c.onchange = () => { PREF[c.dataset.a11y] = c.checked; save(); });
+}
+/* ---------- crash reports (anonymous: message, page and browser only) ---------- */
+let errSent = 0;
+function reportError(msg, src) { if (!sbOn() || errSent >= 5 || !navigator.onLine) return; const m = String(msg || '').slice(0, 500); if (!m || /ResizeObserver|Script error|extension:\/\//i.test(m + src)) return; errSent++;
+  fetch(SB.url.replace(/\/$/, '') + '/rest/v1/app_errors', { method: 'POST', headers: { apikey: SB.anonKey, 'Content-Type': 'application/json', Prefer: 'return=minimal' }, body: JSON.stringify({ message: m, source: String(src || '').slice(0, 300), page: location.hash.slice(0, 100), agent: navigator.userAgent.slice(0, 200), version: document.querySelector('script[src*="app.js"]')?.src.split('v=')[1] || '' }) }).catch(() => {}); }
+addEventListener('error', e => reportError(e.message, `${e.filename || ''}:${e.lineno || ''}:${e.colno || ''} ${e.error?.stack?.slice(0, 200) || ''}`));
+addEventListener('unhandledrejection', e => { const r = e.reason; if (r?.name === 'AbortError' || /offline|Failed to fetch|NetworkError|Load failed|rate limit|429/i.test(String(r?.message || r))) return; reportError(r?.message || String(r), r?.stack?.slice(0, 300)); });
+/* ---------- offline banner + sync when the app opens ---------- */
+function netBanner() { let b = document.getElementById('netb'); if (navigator.onLine) { b?.remove(); return; } if (b) return; b = document.createElement('div'); b.id = 'netb'; b.setAttribute('role', 'status'); b.textContent = 'You are offline — saved chapters, places and your library still work.'; document.body.appendChild(b); }
+addEventListener('online', netBanner); addEventListener('offline', netBanner); netBanner();
+let lastPull = 0; function syncOnOpen() { if (!sbOn() || !signedIn() || !navigator.onLine || Date.now() - lastPull < 6e5) return; lastPull = Date.now(); pullProfile(); }
+setTimeout(syncOnOpen, 3000); document.addEventListener('visibilitychange', () => { if (!document.hidden) syncOnOpen(); });
 /* ---------------- router ---------------- */
 async function render() {
   const h = decodeURIComponent(location.hash.slice(1) || 'home');
@@ -2803,6 +2841,7 @@ async function render() {
     else if (h.startsWith('person-')) await viewPerson(h.slice(7));
     else if (h === 'chronology') await viewChronology();
     else if (h === 'profile') viewProfile();
+    else if (h === 'settings') viewSettings();
     else if (h === 'devotionals') viewDevotionals();
     else if (h === 'feasts') viewFeasts();
     else if (h === 'teachings' || h.startsWith('teachings-')) viewTeachings(h.slice(10));

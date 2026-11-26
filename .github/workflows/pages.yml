@@ -29,6 +29,8 @@ jobs:
         run: node tools/build-images.mjs || echo "Photos skipped"
       - name: Build share pictures
         run: pip install --quiet pillow && python3 tools/build-og.py || echo "Share pictures skipped"
+      - name: Build the offline World English Bible (public domain)
+        run: (git clone --depth 1 https://github.com/TehShrike/world-english-bible /tmp/webb && node tools/build-web.mjs /tmp/webb) || echo "Offline WEB skipped"
       - name: Build cross-references (OpenBible.info, CC BY)
         run: node tools/build-xrefs.mjs || echo "Cross-references skipped"
       - name: Stamp file versions so phones always get matching files
@@ -39,6 +41,12 @@ jobs:
           npx -y esbuild@0.24.0 css/style.css --minify --outfile=/tmp/style.min.css && cp /tmp/style.min.css css/style.css || echo "Styles left unshrunk"
       - name: Build share pages and sitemap
         run: node tools/build-pages.mjs
+      - name: Test the app before publishing (stops a broken version going live)
+        run: |
+          pip install --quiet playwright
+          python3 -m http.server 8765 >/dev/null 2>&1 &
+          sleep 2
+          python3 tests/smoke.py
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v4
         with:

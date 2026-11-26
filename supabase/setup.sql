@@ -110,3 +110,30 @@ alter table public.push_subscriptions enable row level security;
 grant insert on public.push_subscriptions to anon, authenticated;
 drop policy if exists "anyone can subscribe" on public.push_subscriptions;
 create policy "anyone can subscribe" on public.push_subscriptions for insert to anon, authenticated with check (user_id is null or user_id = (select auth.uid()));
+
+-- ===== Notification time: each phone chooses its hour (stored in UTC) =====
+alter table public.push_subscriptions add column if not exists send_utc smallint check (send_utc between 0 and 23);
+create or replace function public.set_push_hour(p_endpoint text, p_hour int)
+returns void language sql security definer set search_path = public as $$
+  update public.push_subscriptions set send_utc = p_hour where endpoint = p_endpoint and p_hour between 0 and 23;
+$$;
+revoke all on function public.set_push_hour(text, int) from public;
+grant execute on function public.set_push_hour(text, int) to anon, authenticated;
+-- run the daily-verse job every hour instead of once a day (it only sends to phones whose hour it is)
+select cron.alter_job((select jobid from cron.job where jobname = 'daily-verse'), schedule := '0 * * * *')
+  where exists (select 1 from cron.job where jobname = 'daily-verse');
+
+-- ===== Crash reports (anonymous): anyone can add one, only you can read them in the Table Editor =====
+create table if not exists public.app_errors (
+  id bigint generated always as identity primary key,
+  message text not null check (length(message) <= 500),
+  source text check (length(source) <= 300),
+  page text check (length(page) <= 100),
+  agent text check (length(agent) <= 200),
+  version text check (length(version) <= 40),
+  created_at timestamptz not null default now()
+);
+alter table public.app_errors enable row level security;
+grant insert on public.app_errors to anon, authenticated;
+drop policy if exists "anyone can report" on public.app_errors;
+create policy "anyone can report" on public.app_errors for insert to anon, authenticated with check (true);

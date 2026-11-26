@@ -1,6 +1,7 @@
 // Just One More Lord — sends the daily phone notification to everyone who switched notifications on.
 // Deploy: Supabase → Edge Functions → Deploy a new function → name "daily-verse" → paste this file → turn OFF "Verify JWT".
 // Secrets (Edge Functions → Secrets): VAPID_PUBLIC, VAPID_PRIVATE, CRON_SECRET, CONTACT_EMAIL.
+// Schedule: hourly (see supabase/setup.sql).
 import webpush from "npm:web-push@3.6.7";
 import { createClient } from "npm:@supabase/supabase-js@2";
 
@@ -29,7 +30,12 @@ Deno.serve(async (req) => {
   const body = await req.json().catch(() => ({}));
   const day = Math.floor(Date.now() / 864e5); const [ref, text] = VERSES[day % VERSES.length];
   const payload = JSON.stringify({ title: body.title || "Verse of the day · " + ref, body: body.body || text, url: body.url || SITE + "#read-" + ref.replace(/^(.+?)\s+(\d+):(\d+).*$/, (_, b, c, v) => b.replace(/\s+/g, "_") + "." + c + "." + v), tag: "votd" });
-  const { data: subs } = await sb.from("push_subscriptions").select("endpoint,keys");
+  // Runs every hour; each phone gets the verse at the hour its owner chose (send_utc, in UTC; empty = 05:00 UTC = 07:00 in South Africa).
+  // Send {"all": true} in the body to send to everyone right now (for testing).
+  const hour = new Date().getUTCHours();
+  let q = sb.from("push_subscriptions").select("endpoint,keys");
+  if (!body.all) q = hour === 5 ? q.or("send_utc.eq.5,send_utc.is.null") : q.eq("send_utc", hour);
+  const { data: subs } = await q;
   let sent = 0, removed = 0;
   for (const s of subs || []) {
     try { await webpush.sendNotification({ endpoint: s.endpoint, keys: s.keys }, payload); sent++; }
