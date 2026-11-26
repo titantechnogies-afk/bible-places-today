@@ -10,7 +10,7 @@ const page = (path, hash, title, desc, img = 'icons/og.jpg') => `<!DOCTYPE html>
 <title>${esc(title)}</title><meta name="description" content="${esc(desc)}"><link rel="canonical" href="${SITE}${path}">
 <meta property="og:type" content="article"><meta property="og:site_name" content="Just One More Lord"><meta property="og:title" content="${esc(title)}"><meta property="og:description" content="${esc(desc)}">
 <meta property="og:image" content="${SITE}${img}"><meta property="og:url" content="${SITE}${path}"><meta name="twitter:card" content="summary_large_image">
-<meta name="theme-color" content="#020a10"><link rel="icon" href="../icons/favicon-32.png"><meta http-equiv="refresh" content="0; url=../#${hash}">
+<meta name="theme-color" content="#020a10"><link rel="icon" href="../icons/app-favicon-32.png"><meta http-equiv="refresh" content="0; url=../#${hash}">
 <style>body{background:#020a10;color:#eefbff;font:18px system-ui;padding:40px}a{color:#00d1ff}</style></head>
 <body><h1>${esc(title)}</h1><p>${esc(desc)}</p><p><a href="../#${hash}">Open in Just One More Lord →</a></p><script>location.replace('../#${hash}')</script></body></html>`;
 fs.mkdirSync('p', { recursive: true });

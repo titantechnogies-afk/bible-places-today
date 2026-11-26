@@ -9,7 +9,7 @@ P = load_js('data/places.js', 'BPT_PLACES'); IM = load_js('data/images.js', 'JOM
 FB = next((f for f in ['/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf', '/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf'] if os.path.exists(f)), None)
 FR = next((f for f in ['/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf', '/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf'] if os.path.exists(f)), None)
 font = lambda f, n: ImageFont.truetype(f, n) if f else ImageFont.load_default()
-os.makedirs('og', exist_ok=True); icon = Image.open('icons/icon-192.png').convert('RGBA').resize((84, 84))
+os.makedirs('og', exist_ok=True); icon = Image.open('icons/app-192.png').convert('RGBA').resize((84, 84))
 W, H = 1200, 630; n = 0
 for p in P:
     bg = Image.new('RGB', (W, H), (2, 10, 16))

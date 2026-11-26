@@ -1184,7 +1184,7 @@ function savePrefs() { try { localStorage.setItem('jom:pref', JSON.stringify(PRE
   ib.onclick = async () => { if (deferred) { deferred.prompt(); await deferred.userChoice; deferred = null; ib.hidden = true; } };
   const ios = /iphone|ipad|ipod/i.test(navigator.userAgent) && !navigator.standalone;
   function showInstallBanner() { if (document.documentElement.classList.contains('embed') || window.top !== window || localStorage.getItem('jom:noinstall') || matchMedia('(display-mode: standalone)').matches || $('#instb')) return;
-    document.body.insertAdjacentHTML('beforeend', `<div class="instb" id="instb" role="dialog" aria-label="Install the app"><img src="icons/icon-192.png" alt=""><div><b>Install Just One More Lord</b><span>${ios ? 'Tap the Share button, then “Add to Home Screen”.' : 'Add it to your home screen — it works offline too.'}</span></div>${ios ? '' : '<button class="btn sm" id="instgo">Install</button>'}<button class="dx" id="instx" aria-label="Not now">×</button></div>`);
+    document.body.insertAdjacentHTML('beforeend', `<div class="instb" id="instb" role="dialog" aria-label="Install the app"><img src="icons/app-192.png" alt=""><div><b>Install Just One More Lord</b><span>${ios ? 'Tap the Share button, then “Add to Home Screen”.' : 'Add it to your home screen — it works offline too.'}</span></div>${ios ? '' : '<button class="btn sm" id="instgo">Install</button>'}<button class="dx" id="instx" aria-label="Not now">×</button></div>`);
     $('#instgo')?.addEventListener('click', () => { ib.click(); $('#instb')?.remove(); }); $('#instx').onclick = () => { localStorage.setItem('jom:noinstall', 1); $('#instb').remove(); }; }
   if (ios) setTimeout(showInstallBanner, 20000);
   if ('serviceWorker' in navigator && location.protocol === 'https:') addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
@@ -2412,7 +2412,7 @@ async function alertsPanel() {
 async function showDailyAlert() {
   if (localStorage.getItem('jom:alert') !== '1' || !('Notification' in window) || Notification.permission !== 'granted') return; if (localStorage.getItem('jom:alertDay') === today()) return;
   const x = votd(); if (!x) return; let t = ''; try { const v = await bibleText(x.ref); t = v.verses.map(y => y.t).join(' '); } catch {}
-  const reg = await navigator.serviceWorker?.getRegistration(); const opts = { body: (t ? `“${t.slice(0, 160)}” ` : '') + `— ${x.ref}`, icon: 'icons/icon-192.png', badge: 'icons/icon-192.png', tag: 'votd', data: { url: SITE + '#place-' + x.p.id } };
+  const reg = await navigator.serviceWorker?.getRegistration(); const opts = { body: (t ? `“${t.slice(0, 160)}” ` : '') + `— ${x.ref}`, icon: 'icons/app-192.png', badge: 'icons/app-192.png', tag: 'votd', data: { url: SITE + '#place-' + x.p.id } };
   try { reg ? await reg.showNotification('Verse of the day', opts) : new Notification('Verse of the day', opts); localStorage.setItem('jom:alertDay', today()); } catch {}
 }
 document.addEventListener('click', async e => { if (!e.target.closest('#alertBtn')) return; const on = localStorage.getItem('jom:alert') === '1';
