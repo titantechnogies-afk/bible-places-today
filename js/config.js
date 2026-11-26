@@ -16,7 +16,7 @@ window.JOM_CONFIG = {
   whatsappChannel: '',
   donateUrl: '',
   contactEmail: '',
-  // Favourite teaching videos shown on the Teachings page. teacher: 'wommack' or 'mohler'. Paste any YouTube link.
+  // Favourite teaching videos shown on the Teachings page. teacher: 'wommack', 'olivier' or 'mohler'. Paste any YouTube link.
   teachings: [
     // { teacher: 'wommack', title: 'Title of the teaching', youtube: 'https://www.youtube.com/watch?v=XXXXXXXXXXX', topic: 'Grace', verse: 'Ephesians 2:8' },
   ]
