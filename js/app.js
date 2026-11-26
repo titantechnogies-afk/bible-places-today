@@ -2682,6 +2682,20 @@ async function viewNotifications() {
 }
 bellBtn(); setTimeout(dailyChecks, 2500); document.addEventListener('visibilitychange', () => { if (!document.hidden) dailyChecks(); });
 
+/* ---------- site-owner tool: make phone-notification keys in the browser (the private key never leaves this device) ---------- */
+async function viewPushKeys() {
+  setNav(''); document.title = 'Notification keys';
+  main.innerHTML = `<section class="band"><div class="wrap quizwrap"><p class="kicker">For the site owner</p><h1>Make notification keys</h1><p class="lead">This makes a pair of keys on this phone. Paste the private key into Supabase only; send the public key to your developer.</p><button class="btn" id="pkgo">Make keys</button><div id="pkout"></div></div></section>`;
+  $('#pkgo').onclick = async () => {
+    const kp = await crypto.subtle.generateKey({ name: 'ECDH', namedCurve: 'P-256' }, true, ['deriveBits']);
+    const b64 = buf => btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    const pub = b64(await crypto.subtle.exportKey('raw', kp.publicKey)); const priv = (await crypto.subtle.exportKey('jwk', kp.privateKey)).d;
+    const cron = b64(crypto.getRandomValues(new Uint8Array(18)));
+    $('#pkout').innerHTML = [['VAPID_PUBLIC (Supabase secret, and send this one to your developer)', pub], ['VAPID_PRIVATE (Supabase secret only — never share)', priv], ['CRON_SECRET (Supabase secret, and in the schedule script)', cron]].map(([l, v]) => `<label class="notebox"><span class="kicker">${l}</span><textarea rows="2" readonly>${v}</textarea></label><button class="btn ghost sm" data-copy="${v}">Copy</button>`).join('');
+    $$('[data-copy]').forEach(b => b.onclick = async () => { try { await navigator.clipboard.writeText(b.dataset.copy); toast('Copied'); } catch { toast('Press and hold the box to copy'); } });
+  };
+}
+
 /* ---------------- router ---------------- */
 async function render() {
   const h = decodeURIComponent(location.hash.slice(1) || 'home');
@@ -2715,6 +2729,7 @@ async function render() {
     else if (h === 'family-devotion') viewFamily2();
     else if (h === 'battle' || h.startsWith('battle-')) viewBattle(h.slice(7));
     else if (h === 'notifications') await viewNotifications();
+    else if (h === 'pushkeys') await viewPushKeys();
     else if (h === 'topics' || h.startsWith('topics-')) await viewTopics(decodeURIComponent(h.slice(7)));
     else if (h.startsWith('topic-')) await viewTopic(h.slice(6));
     else if (h === 'dictionary') await viewDictionary('');

@@ -13,7 +13,7 @@ window.JOM_CONFIG = {
   // VISITOR COUNTS: free Cloudflare Web Analytics token (no cookies). Leave '' to switch off.
   cloudflareToken: '',
   // PHONE NOTIFICATIONS: public push key (safe to publish). The matching private key lives only in Supabase secrets.
-  pushPublicKey: 'BGr2fAsi87vHVepG_jBYts_D9DDDkKr_R5iY310YZN3dVbuRCniRn9-2X8Aq_5kJNhlK-lM6XfNzCVz__CDd28Y',
+  pushPublicKey: '',
   // Optional links shown in the footer: a WhatsApp channel and a donation page (e.g. PayFast, GitHub Sponsors).
   whatsappChannel: '',
   donateUrl: '',
