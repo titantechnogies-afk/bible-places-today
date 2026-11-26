@@ -740,3 +740,32 @@ html.embed body{background:#020a10}html.embed main{min-height:0}
 .ftree .fnode.main>.fcard{position:relative}
 .ftree ul>.fnode.main>.fcard::before{content:"↓";position:absolute;top:-14px;left:16px;color:#ffc72c;font-size:12px}
 .ftree{overflow-x:auto}
+/* people */
+.phero.person{min-height:auto;padding:clamp(28px,6vw,60px) 0 20px;background:radial-gradient(ellipse at 80% 20%,rgba(255,199,44,.18),transparent 55%),radial-gradient(ellipse at 10% 90%,rgba(0,209,255,.16),transparent 55%),#020a10}
+.phero.person::after{display:none}
+.pfacts{grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr))}
+.pfacts>div{display:grid;gap:4px;padding:14px 16px}.pfacts span{font:700 11px "Sora",sans-serif;letter-spacing:.12em;text-transform:uppercase;color:var(--gold2)}.pfacts b{font-size:17px;font-weight:600}
+.famgrid{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr))}
+.chip.static{cursor:default;opacity:.8}
+.ptl{list-style:none;padding:0;margin:0;display:grid;gap:8px;max-width:860px}.ptl li{display:grid;grid-template-columns:100px minmax(0,1fr);gap:12px;padding:10px 14px;border-radius:12px;background:var(--glass);border:1px solid rgba(31,224,208,.18)}
+.ptl .yr{font:700 13px "Sora",sans-serif;color:var(--gold2)}
+.easton{margin-top:14px;padding:12px 16px;border-radius:12px;background:rgba(5,20,28,.55);border:1px solid rgba(31,224,208,.2)}.easton summary{cursor:pointer;font-weight:700;color:var(--gold2)}
+.bkbars{display:grid;gap:6px;max-width:720px}.bkbars div{display:grid;grid-template-columns:130px 1fr 44px;gap:10px;align-items:center}.bkbars i{display:block;height:10px;border-radius:6px;background:var(--neon);box-shadow:0 0 10px rgba(0,209,255,.5)}.bkbars b{font:700 13px "Sora",sans-serif;text-align:right}
+.aboutpeople{margin-bottom:24px;border-color:rgba(255,199,44,.4)}.aboutpeople .bigsearch{margin-top:10px;max-width:560px}
+.lifechart{position:relative;padding:4px 0 34px;overflow-x:auto}
+.life{position:relative;display:block;width:100%;min-width:640px;height:30px;margin:3px 0;background:none;border:0;padding:0;text-align:left;color:#fff}
+.life i{position:absolute;left:var(--l);width:var(--w);top:9px;height:12px;border-radius:6px;background:linear-gradient(90deg,#00d1ff,#ffc72c);box-shadow:0 0 10px rgba(0,209,255,.5)}
+.life .lname{position:absolute;right:calc(100% - var(--l) + 8px);top:5px;font:700 13px "Sora",sans-serif;white-space:nowrap}
+.life .lyrs{position:absolute;left:calc(var(--l) + var(--w) + 8px);top:6px;font-size:12px;color:var(--mute);white-space:nowrap}
+.life:hover i{box-shadow:0 0 16px #ffc72c}
+.laxis{position:relative;min-width:640px;height:24px;border-top:1px solid rgba(31,224,208,.3);margin-top:8px}.laxis span{position:absolute;top:4px;transform:translateX(-50%);font:700 11px "Sora",sans-serif;color:var(--mute)}
+.lifechart{padding-left:110px}
+.dyk{display:grid;gap:8px;padding-left:20px;max-width:860px}
+.lifechart{padding:4px 0 10px;overflow:visible}
+.life{display:grid;grid-template-columns:118px minmax(0,1fr);align-items:center;gap:8px;width:100%;min-width:0;height:auto;margin:2px 0;padding:3px 0;border-radius:8px}
+.life:hover{background:rgba(0,209,255,.06)}
+.life .lname{position:static;display:grid;font:700 13px "Sora",sans-serif;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.life .lname small{font:500 10.5px "Source Sans 3",sans-serif;color:var(--mute)}
+.ltrack{position:relative;height:12px;border-radius:6px;background:rgba(255,255,255,.04)}
+.life i{top:0;height:12px}
+.laxis{min-width:0;margin-left:126px}

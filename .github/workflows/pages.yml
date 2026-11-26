@@ -21,6 +21,8 @@ jobs:
           node-version: 22
       - name: Build the full Bible-places index (optional)
         run: node tools/build-gazetteer.mjs || echo "Skipped; the site loads the index on demand."
+      - name: Build People of the Bible (Theographic, CC BY-SA)
+        run: (git clone --depth 1 https://github.com/robertrouse/theographic-bible-metadata /tmp/theo && node tools/build-people.mjs /tmp/theo) || echo "People skipped"
       - name: Download place photographs (Wikimedia Commons)
         run: node tools/build-images.mjs || echo "Photos skipped"
       - name: Build share pictures

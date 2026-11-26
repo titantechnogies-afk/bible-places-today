@@ -1194,7 +1194,7 @@ function viewTimeline() {
   setNav('timeline'); document.title = 'Bible timeline — Just One More Lord';
   let pxy = +(localStorage.getItem('jom:tlz') || 0.5); const Y0 = -2100, Y1 = 110;
   main.innerHTML = `<section class="band"><div class="wrap"><div class="sh"><div><p class="kicker">From Abraham to Revelation</p><h1>Bible timeline</h1><p>Empires, kings, prophets and events side by side. Zoom in, scroll sideways and tap anything to read about it. Dates are approximate; items marked ≈ are debated.</p></div>
-    <div class="linkrow"><button class="btn ghost sm" data-go="feasts">Feasts</button><button class="btn ghost sm" data-go="kingdoms">Kingdom maps</button><button class="btn ghost sm" id="tlout" aria-label="Zoom out">−</button><button class="btn ghost sm" id="tlin" aria-label="Zoom in">+</button><button class="btn sm" data-go="family">Family tree</button></div></div>
+    <div class="linkrow"><button class="btn ghost sm" data-go="chronology">From Adam to today</button><button class="btn ghost sm" data-go="feasts">Feasts</button><button class="btn ghost sm" data-go="kingdoms">Kingdom maps</button><button class="btn ghost sm" id="tlout" aria-label="Zoom out">−</button><button class="btn ghost sm" id="tlin" aria-label="Zoom in">+</button><button class="btn sm" data-go="family">Family tree</button></div></div>
     <div class="chips" id="tljump">${[['Patriarchs', -2000], ['Exodus', -1460], ['Judges', -1380], ['Kings', -1060], ['Exile', -620], ['Return', -545], ['Jesus', -10], ['Apostles', 30]].map(([l, y]) => `<button class="chip" data-y="${y}">${l}</button>`).join('')}</div>
     </div><div class="tlwrap" id="tlw" tabindex="0" aria-label="Timeline, scroll sideways"><div class="tlin" id="tli"></div></div>
     <div class="wrap"><h2 class="libh">The story in order</h2><ol class="tllist">${TL.filter(r => r[3] === 'ev' || r[3] === 'ld').slice().sort((a, b) => a[0] - b[0]).map(r => `<li><span class="yr">${r[7] ? '≈ ' : ''}${yrLbl(r[0])}</span><button class="inl" data-tl="${TL.indexOf(r)}">${esc(r[2])}</button>${r[4] ? ` <button class="vref sm" data-verse="${esc(r[4])}">${esc(r[4])}</button>` : ''}</li>`).join('')}</ol></div></section>`;
@@ -1342,7 +1342,7 @@ async function viewFly(id) {
 function homeMore() {
   const host = $('#feat')?.closest('.band'); if (!host || $('.moretiles')) return;
   const T = [['read', 'Read the Bible', 'Every chapter, with its places on a map and the Hebrew & Greek behind each verse.'], ['timeline', 'Bible timeline', 'Empires, kings, prophets and events from Abraham to Revelation.'], ['family', 'Family tree', 'The line from Adam to Jesus, with the twelve tribes and more.'],
-    ['fly-' + (JOURNEYS.find(j => j.id === 'apostles') || JOURNEYS[0])?.id, '3D fly-overs', 'Fly over the real terrain of the journeys of Abraham, Moses, Jesus and Paul.'], ['kingdoms', 'Kingdom maps', 'See the borders change from David to the Romans.'], ['distance', 'How far was it?', 'Distances and walking days between Bible places.'], ['kids', 'Kids\' corner', 'Stories, a fun quiz and pictures to colour.'], ['plans', 'Reading plans', 'John in 21 days, Acts with Paul, Psalms of hope and journey plans.'], ['quiz', 'Quiz', 'Test yourself and challenge a friend.'], ['near', 'Near me', 'Find Bible places close to where you are.'], ['library', 'My library', 'Your saved places, verses, highlights and notes.'], ['memory', 'Scripture memory', 'Learn verses by heart with a few minutes\' practice a day.'], ['devotionals', 'Devotionals', 'Short reflections and prayers from the Bible lands.'], ['feasts', 'Feasts & holy days', 'Passover, Pentecost, Tabernacles and Easter — dates for the year ahead.'], ['teachings', 'Teachings', 'Watch Andrew Wommack and Dan Mohler from their official channels.'], ['prayer', 'Prayer', 'A private prayer journal and a shared prayer wall.'], ['community', 'Friends & community', 'Invite friends, read plans together and join the conversation.'], ['embed', 'For churches', 'Put any Bible place or journey on your church or school website.'], ['devnotes', 'Developer notes', 'What\'s new, what\'s next, and a place for your feedback.']];
+    ['fly-' + (JOURNEYS.find(j => j.id === 'apostles') || JOURNEYS[0])?.id, '3D fly-overs', 'Fly over the real terrain of the journeys of Abraham, Moses, Jesus and Paul.'], ['kingdoms', 'Kingdom maps', 'See the borders change from David to the Romans.'], ['distance', 'How far was it?', 'Distances and walking days between Bible places.'], ['kids', 'Kids\' corner', 'Stories, a fun quiz and pictures to colour.'], ['plans', 'Reading plans', 'John in 21 days, Acts with Paul, Psalms of hope and journey plans.'], ['quiz', 'Quiz', 'Test yourself and challenge a friend.'], ['near', 'Near me', 'Find Bible places close to where you are.'], ['library', 'My library', 'Your saved places, verses, highlights and notes.'], ['people', 'People of the Bible', 'Look up anyone in the Bible: family, age, map, journeys and every verse.'], ['chronology', 'From Adam to today', 'Lifespans from Adam to Jesus and the age of mankind in the Bible.'], ['memory', 'Scripture memory', 'Learn verses by heart with a few minutes\' practice a day.'], ['devotionals', 'Devotionals', 'Short reflections and prayers from the Bible lands.'], ['feasts', 'Feasts & holy days', 'Passover, Pentecost, Tabernacles and Easter — dates for the year ahead.'], ['teachings', 'Teachings', 'Watch Andrew Wommack and Dan Mohler from their official channels.'], ['prayer', 'Prayer', 'A private prayer journal and a shared prayer wall.'], ['community', 'Friends & community', 'Invite friends, read plans together and join the conversation.'], ['embed', 'For churches', 'Put any Bible place or journey on your church or school website.'], ['devnotes', 'Developer notes', 'What\'s new, what\'s next, and a place for your feedback.']];
   host.insertAdjacentHTML('afterend', `<section class="band moretiles"><div class="wrap"><div class="sh"><div><h2>More ways to explore</h2><p>Tools for personal study, families, churches and travellers — free, and they work on your phone.</p></div></div>
     <div class="tiles">${T.map(([h, t, d]) => `<button class="tile" data-go="${h}"><b>${t}</b><span>${d}</span></button>`).join('')}</div></div></section>`);
 }
@@ -1401,6 +1401,7 @@ function acceptInvite(arg) { // #friend-<name>[-<planId>]
 
 /* developer notes: what's new, what's next, and a feedback thread */
 const DEVNOTES = [
+  ['2026-11-26', 'People of the Bible', ['Look up any of 3,000+ people: family, dates and age, birthplace and place of death, a map of where they lived, journeys, life events, biography and every verse', 'Hebrew and Greek spelling of names', '“From Adam to today”: lifespans from Adam to Jesus and the age of mankind by traditional Bible chronology']],
   ['2026-11-25', 'Profiles, memory verses and a year in the Bible', ['Free profiles with sign-up and sync across devices', 'The whole Bible in a year plan', 'Scripture memory with daily practice', 'Devotionals from 13 Bible places', 'Feasts and holy days for the year ahead', 'A photograph for every place, and a share picture for every place', 'Faster loading', 'Privacy policy and app-store preparation']],
   ['2026-11-25', 'Kingdom maps, distances, kids\' corner and languages', ['Kingdom maps for six eras, from David and Solomon to the time of Jesus', '“How far was it?” — distances and walking days, and totals for every journey', 'Kids\' corner: stories read aloud, a fun quiz and pictures to colour', '360° views of places where a panorama is available', 'Save a journey for offline travel', 'Menus in Afrikaans, isiZulu and isiXhosa (help us improve them!)']],
   ['2026-11-25', 'Prayer, translations and smarter search', ['Prayer journal (mark prayers as answered) and a shared prayer wall', 'Choose WEB, KJV, ASV, Basic English or Young\'s Literal in the reader, and compare them verse by verse', 'Word study: tap any word for its Hebrew or Greek meaning', 'Ask questions in the search box, e.g. “Where was Paul shipwrecked?”']],
@@ -2013,6 +2014,103 @@ function viewProfile() {
   profileBtn(); if (sbOn() && signedIn()) setTimeout(pullProfile, 1500);
 })();
 
+/* ======================================================================================
+   PEOPLE OF THE BIBLE: a searchable profile for all 3,000+ named people.
+   Data: Theographic Bible Metadata (CC BY-SA 4.0) and Easton's Bible Dictionary (1897, public domain), built in CI.
+   ====================================================================================== */
+let PIDX = null; const PSH = {};
+async function peopleIndex() { if (PIDX) return PIDX; try { const r = await fetch('data/people/index.json'); if (!r.ok) throw 0; PIDX = await r.json(); } catch { PIDX = []; } return PIDX; }
+async function personData(slug) { const row = (await peopleIndex()).find(r => r[0] === slug); if (!row) return null; const L = row[6];
+  if (!PSH[L]) PSH[L] = fetch(`data/people/${L}.json`).then(r => r.ok ? r.json() : {}).catch(() => ({})); return (await PSH[L])[slug] || null; }
+const pyr = y => y == null ? '' : y < 0 ? `${-y} BC` : `AD ${y}`;
+const normName = s => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z ]/g, '');
+function personMatches(q, idx, n = 30) { q = normName(q).trim(); if (!q) return [];
+  const sc = r => { const nm = normName(r[1]), al = normName(r[2]); if (nm === q) return 100; if (nm.startsWith(q)) return 60; if (al.split(/\s*,?\s+/).includes(q)) return 50; if (nm.includes(q)) return 30; if (al.includes(q)) return 20; return 0; };
+  return idx.map(r => [r, sc(r)]).filter(x => x[1]).sort((a, b) => b[1] - a[1] || b[0][5] - a[0][5]).slice(0, n).map(x => x[0]); }
+const prow = r => `<button class="ritem" data-go="person-${esc(r[0])}"><div><b>${esc(r[7] || r[1])}</b><span>${r[2] ? 'Also: ' + esc(r[2].split(',').slice(0, 4).join(', ')) + ' · ' : ''}${esc(r[4])}${r[4].length >= 110 ? '…' : ''}</span></div><span class="tag">${r[5]} verse${r[5] === 1 ? '' : 's'}</span></button>`;
+async function viewPeople(q) {
+  setNav(''); document.title = 'People of the Bible — Just One More Lord';
+  main.innerHTML = `<section class="band"><div class="wrap"><div class="sh"><div><p class="kicker">Who's who in the Bible</p><h1>People of the Bible</h1><p>Look up anyone named in the Bible — over 3,000 people. Each profile brings together their family, dates and age, where they were born, lived and died on a map, their journeys, life events, every verse that mentions them and a biography.</p></div></div>
+    <form class="bigsearch" id="pform" role="search" style="max-width:640px"><label class="sr" for="pq">Search for a person</label><input id="pq" type="search" placeholder="Try Abraham, Ruth, David, Mary, Paul…" value="${esc(q || '')}" autocomplete="off"><button class="btn" type="submit">Search</button></form>
+    <div id="pres" style="margin-top:18px"><p class="muted"><span class="spin"></span>Loading people…</p></div></div></section>`;
+  const idx = await peopleIndex();
+  if (!idx.length) { $('#pres').innerHTML = '<p class="empty">The people data is not available yet. It is added automatically the next time the site is published.</p>'; return; }
+  const show = v => { const m = personMatches(v, idx); $('#pres').innerHTML = v.trim() ? (m.length ? `<p class="small muted">${m.length >= 30 ? 'Top 30 matches' : m.length + ' match' + (m.length === 1 ? '' : 'es')}</p><div class="rlist">${m.map(prow).join('')}</div>` : '<p class="empty">No one by that name. Try another spelling.</p>')
+    : `<h2 class="libh" style="margin-top:6px">Most mentioned</h2><div class="rlist">${idx.filter(r => r[0] !== 'god_1324').slice(0, 24).map(prow).join('')}</div>
+      <h2 class="libh">Browse A–Z</h2><div class="chips">${[...new Set(idx.map(r => r[1][0].toUpperCase()))].sort().map(L => `<button class="chip" data-az="${L}">${L}</button>`).join('')}</div><div id="paz" style="margin-top:12px"></div>`;
+    $$('[data-az]').forEach(b => b.onclick = () => { $$('[data-az]').forEach(x => x.setAttribute('aria-pressed', x === b)); $('#paz').innerHTML = `<div class="rlist">${idx.filter(r => r[1][0].toUpperCase() === b.dataset.az).sort((a, c) => a[1].localeCompare(c[1])).map(prow).join('')}</div>`; }); };
+  let tm; $('#pq').oninput = e => { clearTimeout(tm); tm = setTimeout(() => show(e.target.value), 150); };
+  $('#pform').onsubmit = e => { e.preventDefault(); show($('#pq').value); }; show(q || '');
+}
+const placeByName = n => { const k = normName(n); return PLACES.find(p => [p.n, p.bn, p.mn, ...(p.alt || [])].some(x => normName(x) === k)); };
+async function viewPerson(slug) {
+  setNav(''); main.innerHTML = `<section class="band"><div class="wrap"><p class="muted"><span class="spin"></span>Loading profile…</p></div></section>`;
+  const d = await personData(slug); if (!d) { main.innerHTML = `<section class="band"><div class="wrap"><h1>Person not found</h1><p><button class="inl" data-go="people">Search the people of the Bible</button></p></div></section>`; return; }
+  const name = d.t || d.n; document.title = `${name} — People of the Bible — Just One More Lord`; track('visited', 'person:' + slug);
+  const link = x => `<button class="chip" data-go="person-${esc(x[0])}">${esc(x[1])}</button>`;
+  const fam = [['Father', d.f], ['Mother', d.m], [d.g === 'Female' ? 'Husband' : d.g === 'Male' ? 'Wife / wives' : 'Spouse', d.sp], ['Brothers and sisters', d.sib], ['Children', d.ch]].filter(x => x[1].length);
+  const vrefs = d.v.map(osisToRef); const first = vrefs[0], last = vrefs[vrefs.length - 1];
+  const nm = [d.n, ...d.a].map(normName); const js = JOURNEYS.filter(j => nm.some(x => x.length > 2 && new RegExp('\\b' + x + 's?\\b').test(normName(j.n))));
+  const facts = [d.b != null && ['Born', `${pyr(d.b)}${d.bp ? ' · ' + d.bp.n : ''}`], d.b == null && d.bp && ['Birthplace', d.bp.n], d.x != null && ['Died', `${pyr(d.x)}${d.dp ? ' · ' + d.dp.n : ''}`], d.x == null && d.dp && ['Place of death', d.dp.n],
+    d.age != null && d.age > 0 && ['Age at death', `${d.age} years`], d.g && ['Gender', d.g], d.a.length && ['Also called', d.a.slice(0, 8).join(', ')], d.gr.length && ['Groups', d.gr.join(', ')],
+    d.w.length && ['Wrote', d.w.join(', ')], ['Mentioned', `${d.vc} verse${d.vc === 1 ? '' : 's'}${first ? ` · first in ${first}` : ''}${last && last !== first ? `, last in ${last}` : ''}`], (d.y0 != null) && ['Appears in history', d.y0 === d.y1 ? pyr(d.y0) : `${pyr(d.y0)} – ${pyr(d.y1)}`]].filter(Boolean);
+  main.innerHTML = `<section class="phero person"><div class="wrap in"><div class="crumbs"><button data-go="people">People of the Bible</button> › ${esc(d.n)}</div><p class="kicker">${esc(d.gr[0] || (d.g === 'Female' ? 'Woman of the Bible' : d.g === 'Male' ? 'Man of the Bible' : 'Named in the Bible'))}</p>
+      <h1>${esc(name)}</h1><p class="sub">${d.a.length ? 'Also called ' + esc(d.a.slice(0, 5).join(', ')) : ''}</p>
+      <div class="ptools"><button class="pill" id="pshare">${ICON.share}<span>Share</span></button><button class="pill" id="porig">Hebrew / Greek name</button></div><div id="porigbox"></div></div></section>
+    <section class="sec"><div class="wrap"><div class="facts pfacts">${facts.map(([k, v]) => `<div><span>${esc(k)}</span><b>${esc(v)}</b></div>`).join('')}</div>
+      ${d.b != null || d.x != null ? '<p class="small muted">Dates follow a traditional Bible chronology and are approximate; scholars differ, especially for the earliest periods.</p>' : ''}</div></section>
+    ${fam.length ? `<section class="sec"><div class="wrap"><h2>Family</h2><div class="famgrid">${fam.map(([k, list]) => `<div class="panel"><p class="kicker">${k}</p><div class="chips">${list.map(link).join('')}</div></div>`).join('')}</div></div></section>` : ''}
+    ${d.pl.length || d.bp || d.dp ? `<section class="sec"><div class="wrap"><h2>Where ${esc(d.n)} lived and travelled</h2><p class="muted">Places named in the same verses as ${esc(d.n)}${d.bp ? ', with the birthplace' : ''}${d.dp ? ' and place of death' : ''} highlighted.</p><div class="mapbox tall" id="pmap"></div>
+      <div class="maplegend">${d.bp ? '<span><span class="dot" style="background:#fff;color:#ff3ec8"></span> Born</span>' : ''}${d.dp ? '<span><span class="dot" style="background:#ff7a3d;color:#ff7a3d"></span> Died</span>' : ''}<span><span class="dot" style="background:#00d1ff;color:#00d1ff"></span> Places in the story</span></div>
+      <div class="chips" style="margin-top:12px">${d.pl.slice(0, 18).map(x => { const pp = placeByName(x.n); return pp ? `<button class="chip" data-go="place-${pp.id}">${esc(x.n)} · ${x.c}</button>` : `<span class="chip static">${esc(x.n)} · ${x.c}</span>`; }).join('')}</div></div></section>` : ''}
+    ${js.length ? `<section class="sec"><div class="wrap"><h2>Journeys</h2><div class="rlist">${js.map(j => `<div class="ritem"><div><b>${esc(j.n)}</b><span>${esc(j.ref)} · ${j.stops.length} stages · ≈ ${fmtKm(journeyKm(j))}</span></div><span class="linkrow"><button class="btn sm" data-go="journey-${j.id}">Map</button><button class="btn ghost sm" data-go="fly-${j.id}">3D</button></span></div>`).join('')}</div></div></section>` : ''}
+    ${d.tl.length ? `<section class="sec"><div class="wrap"><h2>Life events</h2><ol class="ptl">${d.tl.map(e => `<li><span class="yr">${e.y != null ? pyr(e.y) : ''}</span><div><b>${esc(e.t)}</b>${e.r ? ` <button class="vref sm" data-verse="${esc(e.r)}">${esc(e.r)}</button>` : ''}</div></li>`).join('')}</ol></div></section>` : ''}
+    ${d.bio || d.ea ? `<section class="sec"><div class="wrap prose"><h2>Biography</h2>${d.bio ? d.bio.split(/\n+/).map(p => `<p>${esc(p)}</p>`).join('') : ''}
+      ${d.ea ? `<details class="easton"${d.bio ? '' : ' open'}><summary>Easton's Bible Dictionary (1897)</summary>${d.ea.split(/\n+/).map(p => `<p>${esc(p)}</p>`).join('')}</details>` : ''}</div></section>` : ''}
+    ${d.bk.length ? `<section class="sec"><div class="wrap"><h2>Where ${esc(d.n)} appears in the Bible</h2><div class="bkbars">${d.bk.map(([b, c]) => `<div><span>${esc(b)}</span><i style="width:${Math.max(4, 100 * c / d.bk[0][1])}%"></i><b>${c}</b></div>`).join('')}</div></div></section>` : ''}
+    <section class="sec"><div class="wrap"><h2>Every verse that mentions ${esc(d.n)} <span class="small muted">(${vrefs.length})</span></h2><div class="chips" id="pverses">${vrefs.slice(0, 40).map(r => `<button class="chip xr" data-verse="${esc(r)}">${esc(r)}</button>`).join('')}</div>
+      ${vrefs.length > 40 ? `<button class="btn ghost sm" id="pmore" style="margin-top:10px">Show all ${vrefs.length}</button>` : ''}</div></section>
+    <section class="sec"><div class="wrap"><p class="small muted">Profile data: <a href="https://theographic.netlify.app/" target="_blank" rel="noopener">Theographic Bible Metadata</a> by Robert Rouse (CC BY-SA 4.0) and Easton's Bible Dictionary (1897, public domain). Places are shown where the dataset has coordinates.</p></div></section>`;
+  $('#pmore')?.addEventListener('click', e => { $('#pverses').innerHTML = vrefs.map(r => `<button class="chip xr" data-verse="${esc(r)}">${esc(r)}</button>`).join(''); e.target.remove(); });
+  $('#pshare').onclick = () => shareIt({ title: `${name} — People of the Bible`, text: `${name}: ${(d.bio || d.ea).slice(0, 180)}…`, hash: 'person-' + slug });
+  $('#porig').onclick = async () => { const box = $('#porigbox'); box.innerHTML = '<p class="small muted"><span class="spin"></span>Looking in the Hebrew and Greek lexicons…</p>';
+    try { await loadConc(); const keys = conc.keys.filter(k => { const L = conc.lex[k]; return L && nm.includes(normName(L[3])); }).slice(0, 6);
+      box.innerHTML = keys.length ? `<div class="chips" style="margin-top:10px">${keys.map(k => `<button class="chip" data-go="strong-${k}"><span class="${k[0] === 'H' ? 'heb' : 'grk'}">${esc(conc.lex[k][0])}</span> · ${esc(conc.lex[k][1])} · ${k}</button>`).join('')}</div>` : '<p class="small muted">No exact match in the lexicon for this name.</p>'; }
+    catch { box.innerHTML = '<p class="small muted">The lexicon could not be loaded.</p>'; } };
+  if ($('#pmap')) { const mk = d.pl.filter(x => x.lat && x.lon).map(x => { const pp = placeByName(x.n); return { lat: x.lat, lon: x.lon, label: x.n, sub: `${x.c} verse${x.c === 1 ? '' : 's'} with ${d.n}`, kind: 'place', go: pp ? 'place-' + pp.id : undefined }; });
+    if (d.bp?.lat) mk.unshift({ lat: d.bp.lat, lon: d.bp.lon, label: 'Born: ' + d.bp.n, kind: 'main' }); if (d.dp?.lat) mk.unshift({ lat: d.dp.lat, lon: d.dp.lon, label: 'Died: ' + d.dp.n, kind: 'disc' });
+    if (mk.length) makeMap($('#pmap'), { markers: mk, maxZoom: 9 }); else $('#pmap').closest('.sec').remove(); }
+}
+async function addPeopleAnswers(q) { if (!q || q.length < 2) return; const idx = await peopleIndex(); const m = personMatches(q.replace(/^(who (was|is)|tell me about)\s+/i, '').replace(/\?$/, ''), idx, 4).filter(r => r[0] !== 'god_1324'); const h1 = $('main h1'); if (!m.length || !h1) return;
+  h1.insertAdjacentHTML('afterend', `<div class="answers"><p class="kicker">People</p><div class="rlist">${m.map(prow).join('')}</div></div>`); }
+
+/* ---------- the age of mankind: from Adam to the apostles (traditional Bible chronology) ---------- */
+async function viewChronology() {
+  setNav('timeline'); document.title = 'From Adam to today — Just One More Lord';
+  main.innerHTML = `<section class="band"><div class="wrap"><p class="muted"><span class="spin"></span>Loading…</p></div></section>`;
+  const idx = await peopleIndex(); const dated = idx.filter(r => r[8] != null && r[9] != null && r[9] > r[8]).sort((a, b) => a[8] - b[8]);
+  if (!dated.length) { main.innerHTML = `<section class="band"><div class="wrap"><p class="empty">The people data is not available yet.</p></div></section>`; return; }
+  const adam = dated.find(r => r[1] === 'Adam') || dated[0]; const creation = adam[8], nowY = new Date().getFullYear(), sinceCreation = nowY - creation - (creation < 0 ? 1 : 0);
+  const lastY = Math.max(...idx.map(r => r[10] ?? -9999)); const Y0 = creation, Y1 = Math.max(100, lastY), span = Y1 - Y0;
+  const pct = y => (100 * (y - Y0) / span).toFixed(2);
+  const byName = n => dated.find(r => r[1] === n);
+  const facts = []; const ov = (a, b) => { const A = byName(a), B = byName(b); if (!A || !B) return; const o = Math.min(A[9], B[9]) - Math.max(A[8], B[8]); if (o > 0) facts.push(`${a} and ${b} were alive at the same time for about ${o} years.`); };
+  ov('Adam', 'Methuselah'); ov('Methuselah', 'Noah'); ov('Adam', 'Lamech'); ov('Shem', 'Abraham'); ov('Noah', 'Abraham'); ov('Shem', 'Isaac'); ov('Shem', 'Israel');
+  const flood = byName('Noah') ? byName('Noah')[8] + 600 : null;
+  main.innerHTML = `<section class="band"><div class="wrap"><div class="sh"><div><p class="kicker">The age of mankind in the Bible</p><h1>From Adam to today</h1><p>Adding up the ages in the Bible's genealogies (Genesis 5 and 11) and the reigns of the kings gives a traditional date for creation and for each generation since. This page follows the chronology used by Theographic, which is close to Archbishop James Ussher's famous 1650 calculation.</p></div><div class="linkrow"><button class="btn ghost sm" data-go="timeline">Timeline</button><button class="btn ghost sm" data-go="people">People</button></div></div>
+    <div class="statrow"><div><b>${pyr(creation)}</b><span>creation of Adam (traditional)</span></div><div><b>≈ ${sinceCreation.toLocaleString()}</b><span>years from Adam to ${nowY}</span></div>${flood ? `<div><b>${pyr(flood)}</b><span>the Flood (Noah aged 600)</span></div>` : ''}<div><b>${(-creation - 4 + 1).toLocaleString()}</b><span>years from Adam to Jesus' birth</span></div></div>
+    <h2 class="libh">Lifespans from Adam to Jesus</h2><p class="small muted">Each bar shows a life from birth to death. Tap a name for the full profile.</p>
+    <div class="lifechart">${dated.map(r => `<button class="life" data-go="person-${esc(r[0])}" title="${esc(r[1])}: ${pyr(r[8])} – ${pyr(r[9])}"><span class="lname">${esc(r[1])}<small>${r[9] - r[8]} yrs · ${pyr(r[8])}</small></span><span class="ltrack"><i style="left:${pct(r[8])}%;width:${Math.max(.6, 100 * (r[9] - r[8]) / span).toFixed(2)}%"></i></span></button>`).join('')}
+      <div class="laxis">${[-4000, -3000, -2000, -1000, 0].filter(y => y >= Y0).map(y => `<span style="left:${pct(y)}%">${y === 0 ? 'BC | AD' : pyr(y)}</span>`).join('')}</div></div>
+    ${facts.length ? `<h2 class="libh">Did you know?</h2><ul class="dyk">${facts.map(f => `<li>${esc(f)}</li>`).join('')}</ul>` : ''}
+    <h2 class="libh">Different ways Christians read these numbers</h2><div class="prose"><ul>
+      <li><b>Traditional (Ussher) chronology:</b> reads the genealogies as complete and adds them up to creation in about ${-creation} BC — the dates used on this page.</li>
+      <li><b>Septuagint chronology:</b> the ancient Greek Old Testament gives longer ages in Genesis 5 and 11, placing creation around 5500 BC.</li>
+      <li><b>Gaps in the genealogies:</b> many scholars note that biblical genealogies sometimes skip generations (compare Matthew 1:8 with 1 Chronicles 3:11-12), so the total may be longer.</li>
+      <li><b>Science:</b> mainstream science dates the universe at about 13.8 billion years and modern humans at about 300,000 years; many Christians read Genesis 1–11 in ways that fit these dates.</li></ul>
+      <p class="small muted">Dates before about 1000 BC are approximate and debated. Birth and death years and ages come from Theographic Bible Metadata (CC BY-SA 4.0), which derives them from the ages given in Scripture.</p></div></div></section>`;
+}
+
 /* ---------------- router ---------------- */
 async function render() {
   const h = decodeURIComponent(location.hash.slice(1) || 'home');
@@ -2025,8 +2123,8 @@ async function render() {
     else if (h === 'journeys') viewJourneys();
     else if (h.startsWith('journey-')) { await viewJourney(h.slice(8)); const jj = h.slice(8); $('main h1')?.insertAdjacentHTML('afterend', `<div class="linkrow"><button class="btn sm" data-go="fly-${jj}">3D fly-over</button><button class="btn ghost sm" data-go="plan-${jj}">Reading plan</button><button class="btn ghost sm" data-go="present-journey-${jj}">Present</button><button class="btn ghost sm" id="tpack">Save for offline travel</button><span class="tag">≈ ${fmtKm(journeyKm(JOURNEYS.find(x => x.id === jj) || { stops: [] }))} in a straight line</span></div>`); $('#tpack')?.addEventListener('click', e => travelPack(JOURNEYS.find(x => x.id === jj), e.currentTarget)); }
     else if (h === 'discoveries') viewDiscoveries();
-    else if (h === 'search') { await viewSearch(); let q = state.lastQuery; if (!q) { try { q = sessionStorage.getItem('bpt:q') || ''; } catch {} } addAnswers(q); }
-    else if (h === 'about') viewAbout();
+    else if (h === 'search') { await viewSearch(); let q = state.lastQuery; if (!q) { try { q = sessionStorage.getItem('bpt:q') || ''; } catch {} } addAnswers(q); addPeopleAnswers(q); }
+    else if (h === 'about') { viewAbout(); $('main .wrap')?.insertAdjacentHTML('afterbegin', `<div class="panel aboutpeople"><p class="kicker">People of the Bible</p><h2>Look up anyone in the Bible</h2><p>Family, dates and age, where they lived and died on a map, journeys, life events and every verse — for over 3,000 people.</p><form class="bigsearch" id="apf" role="search"><label class="sr" for="apq">Name</label><input id="apq" type="search" placeholder="Type a name, e.g. Moses"><button class="btn" type="submit">Look up</button></form><p class="small"><button class="inl" data-go="chronology">From Adam to today: the age of mankind in the Bible</button></p></div>`); $('#apf')?.addEventListener('submit', e => { e.preventDefault(); go('people-' + encodeURIComponent($('#apq').value.trim())); }); }
     else if (h === 'concordance') await viewConcordance();
     else if (h === 'read' || h.startsWith('read-')) await viewRead(h.slice(5));
     else if (h === 'library') viewLibrary();
@@ -2038,6 +2136,9 @@ async function render() {
     else if (h === 'community') viewCommunity();
     else if (h === 'prayer') viewPrayer();
     else if (h === 'memory') viewMemory();
+    else if (h === 'people' || h.startsWith('people-')) await viewPeople(decodeURIComponent(h.slice(7)));
+    else if (h.startsWith('person-')) await viewPerson(h.slice(7));
+    else if (h === 'chronology') await viewChronology();
     else if (h === 'profile') viewProfile();
     else if (h === 'devotionals') viewDevotionals();
     else if (h === 'feasts') viewFeasts();
