@@ -2662,9 +2662,14 @@ async function pushState() { if (!('serviceWorker' in navigator) || !('PushManag
 async function pushOn() {
   const p = await Notification.requestPermission(); if (p !== 'granted') { toast('Notifications were not allowed — check your phone settings'); return false; }
   const reg = await navigator.serviceWorker.ready; const sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64u(PUSHKEY) }); const j = sub.toJSON();
-  await sbFetch('/rest/v1/push_subscriptions', { method: 'POST', headers: { Prefer: 'resolution=ignore-duplicates,return=minimal' }, body: JSON.stringify({ endpoint: j.endpoint, keys: j.keys, user_id: signedIn() ? AUTH.user.id : null }) }, signedIn());
+  await pushSave(sub);
   localStorage.setItem('jom:alert', '1'); toast('Phone notifications are on'); return true;
 }
+async function pushSave(sub) { const j = sub.toJSON();
+  try { await sbFetch('/rest/v1/push_subscriptions', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ endpoint: j.endpoint, keys: j.keys, user_id: signedIn() ? AUTH.user.id : null }) }, signedIn()); }
+  catch (e) { if (e.status !== 409 && !/duplicate/i.test(e.message)) { localStorage.removeItem('jom:pushsaved'); await sub.unsubscribe().catch(() => {}); throw new Error('Could not register this phone: ' + e.message); } }
+  localStorage.setItem('jom:pushsaved', j.endpoint); }
+async function pushResync() { try { if ((await pushState()) !== 'on') return; const s = await (await navigator.serviceWorker.getRegistration()).pushManager.getSubscription(); if (s && localStorage.getItem('jom:pushsaved') !== s.endpoint) await pushSave(s); } catch {} }
 async function pushOff() { const reg = await navigator.serviceWorker.getRegistration(); const s = await reg?.pushManager.getSubscription(); if (s) await s.unsubscribe(); localStorage.setItem('jom:alert', '0'); toast('Phone notifications are off'); }
 async function viewNotifications() {
   setNav(''); document.title = 'Notifications — Just One More Lord'; const ios = /iphone|ipad|ipod/i.test(navigator.userAgent), standalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone;
@@ -2680,7 +2685,7 @@ async function viewNotifications() {
   $$('[data-np]').forEach(c => c.onchange = () => { MY.nprefs[c.dataset.np] = c.checked ? 1 : 0; saveMy(); });
   main.querySelector('.rlist').onclick = e => { const b = e.target.closest('[data-nid]'); if (!b) return; const x = L.find(y => y.id === b.dataset.nid); if (!x) return; x.r = 1; saveMy(); bellUpdate(); if (x.go) go(x.go); else viewNotifications(); };
 }
-bellBtn(); setTimeout(dailyChecks, 2500); document.addEventListener('visibilitychange', () => { if (!document.hidden) dailyChecks(); });
+bellBtn(); setTimeout(dailyChecks, 2500); setTimeout(pushResync, 4000); document.addEventListener('visibilitychange', () => { if (!document.hidden) dailyChecks(); });
 
 /* ---------- site-owner tool: make phone-notification keys in the browser (the private key never leaves this device) ---------- */
 async function viewPushKeys() {
