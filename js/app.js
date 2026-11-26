@@ -953,7 +953,7 @@ function verseTools(ref) {
     <button class="pill${saved ? ' on' : ''}" data-act="save" aria-pressed="${saved}">${ICON.star(saved)}<span>${saved ? 'Saved' : 'Save verse'}</span></button>
     <span class="hlrow" role="group" aria-label="Highlight colour">${HLC.map(([c, l]) => `<button class="hl-dot hl-${c}${MY.hl[ref] === c ? ' on' : ''}" data-hl="${c}" aria-label="Highlight ${l}" aria-pressed="${MY.hl[ref] === c}"></button>`).join('')}<button class="hl-dot hl-none" data-hl="" aria-label="Remove highlight">×</button></span>
     <button class="pill" data-act="share">${ICON.share}<span>Share</span></button>
-    <button class="pill" data-act="read">Read chapter</button><button class="pill" data-act="cmp">Compare translations</button><button class="pill" data-act="mem">Memorise</button><button class="pill" data-act="cmt">Commentary</button><button class="pill" data-act="pic">Make a picture</button><button class="pill" data-act="les">Add to lesson</button></div>
+    <button class="pill" data-act="read">Read chapter</button><button class="pill" data-act="cmp">Compare translations</button><button class="pill" data-act="mem">Memorise</button><button class="pill" data-act="cmt">Commentary</button><button class="pill" data-act="pic">Make a picture</button><button class="pill" data-act="journal">✏️ Journal</button><button class="pill" data-act="les">Add to lesson</button></div>
     <label class="notebox"><span class="kicker">My note</span><textarea rows="2" placeholder="Write a thought, prayer or question…" data-note>${esc(MY.notes[ref]?.t || '')}</textarea></label>`;
 }
 function wireVerseTools(box, ref, getText) {
@@ -968,6 +968,7 @@ function wireVerseTools(box, ref, getText) {
       $$(`.rverse[data-ref="${CSS.escape(ref)}"]`).forEach(v => v.classList.toggle('saved', on)); toast(on ? 'Saved to your library' : 'Removed from your library'); }
     if (a === 'share') { const txt = await getText?.(); shareIt({ title: ref, text: `“${(txt || '').slice(0, 240)}” — ${ref} (WEB)`, hash: 'read-' + readHash(ref) }); }
     if (a === 'read') { if (dlg.open) dlg.close(); go('read-' + readHash(ref)); }
+    if (a === 'journal') { if (dlg.open) dlg.close(); go('journal-' + encodeURIComponent(ref)); }
     if (a === 'mem') addMemory(ref, (await getText?.()) || '');
     if (a === 'les') lessonAdd({ k: 'verse', ref, t: (await getText?.()) || '' });
     if (a === 'pic') { if (dlg.open) dlg.close(); go('versepic-' + encodeURIComponent(ref)); }
@@ -1052,7 +1053,7 @@ function viewLibrary() {
     <div class="linkrow"><button class="btn ghost sm" id="bk">Download backup</button><label class="btn ghost sm" for="rs">Restore backup</label><input id="rs" type="file" accept="application/json" hidden></div></div>
     <div class="statrow">${[[pl.length, 'places'], [vs.length, 'verses'], [hls.length, 'highlights'], [ns.length, 'notes'], [plans.length, 'plans']].map(([n, l]) => `<div><b>${n}</b><span>${l}</span></div>`).join('')}</div>
     <h2 class="libh">My progress</h2>${progressHTML()}
-    <div class="linkrow" style="margin-top:14px"><button class="btn sm" data-go="memory">Scripture memory (${Object.keys(MY.mem || {}).length})</button><button class="btn ghost sm" data-go="prayer">Prayer journal</button><button class="btn ghost sm" data-go="plan-year">Bible in a year</button><button class="btn ghost sm" data-go="progress">My Bible progress map</button></div>
+    <div class="linkrow" style="margin-top:14px"><button class="btn sm" data-go="memory">Scripture memory (${Object.keys(MY.mem || {}).length})</button><button class="btn ghost sm" data-go="prayer">Prayer journal</button><button class="btn ghost sm" data-go="plan-year">Bible in a year</button><button class="btn ghost sm" data-go="progress">My Bible progress map</button><button class="btn ghost sm" data-go="journal">My journal</button><button class="btn ghost sm" data-go="wrapped">My year in the Word</button></div>
     <h2 class="libh">Saved places</h2>${pl.length ? `<div class="grid" id="libp">${pl.map(placeCard).join('')}</div>` : '<p class="empty">Tap “Save place” on any place page.</p>'}
     <h2 class="libh">Saved verses</h2>${vs.length ? `<div class="rlist">${vs.map(([r, x]) => vbtn(r, x.t ? `<span>${esc(x.t.slice(0, 160))}${x.t.length > 160 ? '…' : ''}</span>` : '')).join('')}</div>` : '<p class="empty">Tap any verse, then “Save verse”.</p>'}
     <h2 class="libh">Highlights</h2>${hls.length ? `<div class="chips">${hls.map(([r, c]) => `<button class="chip hlchip hl-${c}" data-verse="${esc(r)}">${esc(r)}</button>`).join('')}</div>` : '<p class="empty">No highlights yet.</p>'}
@@ -1357,7 +1358,7 @@ async function viewFly(id) {
 function homeMore() {
   const host = $('#feat')?.closest('.band'); if (!host || $('.moretiles')) return;
   const T = [['read', 'Read the Bible', 'Every chapter, with its places on a map and the Hebrew & Greek behind each verse.'], ['timeline', 'Bible timeline', 'Empires, kings, prophets and events from Abraham to Revelation.'], ['family', 'Family tree', 'The line from Adam to Jesus, with the twelve tribes and more.'],
-    ['grace', 'Grace lens', 'Every passage in the light of the finished work of Jesus and the love of God.'], ['concordance', 'Strong\'s Concordance', 'Every Hebrew and Greek word, its meaning and every place it appears.'], ['fly-' + (JOURNEYS.find(j => j.id === 'apostles') || JOURNEYS[0])?.id, '3D fly-overs', 'Fly over the real terrain of the journeys of Abraham, Moses, Jesus and Paul.'], ['kingdoms', 'Kingdom maps', 'See the borders change from David to the Romans.'], ['distance', 'How far was it?', 'Distances and walking days between Bible places.'], ['kids', 'Kids\' corner', 'Stories, a fun quiz and pictures to colour.'], ['plans', 'Reading plans', 'John in 21 days, Acts with Paul, Psalms of hope and journey plans.'], ['quiz', 'Quiz', 'Test yourself and challenge a friend.'], ['near', 'Near me', 'Find Bible places close to where you are.'], ['library', 'My library', 'Your saved places, verses, highlights and notes.'], ['books', 'Books of the Bible', 'An introduction to all 66 books: author, date, themes and outline.'], ['tabernacle', 'Tabernacle & Temple', 'Tap each part and see how it points to Jesus.'], ['jerusalem', 'Jerusalem through time', 'The city from David to Jesus on the map.'], ['learn', 'Learn Hebrew & Greek', 'Alphabets, the 100 most common words and flashcards.'], ['family-devotion', 'Family devotion', 'A 10-minute story, questions and prayer for the whole family.'], ['fasting', 'Fasting', 'Track a fast with Scripture and prayer reminders.'], ['battle', 'Quiz battles', 'Same questions, beat your friend\'s score.'], ['study', 'Study tools', 'Commentaries, topical Bible, dictionary, prophecy and the four Gospels side by side.'], ['daily', 'Daily challenge', 'One Bible question a day — keep your streak going.'], ['versepic', 'Verse pictures', 'Make a verse picture on a photo of a real Bible place.'], ['groups', 'Church groups', 'Read the same plan and pray together as a church.'], ['places', 'Every Bible place', 'All 1,300 Bible places on one map, plus the events map.'], ['people', 'People of the Bible', 'Look up anyone in the Bible: family, age, map, journeys and every verse.'], ['chronology', 'From Adam to today', 'Lifespans from Adam to Jesus and the age of mankind in the Bible.'], ['memory', 'Scripture memory', 'Learn verses by heart with a few minutes\' practice a day.'], ['devotionals', 'Devotionals', 'Short reflections and prayers from the Bible lands.'], ['feasts', 'Feasts & holy days', 'Passover, Pentecost, Tabernacles and Easter — dates for the year ahead.'], ['teachings', 'Teachings', 'Watch Andrew Wommack and Dan Mohler from their official channels.'], ['prayer', 'Prayer', 'A private prayer journal and a shared prayer wall.'], ['community', 'Friends & community', 'Invite friends, read plans together and join the conversation.'], ['embed', 'For churches', 'Put any Bible place or journey on your church or school website.'], ['devnotes', 'Developer notes', 'What\'s new, what\'s next, and a place for your feedback.']];
+    ['grace-minute', 'Grace minute', 'One minute a day: a verse, the finished work, a reflection and a prayer.'], ['grace', 'Grace lens', 'Every passage in the light of the finished work of Jesus and the love of God.'], ['journal', 'Bible journal', 'Draw, write and add stickers on any verse.'], ['wrapped', 'My year in the Word', 'Your chapters, streaks and favourite verses this year — share it.'], ['friends', 'Friends', 'See who is online and pray for each other.'], ['testimonies', 'Testimonies', 'Answered prayers and healings.'], ['churches', 'Church finder', 'Find a grace-teaching church near you.'], ['concordance', 'Strong\'s Concordance', 'Every Hebrew and Greek word, its meaning and every place it appears.'], ['fly-' + (JOURNEYS.find(j => j.id === 'apostles') || JOURNEYS[0])?.id, '3D fly-overs', 'Fly over the real terrain of the journeys of Abraham, Moses, Jesus and Paul.'], ['kingdoms', 'Kingdom maps', 'See the borders change from David to the Romans.'], ['distance', 'How far was it?', 'Distances and walking days between Bible places.'], ['kids', 'Kids\' corner', 'Stories, a fun quiz and pictures to colour.'], ['plans', 'Reading plans', 'John in 21 days, Acts with Paul, Psalms of hope and journey plans.'], ['quiz', 'Quiz', 'Test yourself and challenge a friend.'], ['near', 'Near me', 'Find Bible places close to where you are.'], ['library', 'My library', 'Your saved places, verses, highlights and notes.'], ['books', 'Books of the Bible', 'An introduction to all 66 books: author, date, themes and outline.'], ['tabernacle', 'Tabernacle & Temple', 'Tap each part and see how it points to Jesus.'], ['jerusalem', 'Jerusalem through time', 'The city from David to Jesus on the map.'], ['learn', 'Learn Hebrew & Greek', 'Alphabets, the 100 most common words and flashcards.'], ['family-devotion', 'Family devotion', 'A 10-minute story, questions and prayer for the whole family.'], ['fasting', 'Fasting', 'Track a fast with Scripture and prayer reminders.'], ['battle', 'Quiz battles', 'Same questions, beat your friend\'s score.'], ['study', 'Study tools', 'Commentaries, topical Bible, dictionary, prophecy and the four Gospels side by side.'], ['daily', 'Daily challenge', 'One Bible question a day — keep your streak going.'], ['versepic', 'Verse pictures', 'Make a verse picture on a photo of a real Bible place.'], ['groups', 'Church groups', 'Read the same plan and pray together as a church.'], ['places', 'Every Bible place', 'All 1,300 Bible places on one map, plus the events map.'], ['people', 'People of the Bible', 'Look up anyone in the Bible: family, age, map, journeys and every verse.'], ['chronology', 'From Adam to today', 'Lifespans from Adam to Jesus and the age of mankind in the Bible.'], ['memory', 'Scripture memory', 'Learn verses by heart with a few minutes\' practice a day.'], ['devotionals', 'Devotionals', 'Short reflections and prayers from the Bible lands.'], ['feasts', 'Feasts & holy days', 'Passover, Pentecost, Tabernacles and Easter — dates for the year ahead.'], ['teachings', 'Teachings', 'Watch Andrew Wommack and Dan Mohler from their official channels.'], ['prayer', 'Prayer', 'A private prayer journal and a shared prayer wall.'], ['community', 'Friends & community', 'Invite friends, read plans together and join the conversation.'], ['embed', 'For churches', 'Put any Bible place or journey on your church or school website.'], ['devnotes', 'Developer notes', 'What\'s new, what\'s next, and a place for your feedback.']];
   host.insertAdjacentHTML('afterend', `<section class="band moretiles"><div class="wrap"><div class="sh"><div><h2>More ways to explore</h2><p>Tools for personal study, families, churches and travellers — free, and they work on your phone.</p></div></div>
     <div class="tiles">${T.map(([h, t, d]) => `<button class="tile" data-go="${h}"><b>${t}</b><span>${d}</span></button>`).join('')}</div></div></section>`);
 }
@@ -1420,6 +1421,7 @@ function acceptInvite(arg) { // #friend-<name>[-<planId>]
 
 /* developer notes: what's new, what's next, and a feedback thread */
 const DEVNOTES = [
+  ['2026-11-26', 'Grace lens and the biggest update yet', ['Grace lens on every chapter and a daily Grace minute', 'Offline English Bible, parallel Bible and advanced search', 'Cross-reference rainbow, when each book was written, Bible progress map', 'Profile pictures, friends with online status, prayer partners', 'Testimonies, grace church finder, live group reading', 'Bible journaling and My year in the Word', 'Choose your notification time; display and accessibility settings']],
   ['2026-11-26', 'Notifications, books and more', ['Notification bell and phone notifications', 'Introductions to all 66 books', 'Interactive Tabernacle and Temple', 'Jerusalem through time', 'Learn Hebrew and Greek', 'Fasting tracker', 'Family devotion every day', 'Paper, sepia and night reading modes', 'Quiz battles with friends', 'Share your badges and streak']],
   ['2026-11-26', 'Study tools and church groups', ['New logo and app icon', 'Commentary on every chapter (Matthew Henry, JFB, Clarke, Gill, Keil-Delitzsch, Tyndale)', 'Topical Bible: 5,000 topics', 'Bible dictionary and the meaning of names', 'Prophecy and fulfilment', 'Gospel harmony', 'Every Bible place (1,300) and a map of 500 events', 'Bible finds in museums', 'Verse picture maker', 'Lesson builder', 'Daily challenge', 'Church groups', 'Daily verse alerts']],
   ['2026-11-26', 'People of the Bible', ['Look up any of 3,000+ people: family, dates and age, birthplace and place of death, a map of where they lived, journeys, life events, biography and every verse', 'Hebrew and Greek spelling of names', '“From Adam to today”: lifespans from Adam to Jesus and the age of mankind by traditional Bible chronology']],
@@ -1449,7 +1451,7 @@ function viewDevNotes() {
    ====================================================================================== */
 /* ---------- activity, streaks and badges ---------- */
 const today = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
-for (const k of ['days', 'readCh', 'visited', 'strongs', 'badges']) if (!MY[k] || typeof MY[k] !== 'object') MY[k] = {};
+for (const k of ['days', 'readCh', 'visited', 'strongs', 'badges', 'journal', 'grace']) if (!MY[k] || typeof MY[k] !== 'object') MY[k] = {};
 function streak() { let n = 0; const d = new Date(); if (!MY.days[today()]) d.setDate(d.getDate() - 1);
   for (;;) { const k = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; if (!MY.days[k]) break; n++; d.setDate(d.getDate() - 1); } return n; }
 function bestStreak() { const ks = Object.keys(MY.days).sort(); let best = 0, run = 0, prev = null;
@@ -3001,6 +3003,109 @@ async function viewLive(gid) {
   $('#lf').onsubmit = async e => { e.preventDefault(); const t = $('#lin').value.trim(); if (!t) return; $('#lin').value = ''; try { await sbFetch('/rest/v1/group_live', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ group_id: gid, user_id: me, name: AUTH.profile?.name || MY.name || 'Member', ref, text: t }) }); pull(); } catch (er) { toast(needSQL(er)); } };
   await pull(); liveTimer = setInterval(() => { if (!document.hidden) pull(); }, 4000);
 }
+
+/* ---------- engagement: my year in the Word, Bible journaling, the Grace minute ---------- */
+async function shareBlob(blob, name, text) { const f = new File([blob], name, { type: blob.type });
+  if (navigator.canShare?.({ files: [f] })) { try { await navigator.share({ files: [f], text }); return; } catch (e) { if (e.name === 'AbortError') return; } }
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; a.click(); }
+function yearStats(y) {
+  const inY = t => t && new Date(t).getFullYear() === y; const ys = String(y);
+  const ch = Object.entries(MY.readCh || {}).filter(([, t]) => inY(t)); const books = {}; ch.forEach(([k]) => { const b = k.replace(/\s+\d+$/, ''); books[b] = (books[b] || 0) + 1; });
+  const top = Object.entries(books).sort((a, b) => b[1] - a[1]).slice(0, 3);
+  const days = Object.keys(MY.days || {}).filter(d => d.startsWith(ys)).sort(); let best = 0, run = 0, prev = null;
+  for (const d of days) { const t = new Date(d + 'T12:00:00'); run = prev && (t - prev) / 864e5 < 1.5 ? run + 1 : 1; best = Math.max(best, run); prev = t; }
+  const vs = Object.entries(MY.verses || {}).filter(([, x]) => inY(x.d)).sort((a, b) => b[1].d - a[1].d);
+  return { y, chapters: ch.length, days: days.length, best, top, verses: vs.length, fav: vs[0]?.[0] || Object.keys(MY.hl || {})[0] || '', notes: Object.values(MY.notes || {}).filter(x => inY(x.d)).length,
+    prayers: (MY.prayers || []).filter(p => inY(p.d)).length, answered: (MY.prayers || []).filter(p => p.a && inY(p.a === true ? p.d : p.a)).length, badges: Object.values(MY.badges || {}).filter(inY).length, places: Object.values(MY.visited || {}).filter(inY).length };
+}
+function viewWrapped(y) {
+  setNav('library'); y = +y || new Date().getFullYear(); const st = yearStats(y); document.title = `My ${y} in the Word — Just One More Lord`;
+  const card = (big, l, sub = '') => `<div class="wcard"><b>${big}</b><span>${l}</span>${sub ? `<em>${sub}</em>` : ''}</div>`;
+  main.innerHTML = `<section class="band wrappedband"><div class="wrap"><p class="kicker">Your year with God's Word</p><h1>My <span class="neon-txt">${y}</span> in the Word</h1>
+    <p class="lead">"Your word is a lamp to my feet and a light for my path" (Psalm 119:105).</p>
+    <div class="wgrid">${card(st.chapters, 'chapters read', st.chapters ? `${(st.chapters / 1189 * 100).toFixed(1)}% of the Bible` : 'Open any chapter to start')}${card(st.days, 'days in the Word')}${card('🔥 ' + st.best, 'longest streak (days)')}
+      ${card(st.top[0] ? esc(st.top[0][0]) : '—', 'most-read book', st.top.slice(1).map(x => esc(x[0])).join(' · '))}${card(st.verses, 'verses saved', st.fav ? esc(st.fav) : '')}${card(st.notes, 'notes written')}${card(st.prayers, 'prayers written', st.answered ? `${st.answered} answered 🙌` : '')}${card(st.badges, 'badges earned')}${card(st.places, 'Bible places explored')}</div>
+    <div class="linkrow"><button class="btn" id="wshare">${ICON.share} Share my year</button><button class="btn ghost" data-go="progress">My Bible progress map</button>${[y - 1, y + 1].filter(v => v <= new Date().getFullYear() && v >= 2025).map(v => `<button class="btn ghost sm" data-go="wrapped-${v}">${v}</button>`).join('')}</div></div></section>`;
+  $('#wshare').onclick = async () => { const c = document.createElement('canvas'); c.width = 1080; c.height = 1350; const x = c.getContext('2d');
+    const g = x.createLinearGradient(0, 0, 1080, 1350); g.addColorStop(0, '#032433'); g.addColorStop(.6, '#05141c'); g.addColorStop(1, '#3a2a06'); x.fillStyle = g; x.fillRect(0, 0, 1080, 1350);
+    const lg = new Image(); lg.src = 'img/logo.png'; await new Promise(r => { lg.onload = r; lg.onerror = r; }); if (lg.width) x.drawImage(lg, 440, 50, 200, 200 * lg.height / lg.width);
+    x.textAlign = 'center'; x.fillStyle = '#8ae8ff'; x.font = '700 40px Sora, sans-serif'; x.fillText('MY YEAR IN THE WORD', 540, 330); x.fillStyle = '#ffc72c'; x.font = '800 150px Sora, sans-serif'; x.fillText(String(y), 540, 480);
+    const rows = [[st.chapters, 'chapters read'], [st.days, 'days in the Word'], [st.best, 'day longest streak'], [st.verses, 'verses saved'], [st.prayers, 'prayers prayed']];
+    rows.forEach(([n, l], i) => { const yy = 610 + i * 120; x.textAlign = 'right'; x.fillStyle = '#fff'; x.font = '800 86px Sora, sans-serif'; x.fillText(String(n), 470, yy); x.textAlign = 'left'; x.fillStyle = '#cfe7ee'; x.font = '500 46px Sora, sans-serif'; x.fillText(l, 500, yy - 8); });
+    x.textAlign = 'center'; if (st.top[0]) { x.fillStyle = '#ffc72c'; x.font = '600 42px Sora, sans-serif'; x.fillText(`Most read: ${st.top[0][0]}`, 540, 1230); }
+    x.fillStyle = 'rgba(255,255,255,.8)'; x.font = '600 32px Sora, sans-serif'; x.fillText('Just One More Lord', 540, 1300);
+    shareBlob(await new Promise(r => c.toBlob(r, 'image/jpeg', .92)), `my-${y}-in-the-word.jpg`, `My ${y} in the Word — ${SITE}`); };
+}
+/* journaling: pictures stored on this device (IndexedDB) */
+const jdb = () => new Promise((ok, bad) => { const r = indexedDB.open('jom-journal', 1); r.onupgradeneeded = () => r.result.createObjectStore('pages', { keyPath: 'id' }); r.onsuccess = () => ok(r.result); r.onerror = () => bad(r.error); });
+const jtx = async (mode, fn) => { const db = await jdb(); return new Promise((ok, bad) => { const t = db.transaction('pages', mode); const st = t.objectStore('pages'); const res = fn(st); t.oncomplete = () => ok(res?.result); t.onerror = () => bad(t.error); }); };
+const JTHEMES = [['Night', ['#032433', '#05141c']], ['Dawn', ['#3a2a06', '#7a4b12']], ['Paper', ['#f6efdf', '#e9dcc0']], ['Ocean', ['#043b4a', '#0a6b80']], ['Rose', ['#3b0d24', '#6d1f43']]];
+async function viewJournal(arg) {
+  setNav('library'); const ref = decodeURIComponent(arg || '');
+  if (!ref) { document.title = 'My Bible journal — Just One More Lord'; let pages = []; try { pages = (await jtx('readonly', st => st.getAll())) || []; } catch {}
+    pages.sort((a, b) => b.d - a.d);
+    main.innerHTML = `<section class="band"><div class="wrap"><p class="kicker">Draw, write and pray</p><h1>My Bible journal</h1><p class="lead">Tap any verse in the Bible and choose <b>✏️ Journal</b> to draw, add stickers and write on it. Pages are kept on this device.</p>
+      <div class="linkrow"><button class="btn" data-go="journal-${encodeURIComponent(votd()?.ref || 'John 3:16')}">Journal today's verse</button></div>
+      <div class="jgrid">${pages.map(p => `<figure class="jthumb"><img src="${p.img}" alt="Journal page: ${esc(p.ref)}"><figcaption>${esc(p.ref)} · ${new Date(p.d).toLocaleDateString()} <button class="inl small" data-jshare="${p.id}">share</button> <button class="inl small" data-jdel="${p.id}">delete</button></figcaption></figure>`).join('') || '<p class="empty">No journal pages yet.</p>'}</div></div></section>`;
+    main.onclick = async e => { const s = e.target.closest('[data-jshare]'), d = e.target.closest('[data-jdel]');
+      if (s) { const p = pages.find(x => x.id === s.dataset.jshare); shareBlob(await (await fetch(p.img)).blob(), 'journal.jpg', p.ref); }
+      if (d && confirm('Delete this page?')) { await jtx('readwrite', st => st.delete(d.dataset.jdel)); main.onclick = null; viewJournal(''); } };
+    return; }
+  main.onclick = null; document.title = `Journal · ${ref} — Just One More Lord`;
+  main.innerHTML = `<section class="band"><div class="wrap"><div class="crumbs"><button data-go="journal">My journal</button> › ${esc(ref)}</div><h1>✏️ Journal ${esc(ref)}</h1>
+    <div class="jtools"><span class="linkrow" role="group" aria-label="Colour">${['#ffffff', '#ffc72c', '#00d1ff', '#39ff9c', '#ff4d8d', '#111111'].map((c, i) => `<button class="jcol${i ? '' : ' on'}" data-col="${c}" style="background:${c}" aria-label="Colour ${c}"></button>`).join('')}</span>
+      <select id="jsz" aria-label="Pen size"><option value="4">Fine</option><option value="9" selected>Medium</option><option value="18">Thick</option></select>
+      <select id="jth" aria-label="Background">${JTHEMES.map(([n], i) => `<option value="${i}">${n}</option>`).join('')}</select>
+      <span class="linkrow" role="group" aria-label="Stickers">${['✝️', '🕊️', '❤️', '🙏', '⭐', '🔥', '🌿', '👑'].map(e => `<button class="jst" data-st="${e}" aria-label="Sticker ${e}">${e}</button>`).join('')}</span>
+      <button class="btn ghost sm" id="jtxt">Aa Text</button><button class="btn ghost sm" id="jundo">Undo</button><button class="btn ghost sm" id="jclr">Clear</button></div>
+    <div class="jwrap"><canvas id="jc" width="1080" height="1350" aria-label="Journal page for ${esc(ref)}"></canvas></div>
+    <div class="linkrow"><button class="btn" id="jsave">Save to my journal</button><button class="btn ghost" id="jshare">${ICON.share} Share</button></div><p class="small muted" id="jhint">Draw with your finger. Tap a sticker, then tap the page to place it.</p></div></section>`;
+  const cv = $('#jc'), x = cv.getContext('2d'); let col = '#ffffff', sticker = null, text = '', theme = 0; const strokes = [];
+  try { const v = await bibleText(ref); text = v.verses.map(y => y.t).join(' ') || v.text; } catch { text = ''; }
+  const wrap = (t, maxW) => { const out = []; let line = ''; for (const w of t.split(/\s+/)) { const tl = line ? line + ' ' + w : w; if (x.measureText(tl).width > maxW && line) { out.push(line); line = w; } else line = tl; } if (line) out.push(line); return out; };
+  const paint = () => { const [n, [a, b]] = JTHEMES[theme]; const g = x.createLinearGradient(0, 0, 0, 1350); g.addColorStop(0, a); g.addColorStop(1, b); x.fillStyle = g; x.fillRect(0, 0, 1080, 1350);
+    const dark = n !== 'Paper'; x.fillStyle = dark ? '#ffffff' : '#2a1d08'; x.textAlign = 'center'; x.font = '600 50px "Cormorant Garamond", Georgia, serif';
+    const lines = wrap(text ? `“${text}”` : '', 900).slice(0, 12); lines.forEach((l, i) => x.fillText(l, 540, 150 + i * 62)); x.fillStyle = dark ? '#ffc72c' : '#8a5a00'; x.font = '700 40px Sora, sans-serif'; x.fillText(ref, 540, 190 + lines.length * 62);
+    x.fillStyle = dark ? 'rgba(255,255,255,.5)' : 'rgba(0,0,0,.4)'; x.font = '500 26px Sora, sans-serif'; x.fillText('Just One More Lord', 540, 1320);
+    for (const s of strokes) { if (s.t === 'st') { x.font = `${s.z}px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif`; x.fillText(s.e, s.x, s.y); continue; }
+      if (s.t === 'tx') { x.fillStyle = s.c; x.font = '600 52px Sora, sans-serif'; x.fillText(s.s, s.x, s.y); continue; }
+      x.strokeStyle = s.c; x.lineWidth = s.w; x.lineCap = x.lineJoin = 'round'; x.beginPath(); s.p.forEach(([px, py], i) => i ? x.lineTo(px, py) : x.moveTo(px, py)); x.stroke(); } };
+  const pos = e => { const r = cv.getBoundingClientRect(); return [(e.clientX - r.left) / r.width * 1080, (e.clientY - r.top) / r.height * 1350]; };
+  let cur = null, pendingText = null;
+  cv.onpointerdown = e => { e.preventDefault(); const [px, py] = pos(e);
+    if (pendingText) { strokes.push({ t: 'tx', s: pendingText, x: px, y: py, c: col }); pendingText = null; $('#jhint').textContent = 'Draw with your finger. Tap a sticker, then tap the page to place it.'; paint(); return; }
+    if (sticker) { strokes.push({ t: 'st', e: sticker, x: px, y: py, z: 110 }); sticker = null; $$('.jst').forEach(b => b.classList.remove('on')); paint(); return; }
+    cur = { t: 'ln', c: col, w: +$('#jsz').value * 1.6, p: [[px, py]] }; strokes.push(cur); cv.setPointerCapture(e.pointerId); };
+  cv.onpointermove = e => { if (!cur) return; cur.p.push(pos(e)); paint(); }; cv.onpointerup = cv.onpointercancel = () => { cur = null; };
+  $$('.jcol').forEach(b => b.onclick = () => { col = b.dataset.col; $$('.jcol').forEach(y => y.classList.toggle('on', y === b)); });
+  $$('.jst').forEach(b => b.onclick = () => { sticker = b.dataset.st; $$('.jst').forEach(y => y.classList.toggle('on', y === b)); $('#jhint').textContent = 'Now tap the page where the sticker should go.'; });
+  $('#jth').onchange = e => { theme = +e.target.value; paint(); }; $('#jundo').onclick = () => { strokes.pop(); paint(); }; $('#jclr').onclick = () => { strokes.length = 0; paint(); };
+  $('#jtxt').onclick = () => { const t = prompt('Text to add (for example a prayer or a word God showed you):'); if (t) { pendingText = t.slice(0, 60); $('#jhint').textContent = 'Now tap the page where the text should go.'; } };
+  const blob = () => new Promise(r => cv.toBlob(r, 'image/jpeg', .85));
+  $('#jsave').onclick = async () => { const b = await blob(); const img = await new Promise(r => { const fr = new FileReader(); fr.onload = () => r(fr.result); fr.readAsDataURL(b); });
+    try { await jtx('readwrite', st => st.put({ id: Date.now().toString(36), ref, d: Date.now(), img })); toast('Saved to your journal'); track('journal', ref + ' ' + Date.now()); } catch { toast('Could not save on this device'); } };
+  $('#jshare').onclick = async () => shareBlob(await blob(), 'journal.jpg', `${ref} — ${SITE}`);
+  if (document.fonts?.ready) await document.fonts.ready; paint();
+}
+const GRACE_PRAYERS = ['Father, thank you that Jesus finished the work. I rest in what he has already done for me today. Amen.', 'Father, thank you that I am loved and accepted in Jesus, not because of my performance but because of his. Amen.', 'Lord Jesus, thank you that there is no condemnation for me. Fill my heart with your love so that it overflows to others today. Amen.', 'Father, thank you that by his stripes I was healed and in him I have everything I need for life and godliness. Amen.', 'Holy Spirit, show me more of the Father\'s heart through Jesus today. Let grace teach me and strengthen me. Amen.', 'Father, thank you that nothing can separate me from your love. I receive your peace today. Amen.', 'Jesus, thank you that you will never leave me nor forsake me. I trust you with this day. Amen.'];
+const GRACE_REFLECT = ['Who is speaking here, and to whom?', 'Is this before or after the cross, and how does that change how you read it?', 'What did Jesus finish or provide in this passage?', 'What does this show you about how the Father sees you?', 'How would you live today if you fully believed this?', 'Is there a lie about God this truth replaces for you?', 'Who could you share this good news with today?'];
+function graceMinuteItem(d = dayIndex()) { const all = []; for (const [k, ns] of Object.entries(GRACE.passages)) ns.forEach(n => all.push([k, n])); if (!all.length) return null; const [k, n] = all[((d * 37) % all.length + all.length) % all.length]; const [c, ch] = k.split('.'); return { c, ch: +ch, n, i: ((d % 7) + 7) % 7 }; }
+async function viewGraceMinute() {
+  setNav('study'); await loadConc(); const it = graceMinuteItem(); if (!it) { go('grace'); return; } const b = conc.byCode[it.c]; const first = String(it.n[0]).split(',')[0].trim(); const ref = `${b.name} ${it.ch}:${first}`;
+  document.title = 'Grace minute — Just One More Lord';
+  main.innerHTML = `<section class="band"><div class="wrap quizwrap"><p class="kicker">Grace minute · ${new Date().toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' })}</p><h1>${esc(it.n[1])}</h1>
+    <div class="votdcard"><div class="vtext" id="gmv"><span class="spin"></span></div><p class="kicker" style="margin-top:8px">${esc(ref)}</p></div>
+    <div class="gnote"><h3>The finished work</h3><p>${esc(it.n[2])}</p></div>
+    <div class="panel"><h3>Reflect</h3><p>${esc(GRACE_REFLECT[it.i])}</p><h3>Pray</h3><p><i>${esc(GRACE_PRAYERS[it.i])}</i></p></div>
+    <div class="linkrow"><button class="btn" id="gmplay">▶ Listen (1 minute)</button><button class="btn ghost" data-go="read-${b.code}.${it.ch}.${parseInt(first)}">Read the chapter</button><button class="btn ghost" id="gmshare">${ICON.share} Share</button><button class="btn ghost sm" data-go="journal-${encodeURIComponent(ref)}">✏️ Journal it</button></div>
+    <p class="small muted">A new Grace minute every day, from the <button class="inl" data-go="grace">Grace lens</button> notes.</p></div></section>`;
+  let vt = ''; try { const v = await bibleText(ref); vt = v.verses.map(x => x.t).join(' '); $('#gmv').textContent = vt; } catch { $('#gmv').textContent = ''; }
+  track('grace', today());
+  $('#gmshare').onclick = () => shareIt({ title: `Grace minute: ${it.n[1]}`, text: `${vt ? `“${vt.slice(0, 180)}” — ${ref}\n\n` : ''}${it.n[2].slice(0, 220)}`, hash: 'grace-minute' });
+  $('#gmplay').onclick = () => { if (!('speechSynthesis' in window)) { toast('Listening is not supported on this device'); return; } if (speechSynthesis.speaking) { speechSynthesis.cancel(); $('#gmplay').textContent = '▶ Listen (1 minute)'; return; }
+    const u = new SpeechSynthesisUtterance(`${vt} ${ref}. ${it.n[1]}. ${it.n[2]} Reflect: ${GRACE_REFLECT[it.i]} Let's pray. ${GRACE_PRAYERS[it.i]}`); const vv = ttsVoice(); if (vv) u.voice = vv; u.rate = +(localStorage.getItem('jom:rate') || 1);
+    u.onend = () => { const b2 = $('#gmplay'); if (b2) b2.textContent = '▶ Listen again'; }; speechSynthesis.speak(u); $('#gmplay').textContent = '❚❚ Stop'; };
+}
 /* ---------------- router ---------------- */
 async function render() {
   const h = decodeURIComponent(location.hash.slice(1) || 'home');
@@ -3057,6 +3162,9 @@ async function render() {
     else if (h === 'chronology') await viewChronology();
     else if (h === 'profile') viewProfile();
     else if (h === 'settings') viewSettings();
+    else if (h === 'wrapped' || h.startsWith('wrapped-')) viewWrapped(h.slice(8));
+    else if (h === 'journal' || h.startsWith('journal-')) await viewJournal(h.slice(8));
+    else if (h === 'grace-minute') await viewGraceMinute();
     else if (h === 'friends') await viewFriends();
     else if (h === 'testimonies') await viewTestimonies();
     else if (h === 'churches') await viewChurches();
