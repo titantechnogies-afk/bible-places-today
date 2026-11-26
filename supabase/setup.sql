@@ -98,3 +98,15 @@ revoke execute on function public.create_group(text, text, text) from public, an
 revoke execute on function public.join_group(text, text) from public, anon;
 grant execute on function public.create_group(text, text, text) to authenticated;
 grant execute on function public.join_group(text, text) to authenticated;
+
+-- ===================== PHONE NOTIFICATIONS =====================
+create table if not exists public.push_subscriptions (
+  endpoint text primary key,
+  keys jsonb not null,
+  user_id uuid references auth.users(id) on delete cascade,
+  created_at timestamptz not null default now()
+);
+alter table public.push_subscriptions enable row level security;
+grant insert on public.push_subscriptions to anon, authenticated;
+drop policy if exists "anyone can subscribe" on public.push_subscriptions;
+create policy "anyone can subscribe" on public.push_subscriptions for insert to anon, authenticated with check (user_id is null or user_id = (select auth.uid()));

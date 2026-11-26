@@ -2,7 +2,7 @@
    App files: served from cache, refreshed in the background. Bible/concordance data: cached on first use.
    Live sources (Wikipedia, Commons, Bible text, map tiles): network first, cached copy when offline. */
 const V = 'jom-v9';
-const SHELL = ['./', 'index.html', 'css/style.css', 'js/app.js', 'data/places.js', 'data/discoveries.js', 'data/journeys.js', 'data/story.js', 'data/study.js', 'js/config.js',
+const SHELL = ['./', 'index.html', 'css/style.css', 'js/app.js', 'data/places.js', 'data/discoveries.js', 'data/journeys.js', 'data/story.js', 'data/study.js', 'data/books-intro.js', 'js/config.js',
   'manifest.webmanifest', 'icons/app-192.png', 'icons/app-512.png', 'icons/app-favicon-32.png', 'img/hero.webp', 'img/logo.png', 'img/logo-sm.png',
   'data/concordance/books.json'];
 const LIMITS = { [V + '-img']: 400, [V + '-live']: 600 };
@@ -34,4 +34,13 @@ self.addEventListener('message', e => {
       await Promise.all(files.slice(i, i + 8).map(async f => { if (!(await c.match(f))) { try { const r = await fetch(f); if (r.ok) await c.put(f, r); } catch {} } done++; }));
       e.source?.postMessage({ type: 'cache-progress', done, total: files.length });
     } })();
+});
+/* phone notifications */
+self.addEventListener('push', e => {
+  let d = {}; try { d = e.data ? e.data.json() : {}; } catch { d = { body: e.data && e.data.text() }; }
+  e.waitUntil(self.registration.showNotification(d.title || 'Just One More Lord', { body: d.body || '', icon: 'icons/app-192.png', badge: 'icons/app-192.png', tag: d.tag || 'jom', data: { url: d.url || './' } }));
+});
+self.addEventListener('notificationclick', e => {
+  e.notification.close(); const url = e.notification.data && e.notification.data.url || './';
+  e.waitUntil(clients.matchAll({ type: 'window', includeUncontrolled: true }).then(ws => { for (const w of ws) if ('focus' in w) { w.navigate ? w.navigate(url) : null; return w.focus(); } return clients.openWindow(url); }));
 });
