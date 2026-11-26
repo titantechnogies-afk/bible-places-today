@@ -797,3 +797,4 @@ html.embed body{background:#020a10}html.embed main{min-height:0}
 .tbio{display:grid;grid-template-columns:minmax(0,220px) minmax(0,1fr);gap:18px;align-items:start;margin:14px 0}
 .tpic{width:100%;border-radius:16px;border:1px solid rgba(255,199,44,.4);box-shadow:0 12px 30px rgba(0,0,0,.45)}
 @media(max-width:600px){.tbio{grid-template-columns:minmax(0,1fr)}.tpic{max-width:320px}}
+.tfig{margin:0}.tfig figcaption{margin-top:6px;text-align:center}
