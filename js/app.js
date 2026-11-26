@@ -1387,6 +1387,8 @@ function viewCommunity() {
   const friends = Object.values(MY.friends || {});
   main.innerHTML = `<section class="band"><div class="wrap"><div class="sh"><div><p class="kicker">Grow together</p><h1>Community</h1><p>Invite friends, study the same plan together, and talk with other readers. Everything personal stays on your phone; comments use free GitHub sign-in.</p></div></div>
     <div class="commgrid">
+      <div class="panel"><h2>Friends</h2><p class="small muted">Add friends with their code, see who is online and pray for each other.</p><div class="linkrow"><button class="btn" data-go="friends">Open friends</button><button class="btn ghost sm" data-go="partner">Prayer partner</button></div></div>
+      <div class="panel"><h2>Testimonies & churches</h2><p class="small muted">Read and share what God has done, and find a grace-teaching church near you.</p><div class="linkrow"><button class="btn" data-go="testimonies">Testimonies</button><button class="btn ghost sm" data-go="churches">Church finder</button></div></div>
       <div class="panel"><h2>Church groups</h2><p class="small muted">Create or join a group: read the same plan, see progress and share prayer requests.</p><div class="linkrow"><button class="btn" data-go="groups">Open groups</button></div></div>
       <div id="alertsSlot"></div>
       <div class="panel"><h2>Prayer</h2><p class="small muted">Keep a private prayer journal and pray with others on the prayer wall.</p><div class="linkrow"><button class="btn" data-go="prayer">Open prayer</button></div></div>
@@ -1979,7 +1981,7 @@ function mergeMy(remote) { if (!remote || typeof remote !== 'object') return;
   if (Array.isArray(remote.prayers)) MY.prayers = [...(MY.prayers || []), ...remote.prayers.filter(p => !(MY.prayers || []).some(x => x.id === p.id))];
   ['name', 'quizPerfect', 'last'].forEach(k => { if (remote[k] && !MY[k]) MY[k] = remote[k]; });
   try { localStorage.setItem('jom:my', JSON.stringify(MY)); } catch {} }
-async function pullProfile() { if (!sbOn() || !signedIn()) return null; try { const rows = await sbFetch(`/rest/v1/profiles?id=eq.${AUTH.user.id}&select=*`); const r = rows?.[0]; if (r) { AUTH.profile = { name: r.name, church: r.church, country: r.country, bio: r.bio, public: r.is_public }; saveAuth(); mergeMy(r.data); } await pushProfile(); return r; } catch (e) { console.warn(e); return null; } }
+async function pullProfile() { if (!sbOn() || !signedIn()) return null; try { const rows = await sbFetch(`/rest/v1/profiles?id=eq.${AUTH.user.id}&select=*`); const r = rows?.[0]; if (r) { AUTH.profile = { name: r.name, church: r.church, country: r.country, bio: r.bio, public: r.is_public, avatar: r.avatar_url || null, code: r.friend_code || null, online: r.show_online !== false, focus: r.prayer_focus || '' }; $('#meBtn')?.remove(); profileBtn(); saveAuth(); mergeMy(r.data); } await pushProfile(); return r; } catch (e) { console.warn(e); return null; } }
 let pushT = null, pushing = false;
 async function pushProfile() { if (!sbOn() || !signedIn() || pushing) return; pushing = true;
   try { const pr = AUTH.profile || {}; await sbFetch('/rest/v1/profiles', { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=minimal' }, body: JSON.stringify({ id: AUTH.user.id, name: pr.name || MY.name || null, church: pr.church || null, country: pr.country || null, bio: pr.bio || null, is_public: !!pr.public, data: MY, updated_at: new Date().toISOString() }) }); AUTH.synced = Date.now(); saveAuth(); }
@@ -1987,7 +1989,7 @@ async function pushProfile() { if (!sbOn() || !signedIn() || pushing) return; pu
 const _saveMy = saveMy;
 saveMy = () => { _saveMy(); if (sbOn() && signedIn()) { clearTimeout(pushT); pushT = setTimeout(pushProfile, 4000); } };
 function profileBtn() { const t = $('.tools'); if (!t || $('#meBtn')) return; const n = (AUTH.profile?.name || MY.name || '').trim();
-  t.insertAdjacentHTML('afterbegin', `<button class="tbtn me" id="meBtn" data-go="profile" title="My profile" aria-label="My profile">${n ? esc(n[0].toUpperCase()) : '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="12" cy="8" r="4" fill="none" stroke="currentColor" stroke-width="2"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>'}</button>`); }
+  t.insertAdjacentHTML('afterbegin', `<button class="tbtn me" id="meBtn" data-go="profile" title="My profile" aria-label="My profile">${AUTH.profile?.avatar ? `<img class="meimg" src="${esc(AUTH.profile.avatar)}" alt="">` : n ? esc(n[0].toUpperCase()) : '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="12" cy="8" r="4" fill="none" stroke="currentColor" stroke-width="2"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>'}</button>`); }
 function viewProfile() {
   setNav(''); document.title = 'My profile — Just One More Lord';
   if (!sbOn()) { main.innerHTML = `<section class="band"><div class="wrap quizwrap"><p class="kicker">Accounts</p><h1>Profiles are almost ready</h1><p class="lead">Sign-up needs the site owner to connect a free Supabase account (see <code>SETUP.md</code>). Until then, everything you save is kept on this phone — use <button class="inl" data-go="library">My library</button> → Download backup to move it.</p></div></section>`; return; }
@@ -2021,7 +2023,7 @@ function viewProfile() {
         <h2 style="margin-top:18px">Account</h2><div class="linkrow"><button class="btn ghost sm" id="pout">Sign out</button><button class="btn ghost sm" id="pdel">Delete my data</button></div>
         <p class="small muted">Deleting removes your profile and synced library from our database. To remove the login itself, email the address in the <a href="privacy.html" target="_blank">privacy policy</a>.</p></div></div>
     <h2 class="libh">My progress</h2>${progressHTML()}</div></section>`;
-  $('#pf').onsubmit = async e => { e.preventDefault(); AUTH.profile = { name: $('#pn').value.trim(), church: $('#pc').value.trim(), country: $('#pco').value.trim(), bio: $('#pb').value.trim(), public: $('#ppub').checked }; MY.name = AUTH.profile.name; saveAuth(); _saveMy(); await pushProfile(); toast('Profile saved'); $('#meBtn')?.remove(); profileBtn(); };
+  $('#pf').onsubmit = async e => { e.preventDefault(); AUTH.profile = { ...AUTH.profile, name: $('#pn').value.trim(), church: $('#pc').value.trim(), country: $('#pco').value.trim(), bio: $('#pb').value.trim(), public: $('#ppub').checked }; MY.name = AUTH.profile.name; saveAuth(); _saveMy(); await pushProfile(); toast('Profile saved'); $('#meBtn')?.remove(); profileBtn(); };
   $('#psync').onclick = async () => { await pullProfile(); toast('Synced'); viewProfile(); };
   $('#pout').onclick = async () => { try { await sbFetch('/auth/v1/logout', { method: 'POST' }); } catch {} signOutLocal(); toast('Signed out'); $('#meBtn')?.remove(); profileBtn(); viewProfile(); };
   $('#pdel').onclick = async () => { if (!confirm('Delete your profile and synced library from the server? What is on this phone stays.')) return; try { await sbFetch(`/rest/v1/profiles?id=eq.${u.id}`, { method: 'DELETE' }); toast('Your data was deleted from the server'); } catch (er) { toast(er.message); } signOutLocal(); $('#meBtn')?.remove(); profileBtn(); viewProfile(); };
@@ -2393,7 +2395,7 @@ async function viewGroups(id) {
       const [mem, prs] = await Promise.all([sbFetch(`/rest/v1/group_members?group_id=eq.${id}&select=user_id,name,role,stats,updated_at`), sbFetch(`/rest/v1/group_prayers?group_id=eq.${id}&select=id,name,text,created_at,user_id&order=created_at.desc&limit=50`)]);
       const plan = ALLPLANS.find(j => j.id === g.plan_id); const owner = g.owner === AUTH.user.id;
       main.innerHTML = `<section class="band"><div class="wrap"><div class="crumbs"><button data-go="groups">My groups</button> › ${esc(g.name)}</div><h1>${esc(g.name)}</h1>
-        <div class="linkrow"><span class="tag">Join code: <b>${esc(g.code)}</b></span><button class="btn ghost sm" id="ginv">${ICON.share} Invite</button>${plan ? `<button class="btn sm" data-go="plan-${plan.id}">Group plan: ${esc(plan.n)}</button>` : ''}</div>
+        <div class="linkrow"><span class="tag">Join code: <b>${esc(g.code)}</b></span><button class="btn ghost sm" id="ginv">${ICON.share} Invite</button><button class="btn sm" data-go="live-${id}">📖 Live reading</button>${plan ? `<button class="btn sm" data-go="plan-${plan.id}">Group plan: ${esc(plan.n)}</button>` : ''}</div>
         ${owner ? `<div class="filters" style="margin-top:12px"><label class="sr" for="gplan">Group plan</label><select id="gplan"><option value="">— choose a reading plan for the group —</option>${ALLPLANS.map(j => `<option value="${j.id}"${j.id === g.plan_id ? ' selected' : ''}>${esc(j.n)}</option>`).join('')}</select></div>` : ''}
         <h2 class="libh">Members (${mem.length})</h2><div class="rlist">${mem.sort((a, b) => (b.stats?.chapters || 0) - (a.stats?.chapters || 0)).map(m => { const st = m.stats || {}; const pd = plan ? (st.plans?.[plan.id] || 0) : null;
           return `<div class="ritem"><div><b>${esc(m.name || 'Member')}${m.role === 'leader' ? ' · leader' : ''}</b><span>🔥 ${st.streak || 0}-day streak · ${st.chapters || 0} chapters read · daily challenge ${st.daily || 0}${pd != null ? ` · plan ${pd}/${plan.stops.length}` : ''}</span></div></div>`; }).join('')}</div>
@@ -2872,6 +2874,133 @@ function viewProgress() {
     <div class="statrow"><div><b>${done}</b><span>of ${total} chapters</span></div><div><b>${(done / total * 100).toFixed(1)}%</b><span>of the Bible</span></div><div><b>${conc.starts.filter(b => b.counts.every((_, c) => isRead(b, c + 1))).length}</b><span>books finished</span></div></div>
     <p class="small muted">Each square is a chapter; it lights up when you open it in the Bible reader. Tap any square to read it.</p><div class="pgrid">${html}</div></div></section>`;
 }
+
+/* ---------- community: profile pictures, friends & online status, testimonies, church finder, prayer partners, live group reading ---------- */
+const needSQL = e => /does not exist|Could not find|schema cache|404/i.test(e?.message || '') ? 'This part is not switched on yet: the site owner needs to run supabase/community.sql in Supabase.' : (e?.message || 'Something went wrong');
+const isOnline = t => t && Date.now() - new Date(t).getTime() < 150000;
+const agoTxt = t => { if (!t) return ''; const m = Math.round((Date.now() - new Date(t)) / 6e4); return m < 2 ? 'online now' : m < 60 ? `active ${m} min ago` : m < 1440 ? `active ${Math.round(m / 60)} h ago` : `active ${new Date(t).toLocaleDateString()}`; };
+function avatarHTML(url, name, size = 44, online = null) { const ini = esc(String(name || '?').trim()[0]?.toUpperCase() || '?');
+  return `<span class="av" style="--av:${size}px">${url ? `<img src="${esc(url)}" alt="" loading="lazy">` : `<b>${ini}</b>`}${online == null ? '' : `<i class="dot${online ? ' on' : ''}" title="${online ? 'Online' : 'Offline'}"></i>`}</span>`; }
+const rpc = (fn, body = {}) => sbFetch('/rest/v1/rpc/' + fn, { method: 'POST', body: JSON.stringify(body) });
+let beatOff = false;
+async function heartbeat() { if (beatOff || document.hidden || !sbOn() || !signedIn() || !navigator.onLine) return; try { await rpc('touch_online'); } catch (e) { if (e.status === 404) beatOff = true; } }
+setTimeout(heartbeat, 5000); setInterval(heartbeat, 60000); document.addEventListener('visibilitychange', () => { if (!document.hidden) heartbeat(); });
+async function resizeImage(file, max = 320) { const img = await new Promise((ok, bad) => { const i = new Image(); i.onload = () => ok(i); i.onerror = bad; i.src = URL.createObjectURL(file); });
+  const sz = Math.min(img.width, img.height), cv = document.createElement('canvas'); cv.width = cv.height = max; cv.getContext('2d').drawImage(img, (img.width - sz) / 2, (img.height - sz) / 2, sz, sz, 0, 0, max, max);
+  return new Promise(ok => cv.toBlob(ok, 'image/jpeg', 0.86)); }
+async function uploadAvatar(file) { const blob = await resizeImage(file); const uid = AUTH.user.id; if (AUTH.exp && Date.now() > AUTH.exp - 60000) await sbRefresh();
+  const r = await fetch(`${SB.url.replace(/\/$/, '')}/storage/v1/object/avatars/${uid}.jpg`, { method: 'POST', headers: { apikey: SB.anonKey, Authorization: 'Bearer ' + AUTH.access, 'Content-Type': 'image/jpeg', 'x-upsert': 'true', 'cache-control': '3600' }, body: blob });
+  if (!r.ok) { const t = await r.text(); throw new Error(/bucket not found/i.test(t) ? 'does not exist' : (t.slice(0, 160) || 'Upload failed')); }
+  const url = `${SB.url.replace(/\/$/, '')}/storage/v1/object/public/avatars/${uid}.jpg?v=${Date.now()}`;
+  await sbFetch(`/rest/v1/profiles?id=eq.${uid}`, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ avatar_url: url }) });
+  AUTH.profile = { ...AUTH.profile, avatar: url }; saveAuth(); $('#meBtn')?.remove(); profileBtn(); return url; }
+const _viewProfile = viewProfile;
+viewProfile = function () { _viewProfile(); if (!sbOn() || !signedIn() || !$('#pf')) return; const pr = AUTH.profile || {};
+  $('.sh', main)?.insertAdjacentHTML('afterbegin', `<label class="avedit" title="Change profile picture">${avatarHTML(pr.avatar, pr.name || MY.name, 96, true)}<span class="btn ghost sm">📷 ${pr.avatar ? 'Change' : 'Add'} photo</span><input type="file" id="avf" accept="image/*" hidden></label>`);
+  $('#pf').insertAdjacentHTML('afterend', `<div class="panel"><h2>Friends</h2><p class="small muted">Your friend code: <b class="fcode" id="myfc">${esc(pr.code || '…')}</b> — share it so friends can add you.</p>
+    <label class="tog"><input type="checkbox" id="pon" ${pr.online !== false ? 'checked' : ''}> Show friends when I am online</label>
+    <label>Prayer focus this week (friends and your prayer partner see it)<textarea id="pfoc" rows="2" maxlength="300" placeholder="e.g. My mom's health, a new job">${esc(pr.focus || '')}</textarea></label>
+    <div class="linkrow"><button class="btn sm" id="pexs">Save</button><button class="btn ghost sm" data-go="friends">My friends</button></div></div>`);
+  $('#avf').onchange = async e => { const f = e.target.files[0]; if (!f) return; toast('Uploading your photo…'); try { await uploadAvatar(f); toast('Profile picture updated'); viewProfile(); } catch (er) { toast(needSQL(er)); } };
+  const saveEx = async (quiet) => { try { const code = await rpc('set_my_extras', { p_show_online: $('#pon').checked, p_prayer_focus: $('#pfoc').value.trim() }); AUTH.profile = { ...AUTH.profile, online: $('#pon').checked, focus: $('#pfoc').value.trim(), code: code || AUTH.profile.code }; saveAuth(); if (code) $('#myfc').textContent = code; if (!quiet) toast('Saved'); } catch (er) { if (!quiet) toast(needSQL(er)); } };
+  $('#pexs').onclick = () => saveEx(); $('#pon').onchange = () => saveEx(true); if (!pr.code) saveEx(true);
+};
+function signInFirst(what) { main.innerHTML = `<section class="band"><div class="wrap quizwrap"><h1>${esc(what)}</h1><p class="lead">Create a free profile or sign in to use this.</p><button class="btn" data-go="profile">Sign in or sign up</button></div></section>`; }
+let friendsTimer = null;
+async function viewFriends() {
+  setNav('community'); document.title = 'Friends — Just One More Lord'; clearInterval(friendsTimer); if (!sbOn() || !signedIn()) return signInFirst('Friends');
+  const pr = AUTH.profile || {};
+  main.innerHTML = `<section class="band"><div class="wrap"><div class="sh"><div><p class="kicker">Grow together</p><h1>Friends</h1><p>See who is online, what they are praying about, and encourage each other.</p></div></div>
+    <div class="commgrid"><div class="panel"><h2>Add a friend</h2><form class="filters" id="faf"><input id="fcode" maxlength="6" placeholder="Their 6-letter code" style="flex:1;text-transform:uppercase" aria-label="Friend code"><button class="btn sm">Add</button></form>
+      <p class="small muted">Your code: <b class="fcode">${esc(pr.code || '— open your profile once')}</b> <button class="inl" id="fshare">Share my code</button></p></div>
+      <div class="panel"><h2>Your status</h2><div class="linkrow">${avatarHTML(pr.avatar, pr.name || MY.name, 44, pr.online !== false)}<span>${pr.online !== false ? 'Friends can see when you are online.' : 'You are hidden (offline to friends).'}</span></div><div class="linkrow"><button class="btn ghost sm" data-go="profile">Change photo or status</button></div></div></div>
+    <div id="flist"><p class="muted"><span class="spin"></span>Loading friends…</p></div></div></section>`;
+  $('#fshare').onclick = () => shareIt({ title: 'Add me on Just One More Lord', text: `Add me as a friend on Just One More Lord — my friend code is ${pr.code}. Open the app → Community → Friends.`, hash: 'friends' });
+  $('#faf').onsubmit = async e => { e.preventDefault(); const c = $('#fcode').value.trim(); if (c.length < 6) return; try { const n = await rpc('add_friend', { p_code: c }); toast(`Friend request sent to ${n}`); $('#fcode').value = ''; load(); } catch (er) { toast(needSQL(er)); } };
+  const load = async () => { if (!$('#flist')) { clearInterval(friendsTimer); return; } let rows; try { rows = await rpc('my_friends'); } catch (er) { $('#flist').innerHTML = `<p class="empty">${esc(needSQL(er))}</p>`; clearInterval(friendsTimer); return; }
+    const inc = rows.filter(r => r.status === 'pending' && r.incoming), out = rows.filter(r => r.status === 'pending' && !r.incoming), acc = rows.filter(r => r.status === 'accepted').sort((a, b) => (isOnline(b.last_seen) - isOnline(a.last_seen)) || String(b.last_seen || '').localeCompare(String(a.last_seen || '')));
+    const on = acc.filter(r => isOnline(r.last_seen)).length;
+    $('#flist').innerHTML = `${inc.length ? `<h2 class="libh">Friend requests</h2><div class="rlist">${inc.map(r => `<div class="ritem fr">${avatarHTML(r.avatar_url, r.name, 44)}<div><b>${esc(r.name)}</b><span>${esc(r.church || 'wants to be your friend')}</span></div><span class="linkrow"><button class="btn sm" data-acc="${r.id}">Accept</button><button class="btn ghost sm" data-dec="${r.id}">Decline</button></span></div>`).join('')}</div>` : ''}
+      <h2 class="libh">My friends (${acc.length}) · <span class="onl">${on} online</span></h2>${acc.length ? `<div class="rlist">${acc.map(r => `<div class="ritem fr">${avatarHTML(r.avatar_url, r.name, 48, isOnline(r.last_seen))}<div><b>${esc(r.name)}</b><span>${esc(r.last_seen ? agoTxt(r.last_seen) : 'status hidden')}${r.church ? ' · ' + esc(r.church) : ''}</span>${r.prayer_focus ? `<span class="pfoc">🙏 ${esc(r.prayer_focus)}</span>` : ''}</div><button class="inl small" data-rm="${r.id}" aria-label="Remove ${esc(r.name)}">remove</button></div>`).join('')}</div>` : '<p class="empty">No friends yet — share your code or add theirs above.</p>'}
+      ${out.length ? `<h2 class="libh">Waiting for them to accept</h2><div class="chips">${out.map(r => `<span class="chip">${esc(r.name)}</span>`).join('')}</div>` : ''}`; };
+  $('#flist').onclick = async e => { const a = e.target.closest('[data-acc],[data-dec],[data-rm]'); if (!a) return; try {
+      if (a.dataset.acc) { await rpc('respond_friend', { p_other: a.dataset.acc, p_accept: true }); toast('Friend added'); }
+      else if (a.dataset.dec) await rpc('respond_friend', { p_other: a.dataset.dec, p_accept: false });
+      else if (confirm('Remove this friend?')) { const o = a.dataset.rm, me = AUTH.user.id; await sbFetch(`/rest/v1/friendships?or=(and(requester.eq.${me},addressee.eq.${o}),and(requester.eq.${o},addressee.eq.${me}))`, { method: 'DELETE' }); }
+      load(); } catch (er) { toast(needSQL(er)); } };
+  await load(); friendsTimer = setInterval(load, 30000);
+}
+async function viewTestimonies() {
+  setNav('community'); document.title = 'Testimonies — Just One More Lord'; if (!sbOn()) return signInFirst('Testimonies');
+  main.innerHTML = `<section class="band"><div class="wrap"><p class="kicker">What God has done</p><h1>Testimonies</h1><p class="lead">"They overcame him by the blood of the Lamb and by the word of their testimony" (Revelation 12:11). Share answered prayers, healings and God's goodness.</p>
+    ${signedIn() ? `<form class="panel authform" id="tf"><label>What kind?<select id="tk">${['answered prayer', 'healing', 'salvation', 'provision', 'other'].map(k => `<option>${k}</option>`).join('')}</select></label><label>Your testimony<textarea id="tt" rows="4" minlength="10" maxlength="1200" required placeholder="Share what God did…"></textarea></label><button class="btn">Share testimony</button><p class="small muted">Shown with your name and photo. Please keep other people's private details out.</p></form>` : '<div class="linkrow"><button class="btn" data-go="profile">Sign in to share yours</button></div>'}
+    <div class="chips" id="tfilt"><button class="chip on" data-k="">All</button>${['answered prayer', 'healing', 'salvation', 'provision'].map(k => `<button class="chip" data-k="${k}">${k}</button>`).join('')}</div><div id="tlist"><p class="muted"><span class="spin"></span>Loading…</p></div></div></section>`;
+  let kind = '';
+  const load = async () => { try { const rows = await sbFetch(`/rest/v1/testimonies?select=id,user_id,name,avatar_url,kind,text,created_at&order=created_at.desc&limit=100${kind ? '&kind=eq.' + encodeURIComponent(kind) : ''}`, {}, signedIn());
+      $('#tlist').innerHTML = rows.length ? rows.map(t => `<article class="tcard">${avatarHTML(t.avatar_url, t.name, 42)}<div><p class="kicker">${esc(t.kind)} · ${new Date(t.created_at).toLocaleDateString()}</p><p>${esc(t.text)}</p><span class="small muted">— ${esc(t.name || 'A believer')}</span>
+        <div class="linkrow"><button class="inl small" data-praise="${t.id}">🙌 Praise God</button>${signedIn() && t.user_id === AUTH.user.id ? `<button class="inl small" data-tdel="${t.id}">delete</button>` : signedIn() ? `<button class="inl small" data-trep="${t.id}">report</button>` : ''}</div></div></article>`).join('') : '<p class="empty">No testimonies yet — be the first to share.</p>'; }
+    catch (er) { $('#tlist').innerHTML = `<p class="empty">${esc(needSQL(er))}</p>`; } };
+  $('#tfilt').onclick = e => { const b = e.target.closest('[data-k]'); if (!b) return; kind = b.dataset.k; $$('#tfilt .chip').forEach(x => x.classList.toggle('on', x === b)); load(); };
+  $('#tf')?.addEventListener('submit', async e => { e.preventDefault(); try { await sbFetch('/rest/v1/testimonies', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ user_id: AUTH.user.id, name: AUTH.profile?.name || MY.name || 'A believer', avatar_url: AUTH.profile?.avatar || null, kind: $('#tk').value, text: $('#tt').value.trim() }) }); $('#tt').value = ''; toast('Thank you for sharing!'); load(); } catch (er) { toast(needSQL(er)); } });
+  $('#tlist').onclick = async e => { const b = e.target.closest('[data-praise],[data-tdel],[data-trep]'); if (!b) return;
+    if (b.dataset.praise) { b.textContent = '🙌 Amen!'; b.disabled = true; return; }
+    try { if (b.dataset.tdel && confirm('Delete your testimony?')) { await sbFetch(`/rest/v1/testimonies?id=eq.${b.dataset.tdel}`, { method: 'DELETE' }); load(); }
+      else if (b.dataset.trep && confirm('Report this testimony as inappropriate?')) { await rpc('report_testimony', { p_id: b.dataset.trep }); toast('Thank you — it will be reviewed'); b.remove(); } } catch (er) { toast(needSQL(er)); } };
+  load();
+}
+async function viewChurches() {
+  setNav('community'); document.title = 'Church finder — Just One More Lord'; if (!sbOn()) return signInFirst('Church finder');
+  main.innerHTML = `<section class="band"><div class="wrap"><p class="kicker">Find a home church</p><h1>Grace church finder</h1><p class="lead">Churches that preach the finished work of Jesus and the love of God, added by members of the app.</p>
+    <div class="mapbox" id="chmap" style="height:380px"></div><div class="linkrow"><button class="btn sm" id="chnear">📍 Sort by nearest to me</button><input id="chq" type="search" placeholder="Filter by name or city" style="flex:1;min-width:160px" aria-label="Filter churches"></div><div class="rlist" id="chlist"><p class="muted"><span class="spin"></span>Loading…</p></div>
+    ${signedIn() ? `<details class="panel" style="margin-top:18px"><summary><h2 style="display:inline">Add a church</h2></summary><form class="authform" id="chf"><label>Church name<input id="cn" required maxlength="100"></label><label>Street address or area (to find it on the map)<input id="ca" required maxlength="160" placeholder="e.g. 1 Wincanton Way, Umhlanga"></label><label>Website (optional)<input id="cw" type="url" maxlength="200"></label><label>About (optional)<textarea id="cab" rows="2" maxlength="400" placeholder="Pastors, service times…"></textarea></label><button class="btn">Find on map and add</button><p class="small" id="chmsg"></p></form></details>` : '<div class="linkrow"><button class="btn ghost" data-go="profile">Sign in to add your church</button></div>'}
+    <p class="small muted">Locations found with OpenStreetMap Nominatim. Report anything that is not a church and it will be hidden.</p></div></section>`;
+  let rows = [], me = null;
+  const dist = r => me ? Math.hypot(r.lat - me.lat, (r.lng - me.lon) * Math.cos(me.lat * Math.PI / 180)) * 111 : null;
+  const list = () => { const q = norm($('#chq').value); const rs = rows.filter(r => !q || norm(`${r.name} ${r.city} ${r.country}`).includes(q)).sort((a, b) => me ? dist(a) - dist(b) : a.name.localeCompare(b.name));
+    $('#chlist').innerHTML = rs.map(r => `<div class="ritem"><div><b>${esc(r.name)}</b><span>${esc([r.city, r.country].filter(Boolean).join(', '))}${me ? ` · ${Math.round(dist(r))} km` : ''}</span>${r.about ? `<span>${esc(r.about)}</span>` : ''}</div><span class="linkrow">${r.website ? `<a class="btn ghost sm" href="${esc(r.website)}" target="_blank" rel="noopener">Website</a>` : ''}<a class="btn ghost sm" target="_blank" rel="noopener" href="https://www.openstreetmap.org/?mlat=${r.lat}&mlon=${r.lng}#map=16/${r.lat}/${r.lng}">Map</a>${signedIn() ? `<button class="inl small" data-crep="${r.id}">report</button>` : ''}</span></div>`).join('') || '<p class="empty">No churches yet — add yours.</p>'; };
+  const load = async () => { try { rows = await sbFetch('/rest/v1/churches?select=*&order=name&limit=1000', {}, signedIn()); } catch (er) { $('#chlist').innerHTML = `<p class="empty">${esc(needSQL(er))}</p>`; return; }
+    $('#chmap').innerHTML = ''; if (rows.length) makeMap($('#chmap'), { markers: rows.map(r => ({ lat: r.lat, lon: r.lng, label: r.name, sub: r.city || '', kind: 'main' })), maxZoom: 12 }); else $('#chmap').remove(); list(); };
+  $('#chq').oninput = list;
+  $('#chnear').onclick = () => navigator.geolocation?.getCurrentPosition(p => { me = { lat: p.coords.latitude, lon: p.coords.longitude }; list(); }, () => toast('Location was not allowed'));
+  $('#chlist').onclick = async e => { const b = e.target.closest('[data-crep]'); if (b && confirm('Report this listing?')) { try { await rpc('report_church', { p_id: b.dataset.crep }); toast('Thank you'); b.remove(); } catch (er) { toast(needSQL(er)); } } };
+  $('#chf')?.addEventListener('submit', async e => { e.preventDefault(); const m = $('#chmsg'); m.textContent = 'Finding the address…';
+    try { const g = await (await fetch('https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=1&q=' + encodeURIComponent($('#ca').value.trim()))).json(); if (!g[0]) { m.textContent = 'That address could not be found — try adding the city and country.'; return; }
+      const ad = g[0].address || {}; await sbFetch('/rest/v1/churches', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ name: $('#cn').value.trim(), city: ad.city || ad.town || ad.suburb || ad.village || '', country: ad.country || '', lat: +g[0].lat, lng: +g[0].lon, website: $('#cw').value.trim() || null, about: $('#cab').value.trim() || null, added_by: AUTH.user.id }) });
+      m.textContent = 'Added — thank you!'; e.target.reset(); load(); } catch (er) { m.textContent = needSQL(er); } });
+  load();
+}
+async function viewPartner() {
+  setNav('community'); document.title = 'Prayer partner — Just One More Lord'; if (!sbOn() || !signedIn()) return signInFirst('Prayer partner');
+  main.innerHTML = `<section class="band"><div class="wrap quizwrap"><p class="kicker">Pray for one another (James 5:16)</p><h1>Prayer partner</h1><p class="lead">Each week you are paired with another believer using the app. You each see the other's prayer focus and pray for them during the week.</p><div id="ppbox"><p class="muted"><span class="spin"></span>Loading…</p></div></div></section>`;
+  const show = async join => { try { const r = (await rpc('prayer_partner', { p_join: !!join }))?.[0] || {};
+      $('#ppbox').innerHTML = r.id ? `<div class="panel ppcard">${avatarHTML(r.avatar_url, r.name, 80)}<div><p class="kicker">This week's partner</p><h2>${esc(r.name)}</h2><p>${r.prayer_focus ? '🙏 ' + esc(r.prayer_focus) : '<span class="muted">They have not shared a prayer focus yet — pray for God\'s love and peace over them.</span>'}</p></div></div>
+          <div class="panel"><h2>Your prayer focus</h2><p class="small muted">${AUTH.profile?.focus ? esc(AUTH.profile.focus) : 'You have not shared one yet.'}</p><button class="btn ghost sm" data-go="profile">Change it</button></div><p class="small muted">A new partner is matched each Monday.</p>`
+        : r.waiting ? `<div class="panel"><h2>Finding you a partner…</h2><p>You are in the queue. As soon as someone else joins this week, you will be paired. Check back soon.</p><button class="btn ghost sm" data-go="profile">Set your prayer focus</button></div>`
+        : `<div class="panel"><h2>Get a prayer partner this week</h2><p class="small muted">Your name, photo and prayer focus will be shared with your partner.</p><button class="btn" id="ppjoin">Find me a prayer partner</button></div>`;
+      $('#ppjoin')?.addEventListener('click', () => show(true)); } catch (er) { $('#ppbox').innerHTML = `<p class="empty">${esc(needSQL(er))}</p>`; } };
+  show(false);
+}
+let liveTimer = null;
+async function viewLive(gid) {
+  setNav('community'); clearInterval(liveTimer); if (!sbOn() || !signedIn()) return signInFirst('Live reading'); await loadConc();
+  const [code, ch] = (sessionStorage.getItem('jom:live:' + gid) || MY.last || 'Jhn.1').split('.'); const b = conc.byCode[code] || conc.byCode.Jhn; const c = Math.min(+ch || 1, b.counts.length); const ref = `${b.name} ${c}`;
+  document.title = `Live reading · ${ref} — Just One More Lord`;
+  main.innerHTML = `<section class="band"><div class="wrap"><div class="crumbs"><button data-go="group-${gid}">Back to the group</button> › Live reading</div><h1>📖 Live reading <span class="neon-txt">${esc(ref)}</span></h1>
+    <div class="readbar"><select id="lbk" aria-label="Book">${conc.starts.map(x => `<option value="${x.code}"${x.code === b.code ? ' selected' : ''}>${esc(x.name)}</option>`).join('')}</select><select id="lch" aria-label="Chapter">${b.counts.map((_, i) => `<option${i + 1 === c ? ' selected' : ''}>${i + 1}</option>`).join('')}</select><button class="btn ghost sm" id="lshare">${ICON.share} Invite the group</button></div>
+    <div class="livegrid"><article class="reader" id="ltext"><p class="muted"><span class="spin"></span>Loading…</p></article>
+      <aside class="panel livechat"><h2>Group chat</h2><div id="lmsgs" aria-live="polite"></div><form class="filters" id="lf"><input id="lin" maxlength="400" placeholder="Share a thought on ${esc(ref)}…" style="flex:1" aria-label="Message"><button class="btn sm">Send</button></form><p class="small muted">Tap a verse to quote it. Messages refresh every few seconds.</p></aside></div></div></section>`;
+  const setCh = (k, n) => { sessionStorage.setItem('jom:live:' + gid, `${k}.${n}`); viewLive(gid); };
+  $('#lbk').onchange = e => setCh(e.target.value, 1); $('#lch').onchange = e => setCh(b.code, e.target.value);
+  $('#lshare').onclick = () => shareIt({ title: 'Read with us live', text: `We are reading ${ref} together now — open Just One More Lord → Community → Church groups → Live reading.`, hash: 'live-' + gid });
+  try { const v = await bibleText(ref); $('#ltext').innerHTML = v.verses.map(x => `<span class="rverse" data-q="${x.v}"><sup>${x.v}</sup>${esc(x.t)} </span>`).join(''); } catch { $('#ltext').innerHTML = '<p class="empty">The chapter text could not be loaded.</p>'; }
+  $('#ltext').onclick = e => { const v = e.target.closest('[data-q]'); if (v) { $('#lin').value = `(${b.name} ${c}:${v.dataset.q}) ` + $('#lin').value; $('#lin').focus(); } };
+  let last = 0; const me = AUTH.user.id;
+  const pull = async () => { if (!$('#lmsgs')) { clearInterval(liveTimer); return; } try { const rows = await sbFetch(`/rest/v1/group_live?group_id=eq.${gid}&id=gt.${last}&select=id,user_id,name,ref,text,created_at&order=id.asc&limit=100`);
+      if (rows.length) { last = rows[rows.length - 1].id; const box = $('#lmsgs'); box.insertAdjacentHTML('beforeend', rows.map(m => `<div class="lmsg${m.user_id === me ? ' mine' : ''}"><b>${esc(m.name || 'Member')}</b><span class="small muted"> · ${esc(m.ref || '')} · ${new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span><p>${esc(m.text)}</p></div>`).join('')); box.scrollTop = box.scrollHeight; } }
+    catch (er) { $('#lmsgs').innerHTML = `<p class="empty">${esc(needSQL(er))}</p>`; clearInterval(liveTimer); } };
+  $('#lf').onsubmit = async e => { e.preventDefault(); const t = $('#lin').value.trim(); if (!t) return; $('#lin').value = ''; try { await sbFetch('/rest/v1/group_live', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ group_id: gid, user_id: me, name: AUTH.profile?.name || MY.name || 'Member', ref, text: t }) }); pull(); } catch (er) { toast(needSQL(er)); } };
+  await pull(); liveTimer = setInterval(() => { if (!document.hidden) pull(); }, 4000);
+}
 /* ---------------- router ---------------- */
 async function render() {
   const h = decodeURIComponent(location.hash.slice(1) || 'home');
@@ -2928,6 +3057,11 @@ async function render() {
     else if (h === 'chronology') await viewChronology();
     else if (h === 'profile') viewProfile();
     else if (h === 'settings') viewSettings();
+    else if (h === 'friends') await viewFriends();
+    else if (h === 'testimonies') await viewTestimonies();
+    else if (h === 'churches') await viewChurches();
+    else if (h === 'partner') await viewPartner();
+    else if (h.startsWith('live-')) await viewLive(h.slice(5));
     else if (h.startsWith('parallel')) await viewParallel(h.slice(9));
     else if (h === 'search-adv' || h.startsWith('search-')) await viewAdvSearch(h === 'search-adv' ? '' : h.slice(7));
     else if (h === 'rainbow') await viewRainbow();
