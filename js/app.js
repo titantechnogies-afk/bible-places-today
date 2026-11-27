@@ -3158,7 +3158,7 @@ function viewHealing() {
     <p class="lead">Healing is part of what Jesus purchased at the cross. Faith comes by hearing the Word (Romans 10:17), so read these, speak them and listen to them often. Tap a reference to read the verse.</p>
     <div class="linkrow"><button class="btn" id="hlsp">▶ Speak them over me</button><button class="btn ghost" data-go="teachings">Teaching on healing</button></div>
     <div class="rlist">${GOSPEL.healing.map(([r, n]) => `<div class="ritem"><div><b><button class="inl" data-verse="${esc(r)}">${esc(r)}</button></b><span>${esc(n)}</span></div></div>`).join('')}</div>
-    <p class="small muted" style="margin-top:14px">Believing God for healing goes hand in hand with wisdom. Keep seeing your doctor and taking prescribed medicine.</p></div></section>`;
+    <p class="small muted" style="margin-top:14px">Believing God for healing goes hand in hand with wisdom. We will never tell you to stop seeing your doctor or to stop your medication. We love it when doctors confirm the healing that comes through Jesus, not through medicine.</p></div></section>`;
   $('#hlsp').onclick = async e => { const b = e.target; let lines = GOSPEL.healing.map(([r, n]) => `${r}. ${n}`); try { const vs = []; for (const [r] of GOSPEL.healing) { const v = await bibleText(r); vs.push(`${v.verses.map(x => x.t).join(' ')} ${r}.`); } lines = vs; } catch {} speakList(lines, b); };
 }
 
