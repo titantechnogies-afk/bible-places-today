@@ -167,6 +167,8 @@ photos: [
   { f: 'newborn', s: 'family', c: 'Children are a gift from the Lord (Psalm 127:3).' },
   { f: 'arsenal-smile', s: 'family', c: 'Joy that comes from being loved.' },
   { f: 'baptism-tank', s: 'raised', c: 'Moments before going under: surrounded by brothers.' },
+  { f: 'pastors', s: 'sunday', c: 'Pastors Richard and Tanya Olivier, Harvest Church.' },
+  { f: 'pastors-stage', s: 'sunday', c: 'Richard and Tanya Olivier leading on a Sunday.' },
   { f: 'sunday-welcome', s: 'sunday', c: 'Welcome to Sunday at Harvest.' },
   { f: 'young-worship', s: 'sunday', c: 'Young worshippers leading the way.' },
   { f: 'ministry-time', s: 'sunday', c: 'Ministry time: hearts wide open to God.' },
