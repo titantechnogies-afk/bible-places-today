@@ -1044,3 +1044,5 @@ body{padding-bottom:64px}
 @media print{.helpfab{display:none}}
 .frbtns{flex-wrap:nowrap;gap:8px;align-items:center}.fnote .fntext{display:block;white-space:pre-wrap;color:var(--ink);margin:4px 0}
 .shareflags{margin:0 0 16px}.shareflags h2{font-size:22px;margin-bottom:6px}
+.ritem .av,.av{display:inline-grid;place-items:center;color:inherit;font-size:inherit}
+.av>b{display:block;line-height:1;text-align:center}
