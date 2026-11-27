@@ -125,7 +125,7 @@ heal: [
   ['Check and pray again', 'Ask them to try something they couldn\'t do before. If it is better but not gone, pray again. Jesus prayed twice for the blind man at Bethsaida. Thank God for every improvement.', ['Mark 8:22-25', 'Luke 17:14']],
   ['Point them to Jesus', 'Whatever happens, tell them how much God loves them and that Jesus paid for their healing and their forgiveness. Offer them the "Gospel in 1 minute" and invite them to receive him.', ['Acts 3:12-16', 'Acts 4:29-30']],
   ['Love, whatever the outcome', 'If you don\'t see the healing right away, don\'t blame the person, and don\'t give up. Keep loving them, keep believing and keep praying for the next person. Results are God\'s department; love is yours.', ['1 Corinthians 13:1-3', 'Galatians 6:9']],
-  ['Walk in wisdom', 'Never tell anyone to stop taking medicine or to stop seeing their doctor. Let a doctor confirm a healing. God works through doctors too.', ['Luke 17:14', 'Colossians 4:14']]
+  ['Walk in wisdom', 'Never tell anyone to stop taking medicine or to stop seeing their doctor. Let a doctor confirm a healing.', ['Luke 17:14', 'Colossians 4:14']]
 ],
 healPrayer: 'In the name of Jesus, I speak to this sickness and this pain: leave this body now. Body, be healed and made whole. Father, thank you that by Jesus\' stripes [name] was healed. I release your life and your peace into them right now. Amen.',
 
