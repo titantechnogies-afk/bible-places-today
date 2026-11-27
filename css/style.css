@@ -1012,3 +1012,13 @@ button.gditem:hover{border-color:var(--cyan);box-shadow:0 0 16px rgba(0,209,255,
 .mdot{width:9px;height:9px;border-radius:50%;background:#39ff9c;box-shadow:0 0 10px #39ff9c;animation:mpulse 2s infinite}
 @keyframes mpulse{50%{opacity:.35}}
 :root[data-motion=reduce] .mdot{animation:none}
+.freehero{margin:16px 0}.freehero img{width:100%;max-height:440px;height:auto;object-fit:cover;object-position:50% 25%;border-radius:20px;border:1px solid rgba(255,199,44,.45)}.freehero figcaption{margin-top:6px;color:var(--mute);font-style:italic;font-size:14px}
+.helpform{margin-top:26px;border-color:rgba(57,255,156,.5)!important;box-shadow:0 0 30px rgba(57,255,156,.12);scroll-margin-top:130px}
+.helpform label{display:block;margin:12px 0 4px}.helpform input:not([type=checkbox]),.helpform textarea{width:100%}
+.helpform label.tog{display:flex}.hp{position:absolute!important;left:-9999px;width:1px;height:1px;opacity:0}
+.sentok{padding:6px 0}.sentok h3{color:#39ff9c}
+.freecta{display:flex;gap:14px;align-items:center;width:100%;text-align:left;margin-top:16px;padding:14px 16px;border-radius:16px;border:1px solid rgba(57,255,156,.45);background:rgba(57,255,156,.07);color:inherit;font:inherit}
+.freecta>span:first-child{font-size:28px}.freecta>span:last-child{display:grid;gap:2px}.freecta b{font:700 16px "Sora",sans-serif}.freecta>span:last-child>span{color:var(--mute);font-size:calc(15px * var(--fs,1))}
+.freecta:hover{box-shadow:0 0 20px rgba(57,255,156,.25)}
+.hmsg{margin-top:12px}.hmtext{white-space:pre-wrap;font-size:calc(17px * var(--fs,1))}.hmsg textarea{width:100%}
+.hbadge{background:#ff4d8d;color:#fff;border-radius:999px;padding:1px 8px;font-size:12px;margin-left:6px}

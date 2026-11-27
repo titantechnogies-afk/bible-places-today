@@ -70,3 +70,11 @@ Comments, the prayer wall and the community board are switched on through GitHub
 Supabase → your project → **SQL Editor** → *New query* → paste everything from `supabase/stats.sql` → **Run**.
 The home screen and the Community page then show how many people have joined (only the number; no names or emails).
 Until this is run, the count is simply hidden.
+
+## Help messages (Freedom section: "Jesus is the ONE step")
+People can send you a private message for help from the Freedom page. To switch it on:
+1. Sign up in the app yourself with your email (My profile).
+2. Supabase → your project → **SQL Editor** → *New query* → paste everything from `supabase/help.sql`.
+3. In the last line, change `YOUR-EMAIL-HERE` to the email you signed up with → **Run**.
+4. In the app, open **My profile**: a **Help messages** button appears (only for you) with the number of new messages.
+To add another admin later, run the last line again with their email.

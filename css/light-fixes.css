@@ -9,3 +9,4 @@
 :root[data-theme=light] .letter p:first-child,:root[data-theme=light] .letter p:nth-last-child(-n+2){color:#8a5d00}
 :root[data-theme=light] .flyer h2{color:#0b2530}
 :root[data-theme=light] .members b{color:#0a8a4f}
+:root[data-theme=light] .sentok h3{color:#0a8a4f}
