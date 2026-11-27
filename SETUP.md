@@ -65,3 +65,8 @@ Until then, iPhone users can already install it: open the site in **Safari → S
 ## 6. Comments (already done ✓)
 
 Comments, the prayer wall and the community board are switched on through GitHub Discussions.
+
+## Member count on the home screen
+Supabase → your project → **SQL Editor** → *New query* → paste everything from `supabase/stats.sql` → **Run**.
+The home screen and the Community page then show how many people have joined (only the number; no names or emails).
+Until this is run, the count is simply hidden.

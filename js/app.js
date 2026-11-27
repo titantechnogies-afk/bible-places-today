@@ -3692,12 +3692,22 @@ function viewChurchFamily() {
   $$('[data-ph]').forEach(b => b.onclick = () => show(+b.dataset.ph));
 }
 
+/* ---------- how many people have joined (needs supabase/stats.sql; hidden until it is installed) ---------- */
+async function memberCount() {
+  try { const c = JSON.parse(sessionStorage.getItem('jom:members') || 'null'); if (c && Date.now() - c.t < 6e5) return c.v; } catch {}
+  if (!window.JOM_CONFIG?.supabase?.url) return null;
+  try { const v = await sbFetch('/rest/v1/rpc/member_count', { method: 'POST', body: '{}' }, false); if (!v || typeof v.members !== 'number') return null; try { sessionStorage.setItem('jom:members', JSON.stringify({ t: Date.now(), v })); } catch {} return v; } catch { return null; }
+}
+async function membersBadge(el, where = 'afterend') {
+  if (!el) return; const v = await memberCount(); if (!v || !v.members || !el.isConnected) return;
+  el.insertAdjacentHTML(where, `<p class="members"><span class="mdot" aria-hidden="true"></span><b>${v.members.toLocaleString('en-ZA')}</b> ${v.members === 1 ? 'person has' : 'people have'} joined${v.week ? ` · <b>${v.week.toLocaleString('en-ZA')}</b> this week` : ''} · <button class="inl" data-go="profile">Join free</button></p>`);
+}
 /* ---------------- router ---------------- */
 async function render() {
   const h = decodeURIComponent(location.hash.slice(1) || 'home');
   if (dlg.open) dlg.close(); window.scrollTo(0, 0); main.onclick = null; if (!h.startsWith('embed-')) document.documentElement.classList.remove('embed');
   try {
-    if (h === 'home' || h === '') { await viewHome(); homeVotd(); homeMore(); maybeGuide(); }
+    if (h === 'home' || h === '') { await viewHome(); homeVotd(); homeMore(); maybeGuide(); membersBadge($('.hero .bigsearch'), 'afterend'); }
     else if (h === 'guide') { await viewHome(); homeVotd(); homeMore(); showGuide(0); }
     else if (h.startsWith('place-')) { await viewPlace(h.slice(6)); enhancePlace(h.slice(6)); if (byId[h.slice(6)]) { addDevotional(h.slice(6)); thenAndNow(byId[h.slice(6)]); pano360(byId[h.slice(6)]); placeComments(h.slice(6)); } }
     else if (h.startsWith('disc-')) { const d = discById[h.slice(5)]; d ? await viewPlace(d.place, d.id) : viewNotFound(); }
@@ -3715,7 +3725,7 @@ async function render() {
     else if (h === 'quiz' || h.startsWith('quiz-')) viewQuiz(h.slice(5));
     else if (h === 'near') viewNear();
     else if (h === 'timeline') viewTimeline();
-    else if (h === 'community') viewCommunity();
+    else if (h === 'community') { viewCommunity(); membersBadge($('main h1'), 'afterend'); }
     else if (h === 'prayer') viewPrayer();
     else if (h === 'memory') viewMemory();
     else if (h === 'books' || h.startsWith('books-')) viewBooks(h.slice(6));

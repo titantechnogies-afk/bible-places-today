@@ -1007,3 +1007,8 @@ button.gditem:hover{border-color:var(--cyan);box-shadow:0 0 16px rgba(0,209,255,
 @media print{body *{visibility:hidden}#flyer,#flyer *{visibility:visible}#flyer{position:absolute;left:0;top:0;width:100%;max-width:none;box-shadow:none;margin:0}.top,.foot,.netnote{display:none}}
 .signfig img,.lovewide,.lovephoto img,img.lovephoto{height:auto}
 .lovephoto img{aspect-ratio:4/3;object-fit:cover}
+.members{display:inline-flex;flex-wrap:wrap;align-items:center;gap:6px;margin:12px 0 4px;padding:8px 14px;border-radius:999px;background:rgba(5,20,28,.6);border:1px solid rgba(57,255,156,.35);font-size:calc(15px * var(--fs,1))}
+.members b{color:#39ff9c;font-family:"Sora",sans-serif}
+.mdot{width:9px;height:9px;border-radius:50%;background:#39ff9c;box-shadow:0 0 10px #39ff9c;animation:mpulse 2s infinite}
+@keyframes mpulse{50%{opacity:.35}}
+:root[data-motion=reduce] .mdot{animation:none}
