@@ -1994,7 +1994,7 @@ function mergeMy(remote) { if (!remote || typeof remote !== 'object') return;
 async function pullProfile() { if (!sbOn() || !signedIn()) return null; try { const rows = await sbFetch(`/rest/v1/profiles?id=eq.${AUTH.user.id}&select=*`); const r = rows?.[0]; if (r) { AUTH.profile = { name: r.name, church: r.church, country: r.country, bio: r.bio, public: r.is_public, avatar: r.avatar_url || null, code: r.friend_code || null, online: r.show_online !== false, focus: r.prayer_focus || '', shareNotes: !!r.share_notes }; $('#meBtn')?.remove(); profileBtn(); saveAuth(); mergeMy(r.data); } await pushProfile(); return r; } catch (e) { console.warn(e); return null; } }
 let pushT = null, pushing = false;
 async function pushProfile() { if (!sbOn() || !signedIn() || pushing) return; pushing = true;
-  try { const pr = AUTH.profile || {}; await sbFetch('/rest/v1/profiles', { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=minimal' }, body: JSON.stringify({ id: AUTH.user.id, name: pr.name || MY.name || null, church: pr.church || null, country: pr.country || null, bio: pr.bio || null, is_public: !!pr.public, data: MY, updated_at: new Date().toISOString() }) }); AUTH.synced = Date.now(); saveAuth(); }
+  try { const pr = AUTH.profile || {}; await sbFetch('/rest/v1/profiles', { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=minimal' }, body: JSON.stringify({ id: AUTH.user.id, name: pr.name || MY.name || null, church: pr.church || null, country: pr.country || null, bio: pr.bio || null, is_public: pr.public !== false, data: MY, updated_at: new Date().toISOString() }) }); AUTH.synced = Date.now(); saveAuth(); }
   catch (e) { console.warn('sync', e.message); } finally { pushing = false; } }
 const _saveMy = saveMy;
 saveMy = () => { _saveMy(); if (sbOn() && signedIn()) { clearTimeout(pushT); pushT = setTimeout(pushProfile, 4000); } };
@@ -2028,7 +2028,7 @@ function viewProfile() {
   main.innerHTML = `<section class="band"><div class="wrap"><div class="sh"><div><p class="kicker">Signed in as ${esc(u.email || '')}</p><h1>${esc(pr.name || 'My profile')}</h1><p>Your library is saved to your account and syncs to every device where you sign in.</p></div></div>
     <div class="commgrid"><form class="panel authform" id="pf"><h2>Profile</h2><label>Name<input id="pn" maxlength="40" value="${esc(pr.name || MY.name || '')}"></label><label>Church (optional)<input id="pc" maxlength="80" value="${esc(pr.church || '')}"></label>
       <label>Country (optional)<input id="pco" maxlength="60" value="${esc(pr.country || '')}"></label><label>About me (optional)<textarea id="pb" rows="3" maxlength="300">${esc(pr.bio || '')}</textarea></label>
-      <label class="tog"><input type="checkbox" id="ppub" ${pr.public ? 'checked' : ''}> Show me in the members list so people can add me as a friend</label><button class="btn" type="submit">Save profile</button></form>
+      <label class="tog"><input type="checkbox" id="ppub" ${pr.public !== false ? 'checked' : ''}> Show me in the members list so people can add me as a friend</label><button class="btn" type="submit">Save profile</button></form>
       <div class="panel"><h2>Sync</h2><p class="small muted">Last synced: ${AUTH.synced ? new Date(AUTH.synced).toLocaleString() : 'not yet'}</p><div class="linkrow"><button class="btn sm" id="psync">Sync now</button><button class="btn ghost sm" data-go="library">My library</button></div>
         <h2 style="margin-top:18px">Account</h2><div class="linkrow"><button class="btn ghost sm" id="pout">Sign out</button><button class="btn ghost sm" id="pdel">Delete my data</button></div>
         <p class="small muted">Deleting removes your profile and synced library from our database. To remove the login itself, email the address in the <a href="privacy.html" target="_blank">privacy policy</a>.</p></div></div>
@@ -3855,7 +3855,7 @@ async function setMyFlags(f) { const body = {}; if ('public' in f) body.is_publi
   AUTH.profile = { ...(AUTH.profile || {}), ...f }; saveAuth(); }
 function shareFlagsHTML() { const pr = AUTH.profile || {};
   return `<div class="panel shareflags"><h2>Be found and share</h2>
-    <label class="tog"><input type="checkbox" data-flag="public" ${pr.public ? 'checked' : ''}> Show me in the members list so people can add me as a friend</label>
+    <label class="tog"><input type="checkbox" data-flag="public" ${pr.public !== false ? 'checked' : ''}> Show me in the members list so people can add me as a friend</label>
     <label class="tog"><input type="checkbox" data-flag="shareNotes" ${pr.shareNotes ? 'checked' : ''}> Share my highlights, notes and saved verses with my friends</label>
     <p class="small muted">Only your accepted friends can see your notes. You can switch this off at any time.</p></div>`; }
 function wireShareFlags(root = document) { $$('[data-flag]', root).forEach(c => c.onchange = async () => { try { await setMyFlags({ [c.dataset.flag]: c.checked }); toast(c.checked ? 'Switched on' : 'Switched off'); } catch (er) { c.checked = !c.checked; toast(needSQL(er)); } }); }
@@ -3864,7 +3864,7 @@ async function viewMembers() {
   const pr = AUTH.profile || {};
   main.innerHTML = `<section class="band"><div class="wrap"><p class="kicker">Hebrews 10:24-25 · encourage one another</p><h1>People who have <span class="neon-txt">joined</span></h1>
     <p class="lead">Find people who have joined the app and add them as friends. Friends can pray for each other and see each other's shared highlights and notes.</p>
-    ${pr.public ? '' : `<div class="panel helpcta"><b>You are hidden from this list.</b><span>Show yourself so other members can find you and add you as a friend.</span><button class="btn sm" id="mshow">Show me in the list</button></div>`}
+    ${pr.public !== false ? '' : `<div class="panel helpcta"><b>You are hidden from this list.</b><span>Show yourself so other members can find you and add you as a friend.</span><button class="btn sm" id="mshow">Show me in the list</button></div>`}
     <form class="bigsearch" id="msf" role="search"><label class="sr" for="msq">Search members</label><input id="msq" type="search" placeholder="Search by name or church…"><button class="btn" type="submit">Search</button></form>
     <div id="mlist"><p class="muted"><span class="spin"></span>Loading…</p></div>
     <div class="linkrow" style="margin-top:16px"><button class="btn ghost" data-go="friends">My friends</button><button class="btn ghost" id="minv">${ICON.share} Invite someone new</button></div></div></section>`;

@@ -49,3 +49,19 @@ $$;
 
 revoke all on function public.members_list(text), public.add_friend_id(uuid), public.friend_library(uuid) from public;
 grant execute on function public.members_list(text), public.add_friend_id(uuid), public.friend_library(uuid) to authenticated;
+
+-- Everyone who joins is listed by default (they can switch it off: Friends page or My profile).
+alter table public.profiles alter column is_public set default true;
+-- Create a profile the moment someone signs up, so every member can be found.
+create or replace function public.jom_new_user() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  insert into public.profiles (id, name, is_public) values (new.id, nullif(trim(new.raw_user_meta_data ->> 'name'), ''), true) on conflict (id) do nothing;
+  return new;
+end $$;
+drop trigger if exists jom_on_auth_user_created on auth.users;
+create trigger jom_on_auth_user_created after insert on auth.users for each row execute function public.jom_new_user();
+-- Members who signed up before this existed but never got a profile.
+insert into public.profiles (id, name, is_public)
+  select u.id, nullif(trim(u.raw_user_meta_data ->> 'name'), ''), true from auth.users u
+  where not exists (select 1 from public.profiles p where p.id = u.id);
