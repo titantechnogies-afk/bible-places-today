@@ -2,6 +2,9 @@
    Live sources: Wikipedia REST + Action API, Wikimedia Commons API, Wikidata Query Service, bible-api.com (World English Bible),
    OpenStreetMap / Esri / OpenTopoMap tiles via Leaflet, optional OpenBible.info gazetteer. Everything degrades to the
    built-in curated dataset when the network is unavailable. */
+/* Guard: slow-loading extras may try to add content next to an element the user has already navigated away from. Skip quietly instead of crashing. */
+(() => { const o = Element.prototype.insertAdjacentHTML; Element.prototype.insertAdjacentHTML = function (pos, html) { if ((pos === 'beforebegin' || pos === 'afterend') && !this.parentNode) return; return o.call(this, pos, html); }; })();
+
 {
 'use strict';
 const PLACES = window.BPT_PLACES || [], DISCS = window.BPT_DISCOVERIES || [], JOURNEYS = window.BPT_JOURNEYS || [];
