@@ -48,10 +48,11 @@ begin
   select id, coalesce(name, 'Your friend') into other, other_name from profiles where friend_code = upper(trim(p_code));
   if other is null then raise exception 'No one has that friend code'; end if;
   if other = me then raise exception 'That is your own code'; end if;
+  -- Friends straight away: no request to accept.
   if exists (select 1 from friendships where requester = other and addressee = me) then
     update friendships set status = 'accepted' where requester = other and addressee = me;
   else
-    insert into friendships (requester, addressee) values (me, other) on conflict do nothing;
+    insert into friendships (requester, addressee, status) values (me, other, 'accepted') on conflict (requester, addressee) do update set status = 'accepted';
   end if;
   return other_name;
 end $$;

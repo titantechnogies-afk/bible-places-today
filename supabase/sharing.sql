@@ -28,10 +28,11 @@ begin
   if p_other = me then raise exception 'That is you'; end if;
   select coalesce(name, 'Your friend') into other_name from profiles where id = p_other and is_public;
   if other_name is null then raise exception 'That member is not available'; end if;
+  -- Friends straight away: no request to accept.
   if exists (select 1 from friendships where requester = p_other and addressee = me) then
     update friendships set status = 'accepted' where requester = p_other and addressee = me;
   else
-    insert into friendships (requester, addressee) values (me, p_other) on conflict do nothing;
+    insert into friendships (requester, addressee, status) values (me, p_other, 'accepted') on conflict (requester, addressee) do update set status = 'accepted';
   end if;
   return other_name;
 end $$;
@@ -65,3 +66,5 @@ create trigger jom_on_auth_user_created after insert on auth.users for each row 
 insert into public.profiles (id, name, is_public)
   select u.id, nullif(trim(u.raw_user_meta_data ->> 'name'), ''), true from auth.users u
   where not exists (select 1 from public.profiles p where p.id = u.id);
+-- Friend requests made before "add friend = friends straight away" become friendships.
+update public.friendships set status = 'accepted' where status = 'pending';
