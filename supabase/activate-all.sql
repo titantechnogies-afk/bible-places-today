@@ -171,11 +171,13 @@ create unique index if not exists profiles_friend_code on public.profiles (frien
 
 -- ===== Profile pictures (public bucket; each person can only write their own file) =====
 insert into storage.buckets (id, name, public) values ('avatars', 'avatars', true) on conflict (id) do update set public = true;
+drop policy if exists "avatar read own" on storage.objects;
 drop policy if exists "avatar insert own" on storage.objects;
 drop policy if exists "avatar update own" on storage.objects;
 drop policy if exists "avatar delete own" on storage.objects;
+create policy "avatar read own" on storage.objects for select to authenticated using (bucket_id = 'avatars' and name = (select auth.uid())::text || '.jpg');
 create policy "avatar insert own" on storage.objects for insert to authenticated with check (bucket_id = 'avatars' and name = (select auth.uid())::text || '.jpg');
-create policy "avatar update own" on storage.objects for update to authenticated using (bucket_id = 'avatars' and name = (select auth.uid())::text || '.jpg');
+create policy "avatar update own" on storage.objects for update to authenticated using (bucket_id = 'avatars' and name = (select auth.uid())::text || '.jpg') with check (bucket_id = 'avatars' and name = (select auth.uid())::text || '.jpg');
 create policy "avatar delete own" on storage.objects for delete to authenticated using (bucket_id = 'avatars' and name = (select auth.uid())::text || '.jpg');
 
 -- ===== Friends =====
