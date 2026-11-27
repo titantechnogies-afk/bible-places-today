@@ -1411,7 +1411,7 @@ function viewCommunity() {
     <h2 class="libh">Community board</h2><p class="muted">Introduce yourself, share prayer requests and ask questions about the Bible lands.</p><div id="cmm"></div></div></section>`;
   $('#mynmS').onclick = () => { MY.name = $('#mynm').value.trim().slice(0, 40); saveMy(); toast('Saved'); };
   const nm = () => myName() || 'A friend';
-  $('#invite').onclick = () => shareIt({ title: 'Just One More Lord', text: `${nm()} invites you to explore the places of the Bible on Just One More Lord — maps, photos, a Bible reader and more. Free, no sign-up.`, hash: `friend-${encodeURIComponent(nm())}` });
+  $('#invite').onclick = () => { const fh = friendInviteHash(); shareIt({ title: 'Just One More Lord', text: fh.startsWith('addfriend-') ? `${nm()} invites you to Just One More Lord, a free grace-based Bible app. Open this link to be friends:` : `${nm()} invites you to explore the places of the Bible on Just One More Lord — maps, photos, a Bible reader and more. Free, no sign-up.`, hash: fh }); };
   $('#tinv').onclick = () => { const j = ALLPLANS.find(x => x.id === $('#tplan').value); if (!MY.plans[j.id]) { MY.plans[j.id] = { done: [], start: Date.now() }; saveMy(); }
     shareIt({ title: `Study ${j.n} with me`, text: `${nm()} invites you to read “${j.n}” together on Just One More Lord. Tap to start the same plan:`, hash: `friend-${encodeURIComponent(nm())}-${j.id}` }); };
   alertsPanel().then(h => { const el = $('#alertsSlot'); if (el) el.outerHTML = h; }); giscus($('#cmm'), 'community');
@@ -2930,10 +2930,10 @@ async function viewFriends() {
   const pr = AUTH.profile || {};
   main.innerHTML = `<section class="band"><div class="wrap"><div class="sh"><div><p class="kicker">Grow together</p><h1>Friends</h1><p>See who is online, what they are praying about, and encourage each other.</p></div></div>
     <div class="commgrid"><div class="panel"><h2>Add a friend</h2><form class="filters" id="faf"><input id="fcode" maxlength="6" placeholder="Their 6-letter code" style="flex:1;text-transform:uppercase" aria-label="Friend code"><button class="btn sm">Add</button></form>
-      <p class="small muted">Your code: <b class="fcode">${esc(pr.code || '— open your profile once')}</b> <button class="inl" id="fshare">Share my code</button></p></div>
+      <p class="small muted">Your code: <b class="fcode">${esc(pr.code || '— open your profile once')}</b> <button class="inl" id="fshare">Share my invite link</button></p></div>
       <div class="panel"><h2>Your status</h2><div class="linkrow">${avatarHTML(pr.avatar, pr.name || MY.name, 44, pr.online !== false)}<span>${pr.online !== false ? 'Friends can see when you are online.' : 'You are hidden (offline to friends).'}</span></div><div class="linkrow"><button class="btn ghost sm" data-go="profile">Change photo or status</button></div></div></div>
     <div id="flist"><p class="muted"><span class="spin"></span>Loading friends…</p></div></div></section>`;
-  $('#fshare').onclick = () => shareIt({ title: 'Add me on Just One More Lord', text: `Add me as a friend on Just One More Lord — my friend code is ${pr.code}. Open the app → Community → Friends.`, hash: 'friends' });
+  $('#fshare').onclick = () => shareIt({ title: 'Add me on Just One More Lord', text: `Be my friend on Just One More Lord. Open this link (or use my friend code ${pr.code} under Community → Friends):`, hash: friendInviteHash() });
   $('#faf').onsubmit = async e => { e.preventDefault(); const c = $('#fcode').value.trim(); if (c.length < 6) return; try { const n = await rpc('add_friend', { p_code: c }); toast(`Friend request sent to ${n}`); $('#fcode').value = ''; load(); } catch (er) { toast(needSQL(er)); } };
   const load = async () => { if (!$('#flist')) { clearInterval(friendsTimer); return; } let rows; try { rows = await rpc('my_friends'); } catch (er) { $('#flist').innerHTML = `<p class="empty">${esc(needSQL(er))}</p>`; clearInterval(friendsTimer); return; }
     const inc = rows.filter(r => r.status === 'pending' && r.incoming), out = rows.filter(r => r.status === 'pending' && !r.incoming), acc = rows.filter(r => r.status === 'accepted').sort((a, b) => (isOnline(b.last_seen) - isOnline(a.last_seen)) || String(b.last_seen || '').localeCompare(String(a.last_seen || '')));
@@ -3701,7 +3701,7 @@ async function memberCount() {
 }
 async function membersBadge(el, where = 'afterend') {
   if (!el) return; const v = await memberCount(); if (!v || !v.members || !el.isConnected) return;
-  el.insertAdjacentHTML(where, `<p class="members"><span class="mdot" aria-hidden="true"></span><b>${v.members.toLocaleString('en-ZA')}</b> ${v.members === 1 ? 'person has' : 'people have'} joined${v.week ? ` · <b>${v.week.toLocaleString('en-ZA')}</b> this week` : ''} · <button class="inl" data-go="profile">Join free</button></p>`);
+  el.insertAdjacentHTML(where, `<p class="members"><span aria-hidden="true">🙌</span><b>${v.members.toLocaleString('en-ZA')}</b> ${v.members === 1 ? 'person has' : 'people have'} joined${v.week ? ` · <b>${v.week.toLocaleString('en-ZA')}</b> this week` : ''} · <button class="inl" data-go="profile">Join free</button></p>`);
 }
 /* ---------- Freedom: Jesus is the ONE step (addiction, drugs, alcohol, violence…) + private help messages ---------- */
 const FREE = window.JOM_FREEDOM || null;
@@ -3827,6 +3827,20 @@ function viewInstall(which) {
   draw();
 }
 
+/* ---------- friend invite links that connect you automatically (#addfriend-CODE-Name) ---------- */
+function friendInviteHash() { const code = AUTH.profile?.code, nm = (AUTH.profile?.name || MY.name || '').trim(); return signedIn() && code ? `addfriend-${code}${nm ? '-' + encodeURIComponent(nm) : ''}` : `friend-${encodeURIComponent(nm || 'A friend')}`; }
+async function addPendingFriend() { let code = null; try { code = localStorage.getItem('jom:pendfriend'); } catch {} if (!code || !sbOn() || !signedIn()) return;
+  try { localStorage.removeItem('jom:pendfriend'); } catch {} try { const n = await rpc('add_friend', { p_code: code }); toast(`You and ${n} are now connected. Find them under Friends.`); } catch (er) { if (!/own code/i.test(er.message)) toast(needSQL(er)); } }
+function viewAddFriend(arg) {
+  setNav('community'); const [code, ...rest] = String(arg).split('-'), nm = decodeURIComponent(rest.join('-')).slice(0, 40) || 'A friend', c = code.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6);
+  document.title = `${nm} invited you — Just One More Lord`;
+  main.innerHTML = `<section class="band"><div class="wrap quizwrap"><p class="kicker">Friend invitation</p><h1><span class="neon-txt">${esc(nm)}</span> wants to be your friend</h1>
+    <p class="lead">Just One More Lord is a free, grace-based Bible app. Be friends to see when each other is online, pray for each other and read plans together.</p>
+    <div class="panel"><p>${signedIn() ? 'Tap below to connect.' : 'Create a free account or sign in, and you will be connected automatically.'}</p><div class="linkrow"><button class="btn" id="afgo">${signedIn() ? `🤝 Add ${esc(nm)} as a friend` : 'Sign up or sign in'}</button><button class="btn ghost" data-go="home">Look around first</button></div></div></div></section>`;
+  $('#afgo').onclick = async () => { if (c.length < 6) { toast('This invitation link is not complete'); return; }
+    try { localStorage.setItem('jom:pendfriend', c); } catch {}
+    if (signedIn()) { await addPendingFriend(); go('friends'); } else go('profile'); };
+}
 /* ---------------- router ---------------- */
 async function render() {
   const h = decodeURIComponent(location.hash.slice(1) || 'home');
@@ -3927,6 +3941,7 @@ async function render() {
     else if (h === 'distance' || h.startsWith('distance-')) viewDistance(h.slice(9));
     else if (h === 'kids' || h.startsWith('kids-')) viewKids(h.slice(5));
     else if (h.startsWith('friend-')) acceptInvite(h.slice(7));
+    else if (h.startsWith('addfriend-')) viewAddFriend(h.slice(10));
     else if (h === 'devnotes') viewDevNotes();
     else if (h.startsWith('present-')) await viewPresent(h.slice(8));
     else if (h.startsWith('embed-')) viewEmbed(h.slice(6));
@@ -3941,6 +3956,7 @@ async function render() {
     else viewNotFound();
   } catch (err) { console.error(err); main.insertAdjacentHTML('beforeend', `<div class="wrap"><p class="notice warn">Part of this page failed to load (${esc(err.message)}). Try reloading.</p></div>`); }
   try { applyLang(); } catch {}
+  try { addPendingFriend(); } catch {}
   main.focus({ preventScroll: true });
 }
 window.addEventListener('hashchange', render);
