@@ -360,6 +360,21 @@ html[data-theme=light].embed body{background:#f5f9fb}
 :root[data-theme=light] .sentok h3{color:#00994d}
 :root[data-theme=light] .freecta:hover{box-shadow:0 0 20px rgba(57,255,156,0.113)}
 :root[data-theme=light] .hbadge{color:#1a1a1a}
+:root[data-theme=light] .phbody{stroke:#3c5967}
+:root[data-theme=light] .phscreen{fill:#111f26}
+:root[data-theme=light] .phcard{fill:#1b2e35}
+:root[data-theme=light] .phline{fill:#283c45}
+:root[data-theme=light] .phbar{fill:rgba(26,37,43,0.95);stroke:#304149}
+:root[data-theme=light] .phurl{fill:#203036}
+:root[data-theme=light] .phsheet{fill:#1a1a1a;stroke:#304149}
+:root[data-theme=light] .phrow{fill:#182429}
+:root[data-theme=light] .phapp{fill:#283c45}
+:root[data-theme=light] .phtog{fill:#207936}
+:root[data-theme=light] .phknob{fill:#1a1a1a}
+:root[data-theme=light] .phtxt.xs{fill:#415862}
+:root[data-theme=light] .phtxt.hot{fill:#004c99}
+:root[data-theme=light] .phstroke{stroke:#004c99}
+:root[data-theme=light] .phhl{stroke:#990035}
 /* hand fixes */
 :root[data-theme=light] .tiles-night{filter:saturate(.85)}
 :root[data-theme=light] .gname{color:#8a5d00}
@@ -373,3 +388,4 @@ html[data-theme=light].embed body{background:#f5f9fb}
 :root[data-theme=light] .flyer h2{color:#0b2530}
 :root[data-theme=light] .members b{color:#0a8a4f}
 :root[data-theme=light] .sentok h3{color:#0a8a4f}
+:root[data-theme=light] .phbody{fill:#1a2a33;stroke:#3b5866}:root[data-theme=light] .phnotch{fill:#1a2a33}:root[data-theme=light] .phdim{fill:rgba(0,0,0,.35)}

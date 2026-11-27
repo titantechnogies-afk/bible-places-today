@@ -1022,3 +1022,16 @@ button.gditem:hover{border-color:var(--cyan);box-shadow:0 0 16px rgba(0,209,255,
 .freecta:hover{box-shadow:0 0 20px rgba(57,255,156,.25)}
 .hmsg{margin-top:12px}.hmtext{white-space:pre-wrap;font-size:calc(17px * var(--fs,1))}.hmsg textarea{width:100%}
 .hbadge{background:#ff4d8d;color:#fff;border-radius:999px;padding:1px 8px;font-size:12px;margin-left:6px}
+/* add to home screen guide */
+.isteps{list-style:none;padding:0;display:grid;gap:14px;margin-top:16px}
+.istep{display:grid;grid-template-columns:minmax(0,170px) minmax(0,1fr);gap:18px;align-items:center;padding:16px;border-radius:18px;background:var(--glass);border:1px solid rgba(31,224,208,.24)}
+.istep h2{font-size:clamp(22px,3vw,28px)}.isvg svg{width:100%;height:auto;display:block}
+.phbody{fill:#1a2a33;stroke:#3b5866;stroke-width:2}.phscreen{fill:#f4f8fa}.phnotch{fill:#1a2a33}
+.phcard{fill:#e2ecf0}.phline{fill:#cfdde3}.phbar{fill:rgba(235,240,243,.95);stroke:#c9d6dc}.phurl{fill:#dfe8ec}
+.phsheet{fill:#ffffff;stroke:#c9d6dc}.phrow{fill:#eef3f5}.phapp{fill:#cfdde3}.phdim{fill:rgba(0,0,0,.35)}
+.phtog{fill:#34c759}.phknob{fill:#fff}
+.phtxt{fill:#1b2b33;font-family:"Source Sans 3",system-ui,sans-serif}.phtxt.sm{font-size:12px}.phtxt.xs{font-size:9px;fill:#4d6873}.phtxt.b{font-weight:700}.phtxt.hot{fill:#0a84ff;font-weight:700}
+.phicon{fill:#1b2b33}.phstroke{fill:none;stroke:#0a84ff;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.phhl{fill:none;stroke:#ff3b7f;stroke-width:3;animation:phpulse 1.6s ease-in-out infinite}
+@keyframes phpulse{50%{stroke-opacity:.35}}:root[data-motion=reduce] .phhl{animation:none}
+@media(max-width:560px){.istep{grid-template-columns:1fr;gap:10px;padding:14px;text-align:center}.isvg{max-width:210px;margin:0 auto}}
