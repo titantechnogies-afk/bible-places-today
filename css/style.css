@@ -1042,3 +1042,5 @@ body{padding-bottom:64px}
 .helpcta{display:grid;gap:4px;margin:14px 0;border-color:rgba(255,199,44,.5)!important}.helpcta .btn{justify-self:start;margin-top:6px}.helpcta span{color:var(--mute)}
 .helpcard{border-color:rgba(57,255,156,.55)!important}
 @media print{.helpfab{display:none}}
+.frbtns{flex-wrap:nowrap;gap:8px;align-items:center}.fnote .fntext{display:block;white-space:pre-wrap;color:var(--ink);margin:4px 0}
+.shareflags{margin:0 0 16px}.shareflags h2{font-size:22px;margin-bottom:6px}
