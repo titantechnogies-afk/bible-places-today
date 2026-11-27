@@ -1984,8 +1984,8 @@ function handleAuthRedirect() { // magic-link / confirmation / Google sign-in co
   const h = location.hash.slice(1); if (!/access_token=/.test(h) && !/error_description=/.test(h)) return false;
   const q = new URLSearchParams(h); if (q.get('error_description')) { history.replaceState(null, '', location.pathname + '#profile'); setTimeout(() => toast(q.get('error_description')), 500); return true; }
   setSession({ access_token: q.get('access_token'), refresh_token: q.get('refresh_token'), expires_in: +q.get('expires_in') || 3600 });
-  history.replaceState(null, '', location.pathname + '#profile');
-  sbFetch('/auth/v1/user').then(u => { AUTH.user = u; saveAuth(); pullProfile().then(() => { toast('Signed in'); if (location.hash === '#profile') viewProfile(); }); }).catch(() => {});
+  history.replaceState(null, '', location.pathname + '#home');
+  sbFetch('/auth/v1/user').then(u => { AUTH.user = u; saveAuth(); document.documentElement.classList.remove('gated'); render(); pullProfile().then(() => { toast('Welcome! You are signed in 🎉'); $('#meBtn')?.remove(); profileBtn(); }); }).catch(() => {});
   return true;
 }
 /* sync: the whole library (MY) is stored in your own profile row, merged with what is on this phone */
@@ -2006,24 +2006,27 @@ const _saveMy = saveMy;
 saveMy = () => { _saveMy(); if (sbOn() && signedIn()) { clearTimeout(pushT); pushT = setTimeout(pushProfile, 4000); } };
 function profileBtn() { const t = $('.tools'); if (!t || $('#meBtn')) return; const n = (AUTH.profile?.name || MY.name || '').trim();
   t.insertAdjacentHTML('afterbegin', `<button class="tbtn me" id="meBtn" data-go="profile" title="My profile" aria-label="My profile">${AUTH.profile?.avatar ? `<img class="meimg" src="${esc(AUTH.profile.avatar)}" alt="">` : n ? esc(n[0].toUpperCase()) : '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="12" cy="8" r="4" fill="none" stroke="currentColor" stroke-width="2"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>'}</button>`); }
-function viewProfile() {
-  setNav(''); document.title = 'My profile — Just One More Lord';
+function viewProfile(gate) {
+  setNav(''); document.title = gate ? 'Welcome — Just One More Lord' : 'My profile — Just One More Lord';
   if (!sbOn()) { main.innerHTML = `<section class="band"><div class="wrap quizwrap"><p class="kicker">Accounts</p><h1>Profiles are almost ready</h1><p class="lead">Sign-up needs the site owner to connect a free Supabase account (see <code>SETUP.md</code>). Until then, everything you save is kept on this phone — use <button class="inl" data-go="library">My library</button> → Download backup to move it.</p></div></section>`; return; }
   if (!signedIn()) {
-    let mode = 'in';
-    const draw = () => { main.innerHTML = `<section class="band"><div class="wrap quizwrap"><p class="kicker">Free account</p><h1>${mode === 'in' ? 'Sign in' : 'Create your profile'}</h1><p class="lead">Keep your saved places, verses, notes, prayers, plans, streaks and badges safe — and on every device you use.</p>
+    let mode = gate ? 'up' : 'in';
+    const draw = () => { main.innerHTML = `<section class="band${gate ? ' gateband' : ''}"><div class="wrap quizwrap">${gate ? `<div class="gatehead"><img src="img/logo.png" alt="Just One More Lord" width="475" height="597"><p class="kicker">Free · grace-based · no ads</p><h1>Welcome to <span class="neon-txt">Just One More Lord</span></h1>
+        <p class="lead">${mode === 'in' ? 'Welcome back! Sign in to continue.' : 'Create your free account to open the app. It takes 30 seconds.'}</p>
+        <ul class="gatelist"><li>📖 The Bible with listening, notes and Hebrew &amp; Greek</li><li>✝ The gospel of grace and who you are in Christ</li><li>🗺 Maps, photos and discoveries from the Bible lands</li><li>🤝 Friends, prayer and church family</li></ul></div>` : `<p class="kicker">Free account</p><h1>${mode === 'in' ? 'Sign in' : 'Create your profile'}</h1><p class="lead">Keep your saved places, verses, notes, prayers, plans, streaks and badges safe — and on every device you use.</p>`}
       <form class="authform" id="af"><label>Email<input type="email" id="ae" required autocomplete="email"></label><label>Password<input type="password" id="ap" required minlength="8" autocomplete="${mode === 'in' ? 'current-password' : 'new-password'}" placeholder="At least 8 characters"></label>
       ${mode === 'up' ? '<label>Your name<input type="text" id="an" maxlength="40" autocomplete="given-name"></label>' : ''}<button class="btn" type="submit">${mode === 'in' ? 'Sign in' : 'Create account'}</button><p class="small" id="amsg" aria-live="polite"></p></form>
       ${SB.google ? '<button class="btn ghost" id="agoogle">Continue with Google</button>' : ''}
       <p class="small">${mode === 'in' ? 'New here? <button class="inl" id="asw">Create a free account</button>' : 'Already have an account? <button class="inl" id="asw">Sign in</button>'} · <button class="inl" id="amagic">Email me a sign-in link</button></p>
-      <p class="small muted">By creating an account you agree to the <a href="privacy.html" target="_blank">privacy policy</a>. Your data is never sold.</p></div></section>`;
+      <p class="small muted">By creating an account you agree to the <a href="privacy.html" target="_blank">privacy policy</a>. Your data is never sold.</p>
+      ${gate ? '<div class="panel helpcta" style="margin-top:18px"><b>🙏 Need help or prayer right now?</b><span>You can send us a private message without an account.</span><button class="btn sm" data-go="help">Message us</button></div>' : ''}</div></section>`;
       $('#asw').onclick = () => { mode = mode === 'in' ? 'up' : 'in'; draw(); };
       const msg = (t, bad) => { const m = $('#amsg'); m.textContent = t; m.className = 'small ' + (bad ? 'warnt' : 'okt'); };
       $('#af').onsubmit = async e => { e.preventDefault(); const email = $('#ae').value.trim(), password = $('#ap').value; msg('Please wait…');
         try { if (mode === 'up') { const j = await sbFetch('/auth/v1/signup?redirect_to=' + encodeURIComponent(SITE), { method: 'POST', body: JSON.stringify({ email, password, data: { name: $('#an')?.value.trim() || '' } }) }, false);
             if (!setSession(j)) { msg('Check your email and tap the confirmation link to finish creating your account.'); return; } MY.name = MY.name || $('#an')?.value.trim(); AUTH.profile = { name: MY.name }; }
           else setSession(await sbFetch('/auth/v1/token?grant_type=password', { method: 'POST', body: JSON.stringify({ email, password }) }, false));
-          await pullProfile(); toast('Welcome!'); $('#meBtn')?.remove(); profileBtn(); viewProfile(); }
+          await pullProfile(); toast('Welcome!'); $('#meBtn')?.remove(); profileBtn(); afterAuth(gate); }
         catch (er) { msg(/invalid login/i.test(er.message) ? 'Wrong email or password.' : er.message, true); } };
       $('#amagic').onclick = async () => { const email = $('#ae').value.trim(); if (!email) { msg('Type your email first.', true); return; }
         try { await sbFetch('/auth/v1/otp?redirect_to=' + encodeURIComponent(SITE), { method: 'POST', body: JSON.stringify({ email, create_user: true, options: { email_redirect_to: SITE } }) }, false); msg('Check your email for a sign-in link.'); } catch (er) { msg(er.message, true); } };
@@ -2919,7 +2922,7 @@ async function uploadAvatar(file) { const blob = await resizeImage(file); const 
   await sbFetch(`/rest/v1/profiles?id=eq.${uid}`, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ avatar_url: url }) });
   AUTH.profile = { ...AUTH.profile, avatar: url }; saveAuth(); $('#meBtn')?.remove(); profileBtn(); return url; }
 const _viewProfile = viewProfile;
-viewProfile = function () { _viewProfile(); if (!sbOn() || !signedIn() || !$('#pf')) return; const pr = AUTH.profile || {};
+viewProfile = function (gate) { _viewProfile(gate); if (!sbOn() || !signedIn() || !$('#pf')) return; const pr = AUTH.profile || {};
   $('.sh', main)?.insertAdjacentHTML('afterbegin', `<label class="avedit" title="Change profile picture">${avatarHTML(pr.avatar, pr.name || MY.name, 96, true)}<span class="btn ghost sm">📷 ${pr.avatar ? 'Change' : 'Add'} photo</span><input type="file" id="avf" accept="image/*" hidden></label>`);
   $('#pf').insertAdjacentHTML('afterend', `<div class="panel"><h2>Friends</h2><p class="small muted">Your friend code: <b class="fcode" id="myfc">${esc(pr.code || '…')}</b> — share it so friends can add you.</p>
     <label class="tog"><input type="checkbox" id="pon" ${pr.online !== false ? 'checked' : ''}> Show friends when I am online</label>
@@ -3776,7 +3779,7 @@ function viewHelp(pre) {
   wireHelpForm();
 }
 /* floating "Need prayer?" button on every page */
-function helpFab() { let f = document.getElementById('helpfab'); const h = location.hash.slice(1) || 'home', hide = /^(help|freedom|help-inbox|embed-|present-|gospel-1min)/.test(h) || document.documentElement.classList.contains('embed');
+function helpFab() { let f = document.getElementById('helpfab'); const h = location.hash.slice(1) || 'home', hide = /^(help|freedom|help-inbox|embed-|present-|gospel-1min)/.test(h) || document.documentElement.classList.contains('embed') || document.documentElement.classList.contains('gated');
   if (!f) { f = document.createElement('button'); f.id = 'helpfab'; f.className = 'helpfab'; f.innerHTML = '<span aria-hidden="true">🙏</span> Need prayer?'; f.setAttribute('aria-label', 'Need help or prayer? Message us'); f.onclick = () => go('help'); document.body.append(f); }
   f.hidden = hide; }
 /* the admin inbox for help messages (only readable by app admins; see supabase/help.sql) */
@@ -3914,12 +3917,19 @@ function viewAddFriend(arg) {
     try { localStorage.setItem('jom:pendfriend', c); } catch {}
     if (signedIn()) { await addPendingFriend(); go('friends'); } else go('profile'); };
 }
+/* ---------- everyone needs a free account to use the app (help and install pages stay open) ---------- */
+const OPEN_ROUTES = /^(profile|help|help-[\w-]+|install|install-[\w-]+|embed-.*|addfriend-.*)$/;
+function needsAccount(h) { return sbOn() && !signedIn() && !OPEN_ROUTES.test(h) && !/access_token=|error_description=/.test(h); }
+function afterAuth(gate) { document.documentElement.classList.remove('gated'); let back = ''; try { back = sessionStorage.getItem('jom:after') || ''; sessionStorage.removeItem('jom:after'); } catch {}
+  if (gate || back) { if (!back || back === 'profile') back = 'home'; go(back); } else viewProfile(); }
 /* ---------------- router ---------------- */
 async function render() {
   const h = decodeURIComponent(location.hash.slice(1) || 'home');
   if (dlg.open) dlg.close(); window.scrollTo(0, 0); main.onclick = null; if (!h.startsWith('embed-')) document.documentElement.classList.remove('embed');
   try {
-    if (h === 'home' || h === '') { await viewHome(); homeVotd(); homeMore(); maybeGuide(); membersBadge($('.hero .bigsearch'), 'afterend'); }
+    const gated = needsAccount(h); document.documentElement.classList.toggle('gated', gated);
+    if (gated) { try { sessionStorage.setItem('jom:after', h); } catch {} viewProfile(true); }
+    else if (h === 'home' || h === '') { await viewHome(); homeVotd(); homeMore(); maybeGuide(); membersBadge($('.hero .bigsearch'), 'afterend'); }
     else if (h === 'guide') { await viewHome(); homeVotd(); homeMore(); showGuide(0); }
     else if (h.startsWith('place-')) { await viewPlace(h.slice(6)); enhancePlace(h.slice(6)); if (byId[h.slice(6)]) { addDevotional(h.slice(6)); thenAndNow(byId[h.slice(6)]); pano360(byId[h.slice(6)]); placeComments(h.slice(6)); } }
     else if (h.startsWith('disc-')) { const d = discById[h.slice(5)]; d ? await viewPlace(d.place, d.id) : viewNotFound(); }

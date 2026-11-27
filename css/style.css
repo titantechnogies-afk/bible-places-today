@@ -1046,3 +1046,9 @@ body{padding-bottom:64px}
 .shareflags{margin:0 0 16px}.shareflags h2{font-size:22px;margin-bottom:6px}
 .ritem .av,.av{display:inline-grid;place-items:center;color:inherit;font-size:inherit}
 .av>b{display:block;line-height:1;text-align:center}
+/* sign-up gate */
+html.gated .nav,html.gated .search,html.gated .foot,html.gated #meBtn,html.gated .bell,html.gated #bellBtn{display:none!important}
+.gatehead{text-align:center}.gatehead img{width:110px;height:auto;margin:0 auto 8px;filter:drop-shadow(0 0 18px rgba(0,209,255,.45))}
+.gatehead h1{font-size:clamp(32px,6vw,48px)}.gatelist{list-style:none;padding:0;display:grid;gap:6px;text-align:left;max-width:420px;margin:12px auto 18px}
+.gatelist li{padding:8px 12px;border-radius:12px;background:rgba(5,20,28,.5);border:1px solid var(--line)}
+.gateband .authform{max-width:460px;margin:0 auto}.gateband>.wrap>p.small{text-align:center}
