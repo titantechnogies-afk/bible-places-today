@@ -1205,7 +1205,9 @@ function savePrefs() { try { localStorage.setItem('jom:pref', JSON.stringify(PRE
     document.body.insertAdjacentHTML('beforeend', `<div class="instb" id="instb" role="dialog" aria-label="Install the app"><img src="icons/app-192.png" alt=""><div><b>Install Just One More Lord</b><span>${ios ? 'Tap the Share button, then “Add to Home Screen”.' : 'Add it to your home screen — it works offline too.'}</span></div>${ios ? '' : '<button class="btn sm" id="instgo">Install</button>'}<button class="dx" id="instx" aria-label="Not now">×</button></div>`);
     $('#instgo')?.addEventListener('click', () => { ib.click(); $('#instb')?.remove(); }); $('#instx').onclick = () => { localStorage.setItem('jom:noinstall', 1); $('#instb').remove(); }; }
   if (ios) setTimeout(showInstallBanner, 20000);
-  if ('serviceWorker' in navigator && location.protocol === 'https:') addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+  if ('serviceWorker' in navigator && location.protocol === 'https:') addEventListener('load', () => navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then(reg => { const chk = () => reg.update().catch(() => {}); setInterval(chk, 30 * 60e3); document.addEventListener('visibilitychange', () => { if (!document.hidden) chk(); }); }).catch(() => {}));
+  if ('serviceWorker' in navigator) { const had = !!navigator.serviceWorker.controller; let reloaded = false; navigator.serviceWorker.addEventListener('controllerchange', () => { if (!had || reloaded) return; reloaded = true; try { sessionStorage.setItem('jom:updated', '1'); } catch {} location.reload(); }); }
+  try { if (sessionStorage.getItem('jom:updated')) { sessionStorage.removeItem('jom:updated'); setTimeout(() => toast('✨ The app has been updated'), 1200); } } catch {}
 })();
 
 /* ======================================================================================

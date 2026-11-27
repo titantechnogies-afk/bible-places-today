@@ -12,13 +12,14 @@ self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(ks => Pr
 async function trim(name) { const max = LIMITS[name]; if (!max) return; const c = await caches.open(name); const ks = await c.keys(); for (let i = 0; i < ks.length - max; i++) await c.delete(ks[i]); }
 async function put(name, req, res) { if (!res || !(res.ok || res.type === 'opaque')) return res; const c = await caches.open(name); await c.put(req, res.clone()); trim(name); return res; }
 const staleWhileRevalidate = async (name, req) => { const hit = await caches.match(req); const net = fetch(req).then(r => put(name, req, r)).catch(() => null); return hit || (await net) || Response.error(); };
+const cacheFirstApp = async (name, req) => (await caches.match(req)) || fetch(req, { cache: 'no-cache' }).then(r => put(name, req, r));
 const cacheFirst = async (name, req) => (await caches.match(req)) || fetch(req).then(r => put(name, req, r));
-const networkFirst = async (name, req) => { try { return await put(name, req, await fetch(req)); } catch { return (await caches.match(req)) || Response.error(); } };
+const networkFirst = async (name, req) => { try { return await put(name, req, await fetch(req, { cache: 'no-cache' })); } catch { return (await caches.match(req)) || Response.error(); } };
 self.addEventListener('fetch', e => {
   const req = e.request; if (req.method !== 'GET') return;
   const u = new URL(req.url);
   if (u.origin === location.origin) {
-    if (req.mode === 'navigate') return e.respondWith(networkFirst(V + '-shell', new Request('index.html')).then(r => r.ok ? r : caches.match('index.html')));
+    if (req.mode === 'navigate') return e.respondWith(networkFirst(V + '-shell', new Request('index.html', { cache: 'no-cache' })).then(r => r.ok ? r : caches.match('index.html')));
     if (u.pathname.includes('/data/concordance/') || u.pathname.includes('/data/xrefs/') || /\/data\/(people|topics|dict|sites|web|gracech)\//.test(u.pathname)) return e.respondWith(cacheFirst(BIBLE, req));
     if (/\.(js|css|html|webmanifest)$/.test(u.pathname) || u.pathname.endsWith('/')) return e.respondWith(networkFirst(V + '-shell', req));
     return e.respondWith(staleWhileRevalidate(V + '-shell', req));
