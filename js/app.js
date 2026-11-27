@@ -1186,13 +1186,16 @@ function viewNear() {
 /* ---------- display settings, install, offline ---------- */
 const PREF = (() => { try { return JSON.parse(localStorage.getItem('jom:pref') || '{}') || {}; } catch { return {}; } })();
 function applyPrefs() { const r = document.documentElement; r.style.setProperty('--fs', PREF.size || 1); r.dataset.contrast = PREF.hc ? 'high' : ''; r.dataset.motion = PREF.rm ? 'reduce' : '';
+  const th = PREF.theme === 'auto' ? (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : '') : PREF.theme === 'light' ? 'light' : ''; r.dataset.theme = th;
+  const tc = $('meta[name="theme-color"]'); if (tc) tc.content = th === 'light' ? '#f3fbfd' : '#020a10'; const lt = $('#ltTog'); if (lt) lt.checked = th === 'light';
   $$('#aaPanel [data-size]').forEach(b => b.setAttribute('aria-pressed', String(+b.dataset.size === +(PREF.size || 1)))); const hc = $('#hcTog'), rm = $('#rmTog'); if (hc) hc.checked = !!PREF.hc; if (rm) rm.checked = !!PREF.rm; }
 function savePrefs() { try { localStorage.setItem('jom:pref', JSON.stringify(PREF)); } catch {} applyPrefs(); }
 (() => { const btn = $('#aaBtn'), pan = $('#aaPanel'); if (!btn) return; applyPrefs();
   btn.onclick = e => { e.stopPropagation(); pan.hidden = !pan.hidden; btn.setAttribute('aria-expanded', !pan.hidden); };
   document.addEventListener('click', e => { if (!pan.hidden && !e.target.closest('.tools')) { pan.hidden = true; btn.setAttribute('aria-expanded', 'false'); } });
   pan.onclick = e => { const s = e.target.closest('[data-size]'); if (s) { PREF.size = +s.dataset.size; savePrefs(); } };
-  $('#hcTog').onchange = e => { PREF.hc = e.target.checked; savePrefs(); }; $('#rmTog').onchange = e => { PREF.rm = e.target.checked; savePrefs(); };
+  $('#hcTog').onchange = e => { PREF.hc = e.target.checked; savePrefs(); }; const lt = $('#ltTog'); if (lt) lt.onchange = e => { PREF.theme = e.target.checked ? 'light' : 'dark'; savePrefs(); };
+  try { matchMedia('(prefers-color-scheme: light)').addEventListener('change', () => { if (PREF.theme === 'auto') applyPrefs(); }); } catch {} $('#rmTog').onchange = e => { PREF.rm = e.target.checked; savePrefs(); };
   let deferred = null; const ib = $('#installBtn');
   window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferred = e; ib.hidden = false; showInstallBanner(); });
   ib.onclick = async () => { if (deferred) { deferred.prompt(); await deferred.userChoice; deferred = null; ib.hidden = true; } };
@@ -1362,7 +1365,7 @@ async function viewFly(id) {
 function homeMore() {
   const host = $('#feat')?.closest('.band'); if (!host || $('.moretiles')) return;
   const T = [['read', 'Read the Bible', 'Every chapter, with its places on a map and the Hebrew & Greek behind each verse.'], ['timeline', 'Bible timeline', 'Empires, kings, prophets and events from Abraham to Revelation.'], ['family', 'Family tree', 'The line from Adam to Jesus, with the twelve tribes and more.'],
-    ['grace-minute', 'Grace minute', 'One minute a day: a verse, the finished work, a reflection and a prayer.'], ['grace', 'Grace lens', 'Every passage in the light of the finished work of Jesus and the love of God.'], ['journal', 'Bible journal', 'Draw, write and add stickers on any verse.'], ['wrapped', 'My year in the Word', 'Your chapters, streaks and favourite verses this year — share it.'], ['friends', 'Friends', 'See who is online and pray for each other.'], ['testimonies', 'Testimonies', 'Answered prayers and healings.'], ['churches', 'Church finder', 'Find a grace-teaching church near you.'], ['concordance', 'Strong\'s Concordance', 'Every Hebrew and Greek word, its meaning and every place it appears.'], ['fly-' + (JOURNEYS.find(j => j.id === 'apostles') || JOURNEYS[0])?.id, '3D fly-overs', 'Fly over the real terrain of the journeys of Abraham, Moses, Jesus and Paul.'], ['kingdoms', 'Kingdom maps', 'See the borders change from David to the Romans.'], ['distance', 'How far was it?', 'Distances and walking days between Bible places.'], ['kids', 'Kids\' corner', 'Stories, a fun quiz and pictures to colour.'], ['plans', 'Reading plans', 'John in 21 days, Acts with Paul, Psalms of hope and journey plans.'], ['quiz', 'Quiz', 'Test yourself and challenge a friend.'], ['near', 'Near me', 'Find Bible places close to where you are.'], ['library', 'My library', 'Your saved places, verses, highlights and notes.'], ['books', 'Books of the Bible', 'An introduction to all 66 books: author, date, themes and outline.'], ['tabernacle', 'Tabernacle & Temple', 'Tap each part and see how it points to Jesus.'], ['jerusalem', 'Jerusalem through time', 'The city from David to Jesus on the map.'], ['learn', 'Learn Hebrew & Greek', 'Alphabets, the 100 most common words and flashcards.'], ['family-devotion', 'Family devotion', 'A 10-minute story, questions and prayer for the whole family.'], ['fasting', 'Fasting', 'Track a fast with Scripture and prayer reminders.'], ['battle', 'Quiz battles', 'Same questions, beat your friend\'s score.'], ['study', 'Study tools', 'Commentaries, topical Bible, dictionary, prophecy and the four Gospels side by side.'], ['daily', 'Daily challenge', 'One Bible question a day — keep your streak going.'], ['versepic', 'Verse pictures', 'Make a verse picture on a photo of a real Bible place.'], ['groups', 'Church groups', 'Read the same plan and pray together as a church.'], ['places', 'Every Bible place', 'All 1,300 Bible places on one map, plus the events map.'], ['people', 'People of the Bible', 'Look up anyone in the Bible: family, age, map, journeys and every verse.'], ['chronology', 'From Adam to today', 'Lifespans from Adam to Jesus and the age of mankind in the Bible.'], ['memory', 'Scripture memory', 'Learn verses by heart with a few minutes\' practice a day.'], ['devotionals', 'Devotionals', 'Short reflections and prayers from the Bible lands.'], ['feasts', 'Feasts & holy days', 'Passover, Pentecost, Tabernacles and Easter — dates for the year ahead.'], ['teachings', 'Teachings', 'Watch Andrew Wommack and Dan Mohler from their official channels.'], ['prayer', 'Prayer', 'A private prayer journal and a shared prayer wall.'], ['community', 'Friends & community', 'Invite friends, read plans together and join the conversation.'], ['embed', 'For churches', 'Put any Bible place or journey on your church or school website.'], ['devnotes', 'Developer notes', 'What\'s new, what\'s next, and a place for your feedback.']];
+    ['identity', 'Who you are in Christ', 'Your new creation identity broken down: spirit, soul and body, 12 truths and daily declarations.'], ['receive', 'Receive Jesus & the Holy Spirit', 'A simple prayer, what just happened, and your next steps.'], ['miracles', 'Miracles of Jesus', 'All the miracles on the map, with what each shows about the Father\'s heart.'], ['parables', 'Parables of Jesus', 'Every parable explained through grace, with a question to think about.'], ['names', 'Names of God', 'El Shaddai, Jehovah Jireh, Abba and more, with the Hebrew and Greek.'], ['measures', 'Bible money & measures', 'A denarius in rand, a cubit in centimetres, and every unit in today\'s terms.'], ['grace-minute', 'Grace minute', 'One minute a day: a verse, the finished work, a reflection and a prayer.'], ['grace', 'Grace lens', 'Every passage in the light of the finished work of Jesus and the love of God.'], ['journal', 'Bible journal', 'Draw, write and add stickers on any verse.'], ['wrapped', 'My year in the Word', 'Your chapters, streaks and favourite verses this year — share it.'], ['friends', 'Friends', 'See who is online and pray for each other.'], ['testimonies', 'Testimonies', 'Answered prayers and healings.'], ['churches', 'Church finder', 'Find a grace-teaching church near you.'], ['concordance', 'Strong\'s Concordance', 'Every Hebrew and Greek word, its meaning and every place it appears.'], ['fly-' + (JOURNEYS.find(j => j.id === 'apostles') || JOURNEYS[0])?.id, '3D fly-overs', 'Fly over the real terrain of the journeys of Abraham, Moses, Jesus and Paul.'], ['kingdoms', 'Kingdom maps', 'See the borders change from David to the Romans.'], ['distance', 'How far was it?', 'Distances and walking days between Bible places.'], ['kids', 'Kids\' corner', 'Stories, a fun quiz and pictures to colour.'], ['plans', 'Reading plans', 'John in 21 days, Acts with Paul, Psalms of hope and journey plans.'], ['quiz', 'Quiz', 'Test yourself and challenge a friend.'], ['near', 'Near me', 'Find Bible places close to where you are.'], ['library', 'My library', 'Your saved places, verses, highlights and notes.'], ['books', 'Books of the Bible', 'An introduction to all 66 books: author, date, themes and outline.'], ['tabernacle', 'Tabernacle & Temple', 'Tap each part and see how it points to Jesus.'], ['jerusalem', 'Jerusalem through time', 'The city from David to Jesus on the map.'], ['learn', 'Learn Hebrew & Greek', 'Alphabets, the 100 most common words and flashcards.'], ['family-devotion', 'Family devotion', 'A 10-minute story, questions and prayer for the whole family.'], ['fasting', 'Fasting', 'Track a fast with Scripture and prayer reminders.'], ['battle', 'Quiz battles', 'Same questions, beat your friend\'s score.'], ['study', 'Study tools', 'Commentaries, topical Bible, dictionary, prophecy and the four Gospels side by side.'], ['daily', 'Daily challenge', 'One Bible question a day — keep your streak going.'], ['versepic', 'Verse pictures', 'Make a verse picture on a photo of a real Bible place.'], ['groups', 'Church groups', 'Read the same plan and pray together as a church.'], ['places', 'Every Bible place', 'All 1,300 Bible places on one map, plus the events map.'], ['people', 'People of the Bible', 'Look up anyone in the Bible: family, age, map, journeys and every verse.'], ['chronology', 'From Adam to today', 'Lifespans from Adam to Jesus and the age of mankind in the Bible.'], ['memory', 'Scripture memory', 'Learn verses by heart with a few minutes\' practice a day.'], ['devotionals', 'Devotionals', 'Short reflections and prayers from the Bible lands.'], ['feasts', 'Feasts & holy days', 'Passover, Pentecost, Tabernacles and Easter — dates for the year ahead.'], ['teachings', 'Teachings', 'Watch Andrew Wommack and Dan Mohler from their official channels.'], ['prayer', 'Prayer', 'A private prayer journal and a shared prayer wall.'], ['community', 'Friends & community', 'Invite friends, read plans together and join the conversation.'], ['embed', 'For churches', 'Put any Bible place or journey on your church or school website.'], ['devnotes', 'Developer notes', 'What\'s new, what\'s next, and a place for your feedback.']];
   host.insertAdjacentHTML('afterend', `<section class="band moretiles"><div class="wrap"><div class="sh"><div><h2>More ways to explore</h2><p>Tools for personal study, families, churches and travellers — free, and they work on your phone.</p></div></div>
     <div class="tiles">${T.map(([h, t, d]) => `<button class="tile" data-go="${h}"><b>${t}</b><span>${d}</span></button>`).join('')}</div></div></section>`);
 }
@@ -2444,7 +2447,7 @@ document.addEventListener('click', async e => { if (!e.target.closest('#alertBtn
 function viewStudyHub() {
   setNav('read'); document.title = 'Study tools — Just One More Lord';
   const T = [['books', 'Books of the Bible', 'Introductions to all 66 books.'], ['tabernacle', 'Tabernacle & Temple', 'Interactive plan: how each part points to Jesus.'], ['jerusalem', 'Jerusalem through time', 'The city from David to Jesus.'], ['learn', 'Learn Hebrew & Greek', 'Alphabets, top 100 words, flashcards.'], ['read', 'Bible reader', 'Five translations, listen aloud, word study and commentary on every chapter.'], ['topics', 'Topical Bible', '5,000 topics and 100,000 verses (Nave\'s).'], ['dictionary', 'Bible dictionary', 'Easton\'s dictionary and the meaning of 2,600 names.'], ['people', 'People of the Bible', '3,000+ profiles with family, maps and every verse.'],
-    ['grace', 'Grace lens', 'Read every passage through the finished work of Jesus.'], ['search-adv', 'Advanced search', 'Search all 31,102 verses by word, phrase, book or Strong\'s number.'], ['parallel', 'Parallel Bible', 'Two or three translations side by side.'], ['rainbow', 'Cross-reference rainbow', 'See the 7,000 strongest links between chapters.'], ['written', 'When was it written?', 'All 66 books on one timeline.'], ['concordance', 'Hebrew & Greek concordance', 'Strong\'s numbers and every occurrence.'], ['prophecy', 'Prophecy and fulfilment', '44 promises and where they were fulfilled.'], ['harmony', 'Gospel harmony', 'The four Gospels side by side, event by event.'], ['places', 'Every Bible place', '1,300 places on one map.'], ['events', 'Events map', '500 events by era.'], ['museums', 'Bible finds in museums', 'Where to see the discoveries today.'], ['lesson', 'Lesson builder', 'Build, print and present a sermon or lesson.'], ['versepic', 'Verse pictures', 'Share a verse on a photo of a Bible place.']];
+    ['grace', 'Grace lens', 'Read every passage through the finished work of Jesus.'], ['search-adv', 'Advanced search', 'Search all 31,102 verses by word, phrase, book or Strong\'s number.'], ['parallel', 'Parallel Bible', 'Two or three translations side by side.'], ['rainbow', 'Cross-reference rainbow', 'See the 7,000 strongest links between chapters.'], ['written', 'When was it written?', 'All 66 books on one timeline.'], ['concordance', 'Hebrew & Greek concordance', 'Strong\'s numbers and every occurrence.'], ['prophecy', 'Prophecy and fulfilment', '44 promises and where they were fulfilled.'], ['harmony', 'Gospel harmony', 'The four Gospels side by side, event by event.'], ['places', 'Every Bible place', '1,300 places on one map.'], ['events', 'Events map', '500 events by era.'], ['museums', 'Bible finds in museums', 'Where to see the discoveries today.'], ['lesson', 'Lesson builder', 'Build, print and present a sermon or lesson.'], ['versepic', 'Verse pictures', 'Share a verse on a photo of a Bible place.'], ['measures', 'Money, weights & measures', 'Every Bible unit in today\'s terms, with money in rand.'], ['names', 'Names of God', 'The Hebrew and Greek names of God and what they mean.'], ['parables', 'Parables of Jesus', 'Every parable through the lens of grace.'], ['miracles', 'Miracles of Jesus', 'The miracles on the map.']];
   main.innerHTML = `<section class="band"><div class="wrap"><div class="sh"><div><p class="kicker">Everything for deeper study</p><h1>Study tools</h1></div></div><div class="tiles">${T.map(([h, t, d]) => `<button class="tile" data-go="${h}"><b>${t}</b><span>${d}</span></button>`).join('')}</div></div></section>`;
 }
 
@@ -2778,6 +2781,8 @@ function viewSettings() {
   setNav(''); document.title = 'Display & accessibility — Just One More Lord'; const pct = () => Math.round((PREF.size || 1) * 100);
   main.innerHTML = `<section class="band"><div class="wrap quizwrap"><p class="kicker">Make it yours</p><h1>Display &amp; accessibility</h1>
     <div class="panel"><h2>Text size</h2><div class="linkrow"><button class="btn ghost sm" data-sz="-0.1" aria-label="Smaller text">A−</button><b id="szv" aria-live="polite">${pct()}%</b><button class="btn ghost sm" data-sz="0.1" aria-label="Bigger text">A+</button><button class="btn ghost sm" data-sz="0">Reset</button></div>
+      <h2 style="margin-top:18px">Theme</h2><div class="linkrow" role="radiogroup" aria-label="Theme">${[['dark', '🌙 Dark neon'], ['light', '☀ Light'], ['auto', 'Match my phone']].map(([k, l]) => `<button class="btn ghost sm" role="radio" data-thm="${k}" aria-checked="${(PREF.theme || 'dark') === k}">${l}</button>`).join('')}</div>
+      <p class="small muted">Light mode is easier to read outside in bright sunlight.</p>
       <h2 style="margin-top:18px">Font</h2><div class="linkrow" role="radiogroup" aria-label="Font">${[['', 'Standard'], ['easy', 'Easy-read (Atkinson Hyperlegible)'], ['lexend', 'Dyslexia-friendly (Lexend)']].map(([k, l]) => `<button class="btn ghost sm" role="radio" data-fnt="${k}" aria-checked="${(PREF.font || '') === k}">${l}</button>`).join('')}</div>
       <h2 style="margin-top:18px">Reading comfort</h2>
       ${[['hc', 'High contrast (no glow, stronger text)'], ['rm', 'Reduce motion and animations'], ['sp', 'Extra line and letter spacing']].map(([k, l]) => `<label class="tog"><input type="checkbox" data-a11y="${k}" ${PREF[k] ? 'checked' : ''}> ${l}</label>`).join('')}
@@ -2785,6 +2790,7 @@ function viewSettings() {
     <p class="small muted" style="margin-top:14px">Saved on this device. Screen readers (VoiceOver and TalkBack) work throughout the app, and the Bible reader can read chapters aloud.</p></div></section>`;
   const save = () => { savePrefs(); applyA11y(); };
   $$('[data-sz]').forEach(b => b.onclick = () => { const d = +b.dataset.sz; PREF.size = d ? Math.min(1.6, Math.max(0.8, Math.round(((PREF.size || 1) + d) * 10) / 10)) : 1; save(); $('#szv').textContent = pct() + '%'; });
+  $$('[data-thm]').forEach(b => b.onclick = () => { PREF.theme = b.dataset.thm; save(); $$('[data-thm]').forEach(x => x.setAttribute('aria-checked', x === b)); });
   $$('[data-fnt]').forEach(b => b.onclick = () => { PREF.font = b.dataset.fnt; save(); $$('[data-fnt]').forEach(x => x.setAttribute('aria-checked', x === b)); });
   $$('[data-a11y]').forEach(c => c.onchange = () => { PREF[c.dataset.a11y] = c.checked; save(); });
 }
@@ -3123,7 +3129,9 @@ const vchips = refs => `<div class="chips">${refs.map(r => `<button class="chip"
 function graceHomeBand() { const it = typeof graceMinuteItem === 'function' ? graceMinuteItem() : null; const idn = GOSPEL.identity.length ? GOSPEL.identity[dayIndex() % GOSPEL.identity.length] : null;
   return `<section class="band graceband"><div class="wrap"><div class="sh"><div><p class="kicker">It is finished</p><h2>You are loved, forgiven and made new</h2><p>This is a grace-based Bible app. Everything here is read in the light of the finished work of Jesus and the love of the Father.</p></div><button class="btn" data-go="gospel">Start here: the gospel of grace</button></div>
     <div class="gcards">${it ? `<button class="gcard" data-go="grace-minute"><span class="kicker">Today's Grace minute</span><b>${esc(it.n[1])}</b><span>A verse, the finished work, a reflection and a prayer.</span></button>` : ''}
-      ${idn ? `<button class="gcard" data-go="identity"><span class="kicker">Who I am in Christ</span><b>${esc(idn[0])}</b><span>${esc(idn[1])}</span></button>` : ''}
+      ${idn ? `<button class="gcard" data-go="identity"><span class="kicker">Who you are in Christ</span><b>${esc(idn[0])}</b><span>${esc(idn[1])}</span></button>` : ''}
+      <button class="gcard" data-go="receive"><span class="kicker">New here?</span><b>Receive Jesus and the Holy Spirit</b><span>A simple prayer, what happens next, and power for your new life.</span></button>
+      <button class="gcard" data-go="miracles"><span class="kicker">Miracles of Jesus</span><b>${(window.JOM_MIRACLES || []).length} miracles on the map</b><span>Where each one happened and what it shows about the Father's heart.</span></button>
       <button class="gcard" data-go="healing"><span class="kicker">Healing scriptures</span><b>By his stripes you were healed</b><span>${GOSPEL.healing.length} promises to read, speak and listen to.</span></button>
       <button class="gcard" data-go="grace"><span class="kicker">Grace lens</span><b>Read every chapter through the cross</b><span>Covenant context and notes on often-misread passages.</span></button>
       <button class="gcard" data-go="teachings"><span class="kicker">Grace teachers</span><b>Andrew Wommack · Dan Mohler · Richard Olivier</b><span>Teaching on the finished work and the love of God.</span></button></div></div></section>`; }
@@ -3134,25 +3142,15 @@ function viewGospel() {
     <nav class="toc">${GOSPEL.truths.map((t, i) => `<a href="#gospel" data-jump="gt${i}">${i + 1}. ${esc(t[0])}</a>`).join('')}</nav>
     ${GOSPEL.truths.map((t, i) => `<article class="truth" id="gt${i}"><h2><span>${i + 1}</span>${esc(t[0])}</h2><p>${esc(t[1])}</p>${vchips(t[2])}</article>`).join('')}
     <div class="panel prayerbox"><h2>A prayer to receive Jesus and the Holy Spirit</h2><p><i>${esc(GOSPEL.salvationPrayer)}</i></p><p class="small muted">If you prayed this, you are born again and a new creation. Tell someone, find a grace-teaching church, and start reading the Gospel of John.</p>
-      <div class="linkrow"><button class="btn" id="gsaved">I prayed this prayer</button><button class="btn ghost" data-go="churches">Find a church</button><button class="btn ghost" data-go="read-Jhn.1">Read John</button></div></div>
-    <div class="panel"><h2>Go deeper</h2><div class="linkrow"><button class="btn" data-go="notes">📝 Teaching notes: grace, faith, healing and more</button></div><p class="small muted">Free teaching from the teachers this app follows:</p>
+      <div class="linkrow"><button class="btn" id="gsaved">I prayed this prayer</button><button class="btn ghost" data-go="receive">What happens next</button><button class="btn ghost" data-go="receive-spirit">Receive the Holy Spirit</button><button class="btn ghost" data-go="churches">Find a church</button><button class="btn ghost" data-go="read-Jhn.1">Read John</button></div></div>
+    <div class="panel"><h2>Go deeper</h2><div class="linkrow"><button class="btn" data-go="identity">👑 Who you are in Christ</button><button class="btn" data-go="notes">📝 Teaching notes: grace, faith, healing and more</button><button class="btn ghost" data-go="parables">Parables of Jesus</button><button class="btn ghost" data-go="miracles">Miracles of Jesus</button><button class="btn ghost" data-go="names">Names of God</button></div><p class="small muted">Free teaching from the teachers this app follows:</p>
       <div class="rlist">${[['Andrew Wommack · Spirit, Soul and Body', 'https://www.youtube.com/channel/UC8H3lzJU5Qm-s3WVroB87kw/search?query=spirit%20soul%20and%20body'], ['Andrew Wommack · The True Nature of God', 'https://www.youtube.com/channel/UC8H3lzJU5Qm-s3WVroB87kw/search?query=true%20nature%20of%20god'], ['Andrew Wommack · You\'ve Already Got It', 'https://www.youtube.com/channel/UC8H3lzJU5Qm-s3WVroB87kw/search?query=already%20got%20it'], ['Andrew Wommack · God Wants You Well', 'https://www.youtube.com/channel/UC8H3lzJU5Qm-s3WVroB87kw/search?query=god%20wants%20you%20well'], ['Dan Mohler · identity and the love of God', 'https://www.youtube.com/results?search_query=Dan+Mohler+identity+love+of+God'], ['Richard Olivier · Harvest Church', 'https://www.youtube.com/@harvestchurchza/videos']].map(([t, u]) => `<a class="ritem" href="${u}" target="_blank" rel="noopener"><div><b>${esc(t)}</b><span>YouTube</span></div><span class="tag">Watch</span></a>`).join('')}</div></div>
     <p class="small muted">Written for this app in the spirit of the finished-work grace teaching of Andrew Wommack, Dan Mohler and Richard Olivier; it is not their own wording. Test everything with Scripture (Acts 17:11).</p></div></section>`;
   $$('[data-jump]').forEach(a => a.onclick = e => { e.preventDefault(); $('#' + a.dataset.jump).scrollIntoView({ behavior: 'smooth', block: 'start' }); });
-  $('#gsaved').onclick = () => { track('saved', today()); toast('Welcome to the family of God! Heaven is rejoicing (Luke 15:7).'); $('#gsaved').textContent = '🎉 Welcome to the family'; $('#gsaved').disabled = true; };
+  $('#gsaved').onclick = () => { markMilestone('jesus'); toast('Welcome to the family of God! Heaven is rejoicing (Luke 15:7).'); $('#gsaved').textContent = '🎉 Welcome to the family'; $('#gsaved').disabled = true; };
 }
 function speakList(items, btn) { if (!('speechSynthesis' in window)) { toast('Listening is not supported on this device'); return; } if (speechSynthesis.speaking) { speechSynthesis.cancel(); btn.textContent = '▶ Speak them over me'; return; }
   const u = new SpeechSynthesisUtterance(items.join('. ')); const vv = ttsVoice(); if (vv) u.voice = vv; u.rate = +(localStorage.getItem('jom:rate') || 1); u.onend = () => { btn.textContent = '▶ Speak them over me'; }; speechSynthesis.speak(u); btn.textContent = '❚❚ Stop'; }
-function viewIdentity() {
-  setNav('gospel'); document.title = 'Who I am in Christ — Just One More Lord'; const t = GOSPEL.identity[dayIndex() % GOSPEL.identity.length];
-  main.innerHTML = `<section class="band"><div class="wrap quizwrap"><p class="kicker">Renew your mind (Romans 12:2)</p><h1>Who I am in <span class="neon-txt">Christ</span></h1>
-    <p class="lead">This is what God says is already true of you in your spirit. Read them out loud and let them shape how you see yourself.</p>
-    <div class="votdcard"><p class="kicker">Today</p><div class="vtext">${esc(t[0])}</div><button class="chip" data-verse="${esc(t[1])}">${esc(t[1])}</button></div>
-    <div class="linkrow"><button class="btn" id="idsp">▶ Speak them over me</button><button class="btn ghost" id="idsh">${ICON.share} Share the list</button></div>
-    <ol class="idlist">${GOSPEL.identity.map(([s, r]) => `<li><span>${esc(s)}</span><button class="chip" data-verse="${esc(r)}">${esc(r)}</button></li>`).join('')}</ol></div></section>`;
-  $('#idsp').onclick = e => speakList(GOSPEL.identity.map(([s, r]) => `${s}. ${r}`), e.target);
-  $('#idsh').onclick = () => shareIt({ title: 'Who I am in Christ', text: GOSPEL.identity.map(([s, r]) => `• ${s} (${r})`).join('\n'), hash: 'identity' });
-}
 function viewHealing() {
   setNav('gospel'); document.title = 'Healing scriptures — Just One More Lord';
   main.innerHTML = `<section class="band"><div class="wrap quizwrap"><p class="kicker">By his stripes you were healed</p><h1>Healing <span class="neon-txt">scriptures</span></h1>
@@ -3209,6 +3207,216 @@ function viewStories(id) {
     <p class="small muted" style="margin-top:14px">${esc(window.JOM_TESTIMONY_NOTE || '')}</p></div></section>`;
   $('#tssh').onclick = () => shareIt({ title: t.title, text: `${t.title}\n\n${t.sum}`, hash: 'stories-' + t.id });
 }
+/* ---------- milestones (prayed to receive Jesus / the Holy Spirit) ---------- */
+function markMilestone(k) { if (!MY.milestones || typeof MY.milestones !== 'object') MY.milestones = {}; if (!MY.milestones[k]) MY.milestones[k] = Date.now(); MY.days[today()] = (MY.days[today()] || 0) + 1; saveMy(); }
+const refChips = refs => vchips(refs.flatMap(r => String(r).split(/;\s*/)));
+const backTop = '<p class="small muted"><button class="inl" data-totop>Back to top ↑</button></p>';
+function wireJumps() { $$('[data-jump]').forEach(a => a.onclick = e => { e.preventDefault(); const t = $('#' + a.dataset.jump); if (t) { if (t.tagName === 'DETAILS') t.open = true; t.scrollIntoView({ behavior: 'smooth', block: 'start' }); } }); $$('[data-totop]').forEach(b => b.onclick = () => window.scrollTo({ top: 0, behavior: 'smooth' })); }
+
+/* ---------- who you are in Christ: the new-creation breakdown ---------- */
+const NEWC = window.JOM_NEWCREATION || { parts: [], swap: [], identity: [], renew: [], faq: [], declare: [] };
+function viewIdentity() {
+  setNav('gospel'); document.title = 'Who you are in Christ — your new creation identity — Just One More Lord';
+  const t = GOSPEL.identity.length ? GOSPEL.identity[dayIndex() % GOSPEL.identity.length] : null;
+  const toc = [['nc-parts', 'Spirit, soul and body'], ['nc-swap', 'The old you and the new you'], ['nc-id', 'Who you are now: 12 truths'], ['nc-renew', 'How to live from it'], ['nc-faq', 'Honest questions'], ['nc-declare', 'Speak it over yourself']];
+  main.innerHTML = `<section class="band"><div class="wrap quizwrap"><p class="kicker">2 Corinthians 5:17 · your new creation identity</p><h1>Who you are in <span class="neon-txt">Christ</span></h1>
+    <p class="lead">${esc(NEWC.intro || 'This is what God says is already true of you in your spirit.')}</p>
+    ${t ? `<div class="votdcard"><div><p class="kicker">Today's truth</p><div class="vtext">${esc(t[0])}</div><button class="chip" data-verse="${esc(t[1])}">${esc(t[1])}</button></div>
+      <div class="linkrow" style="align-content:center"><button class="btn" id="idsp">▶ Speak today's truths</button><button class="btn ghost" id="idsh">${ICON.share} Share</button></div></div>` : ''}
+    <nav class="toc" aria-label="On this page">${toc.map(([id, l], i) => `<a href="#identity" data-jump="${id}">${i + 1}. ${esc(l)}</a>`).join('')}</nav>
+
+    <h2 id="nc-parts" class="nch">1. You are a spirit, you have a soul, you live in a body</h2>
+    <p>1 Thessalonians 5:23 names all three parts of you. Knowing which part was made new is the key to understanding your identity.</p>
+    <div class="ncparts">
+      <svg class="ncdiag" viewBox="0 0 220 220" role="img" aria-label="Three circles: body on the outside, soul in the middle, spirit at the centre">
+        <circle cx="110" cy="110" r="104" class="nc-b"/><circle cx="110" cy="110" r="70" class="nc-s"/><circle cx="110" cy="110" r="36" class="nc-sp"/>
+        <text x="110" y="28" text-anchor="middle">BODY</text><text x="110" y="62" text-anchor="middle">SOUL</text><text x="110" y="106" text-anchor="middle" class="nc-spt">SPIRIT</text><text x="110" y="122" text-anchor="middle" class="nc-spt small">made new</text></svg>
+      <div class="ncpcards">${NEWC.parts.map(([h, p, r], i) => `<article class="panel ncp ncp${i}"><h3>${esc(h)}</h3><p>${esc(p)}</p>${refChips(r)}</article>`).join('')}</div></div>
+
+    <h2 id="nc-swap" class="nch">2. The old you and the new you</h2>
+    <p>Everything you were in Adam, Jesus exchanged for everything he is. This is the great exchange of the cross.</p>
+    <div class="ncswap" role="table" aria-label="In Adam compared with in Christ"><div class="ncrow nchead" role="row"><span role="columnheader">In Adam, I was</span><span role="columnheader">In Christ, I am</span></div>
+      ${NEWC.swap.map(([a, b, r]) => `<div class="ncrow" role="row"><span role="cell" class="ncold">${esc(a)}</span><span role="cell" class="ncnew"><b>${esc(b)}</b>${refChips([r])}</span></div>`).join('')}</div>
+
+    <h2 id="nc-id" class="nch">3. Who you are now: 12 truths</h2>
+    <p>Tap each one to open it. Each has an explanation, five "I am" statements with the verse behind them, and a button to hear them spoken over you.</p>
+    <div class="ncids">${NEWC.identity.map(x => `<details class="ncid" id="nc-${x.id}"><summary><span class="ncic" aria-hidden="true">${x.icon}</span><span><b>${esc(x.t)}</b><span class="small muted">${esc(x.sum)}</span></span></summary>
+      <div class="ncbody"><p>${esc(x.text)}</p><ul class="ncam">${x.i.map(([s, r]) => `<li><span>${esc(s)}</span><button class="chip" data-verse="${esc(r)}">${esc(r)}</button></li>`).join('')}</ul>
+      <div class="linkrow"><button class="btn sm" data-ncsp="${x.id}">▶ Speak these over me</button><button class="btn ghost sm" data-ncsh="${x.id}">${ICON.share} Share</button></div></div></details>`).join('')}</div>
+
+    <h2 id="nc-renew" class="nch">4. How to live from who you already are</h2>
+    <p>You do not become new by trying harder. You already are new in your spirit. The Christian life is renewing your mind to that truth so it shows up in how you think, feel and live (Romans 12:2).</p>
+    <ol class="ncsteps">${NEWC.renew.map(([h, p, r]) => `<li><h3>${esc(h)}</h3><p>${esc(p)}</p>${refChips(r)}</li>`).join('')}</ol>
+
+    <h2 id="nc-faq" class="nch">5. Honest questions</h2>
+    ${NEWC.faq.map(([q, a, r]) => `<details class="ncfaq"><summary>${esc(q)}</summary><p>${esc(a)}</p>${refChips(r)}</details>`).join('')}
+
+    <h2 id="nc-declare" class="nch">6. Speak it over yourself</h2>
+    <p>Faith comes by hearing (Romans 10:17). Read these out loud every morning, or press play and listen.</p>
+    <div class="panel prayerbox"><ol class="ncdecl">${NEWC.declare.map(d => `<li>${esc(d)}</li>`).join('')}</ol>
+      <div class="linkrow"><button class="btn" id="ncdsp">▶ Speak them over me</button><button class="btn ghost" id="ncdsh">${ICON.share} Share</button><button class="btn ghost" data-go="memory">Learn them by heart</button></div></div>
+
+    ${GOSPEL.identity.length ? `<details class="ncfaq"><summary>More "in Christ" statements (${GOSPEL.identity.length})</summary><ol class="idlist">${GOSPEL.identity.map(([s, r]) => `<li><span>${esc(s)}</span> <button class="chip" data-verse="${esc(r)}">${esc(r)}</button></li>`).join('')}</ol></details>` : ''}
+    <div class="panel" style="margin-top:22px"><h2>Not sure you are in Christ yet?</h2><p>All of this becomes true of you the moment you receive Jesus. It is simple, and it is a gift.</p><div class="linkrow"><button class="btn" data-go="receive">Receive Jesus</button><button class="btn ghost" data-go="receive-spirit">Receive the Holy Spirit</button><button class="btn ghost" data-go="notes">Teaching notes on identity</button></div></div>
+    ${backTop}
+    <p class="small muted">Written for this app in the spirit of the finished-work grace teaching of Andrew Wommack, Dan Mohler and Richard Olivier; it is not their own wording. Test everything with Scripture (Acts 17:11).</p></div></section>`;
+  wireJumps();
+  if (t) { $('#idsp').onclick = e => speakList(GOSPEL.identity.map(([s, r]) => `${s}. ${r}`), e.target); $('#idsh').onclick = () => shareIt({ title: 'Who I am in Christ', text: GOSPEL.identity.map(([s, r]) => `• ${s} (${r})`).join('\n'), hash: 'identity' }); }
+  $$('[data-ncsp]').forEach(b => b.onclick = () => { const x = NEWC.identity.find(y => y.id === b.dataset.ncsp); speakList(x.i.map(([s]) => s), b); });
+  $$('[data-ncsh]').forEach(b => b.onclick = () => { const x = NEWC.identity.find(y => y.id === b.dataset.ncsh); shareIt({ title: `In Christ I am ${x.t.toLowerCase()}`, text: `${x.t}\n` + x.i.map(([s, r]) => `• ${s} (${r})`).join('\n'), hash: 'identity' }); });
+  $('#ncdsp').onclick = e => speakList(NEWC.declare, e.target);
+  $('#ncdsh').onclick = () => shareIt({ title: 'Who I am in Christ', text: NEWC.declare.map(d => '• ' + d).join('\n'), hash: 'identity' });
+}
+
+/* ---------- receive Jesus / receive the Holy Spirit ---------- */
+const RCV = window.JOM_RECEIVE || null;
+function viewReceive(which) {
+  setNav('gospel'); if (!RCV) { viewNotFound(); return; }
+  const sp = which === 'spirit', R = sp ? RCV.spirit : RCV.jesus, key = sp ? 'spirit' : 'jesus', done = MY.milestones?.[key];
+  document.title = (sp ? 'Receive the Holy Spirit' : 'Receive Jesus') + ' — Just One More Lord';
+  main.innerHTML = `<section class="band"><div class="wrap quizwrap"><div class="seg rcvtabs" role="tablist"><button role="tab" data-go="receive" aria-selected="${!sp}" aria-pressed="${!sp}">Receive Jesus</button><button role="tab" data-go="receive-spirit" aria-selected="${sp}" aria-pressed="${sp}">Receive the Holy Spirit</button></div>
+    <p class="kicker">${sp ? 'Luke 11:13 · Acts 2:38-39' : 'Romans 10:9-10 · John 1:12'}</p><h1>${sp ? 'Receive the <span class="neon-txt">Holy Spirit</span>' : 'Receive <span class="neon-txt">Jesus</span>'}</h1>
+    <p class="lead">${esc(R.lead)}</p>
+    <ol class="ncsteps">${R.steps.map(([h, p, r]) => `<li><h3>${esc(h)}</h3><p>${esc(p)}</p>${refChips(r)}</li>`).join('')}</ol>
+    <div class="panel prayerbox rcvprayer"><p class="kicker">Pray this out loud, from your heart</p><h2>${sp ? 'A prayer to receive the Holy Spirit' : 'A prayer to receive Jesus'}</h2><p class="rcvp"><i>${esc(R.prayer)}</i></p>
+      <div class="linkrow"><button class="btn" id="rcvdone" ${done ? 'disabled' : ''}>${done ? '🎉 ' + (sp ? 'You asked and received' : 'Welcome to the family') : 'I prayed this prayer'}</button><button class="btn ghost" id="rcvsp">▶ Pray it with me</button></div>
+      <div id="rcvafter" ${done ? '' : 'hidden'}><h2 style="margin-top:18px">${sp ? 'What now?' : 'What just happened'}</h2>${R.after.map(([h, p, r]) => `<div class="truth"><h3>${esc(h)}</h3><p>${esc(p)}</p>${refChips(r)}</div>`).join('')}</div></div>
+    ${!sp ? `<div class="panel"><h2>Next: receive the Holy Spirit</h2><p>Jesus has more for you: the Holy Spirit's power to live this new life.</p><button class="btn" data-go="receive-spirit">Receive the Holy Spirit →</button></div>` : ''}
+    <h2 class="nch">Your next steps</h2><div class="tiles">${RCV.next.map(([ic, h, d, go]) => `<button class="tile" data-go="${go}"><b>${ic} ${esc(h)}</b><span>${esc(d)}</span></button>`).join('')}</div>
+    <h2 class="nch">Questions people ask</h2>${RCV.faq.map(([q, a, r]) => `<details class="ncfaq"><summary>${esc(q)}</summary><p>${esc(a)}</p>${refChips(r)}</details>`).join('')}
+    <div class="panel" style="margin-top:20px"><h2>Free resources</h2><div class="rlist">${[['Andrew Wommack · free salvation and Holy Spirit booklets', 'https://www.awmi.net/reading/teaching-articles/'], ['Andrew Wommack · The New You & the Holy Spirit', 'https://www.youtube.com/channel/UC8H3lzJU5Qm-s3WVroB87kw/search?query=new%20you%20holy%20spirit'], ['Dan Mohler · the baptism of the Holy Spirit', 'https://www.youtube.com/results?search_query=Dan+Mohler+baptism+of+the+Holy+Spirit'], ['Richard Olivier · Harvest Church', 'https://www.youtube.com/@harvestchurchza/videos']].map(([l, u]) => `<a class="ritem" href="${u}" target="_blank" rel="noopener"><div><b>${esc(l)}</b><span>Free</span></div><span class="tag">Open ↗</span></a>`).join('')}</div></div>
+    <p class="small muted">If you prayed today, tell someone, and if you'd like, share it on the <button class="inl" data-go="testimonies">testimonies</button> page. Written for this app in our own words; test everything with Scripture (Acts 17:11).</p></div></section>`;
+  $('#rcvdone').onclick = e => { markMilestone(key); e.target.disabled = true; e.target.textContent = sp ? '🎉 You asked and received' : '🎉 Welcome to the family'; $('#rcvafter').hidden = false; $('#rcvafter').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    toast(sp ? 'Your Father has given you the Holy Spirit (Luke 11:13). Now thank him and speak!' : 'Welcome to the family of God! Heaven is rejoicing (Luke 15:7).'); };
+  $('#rcvsp').onclick = e => speakList([R.prayer], e.target);
+}
+
+/* ---------- the miracles of Jesus on the map ---------- */
+const MIR = window.JOM_MIRACLES || [], MKIND = window.JOM_MIRACLE_KINDS || {};
+const mirPos = m => m.at ? { lat: m.at[0], lon: m.at[1] } : byId[m.p] ? { lat: byId[m.p].lat, lon: byId[m.p].lon } : null;
+async function viewMiracles(id) {
+  setNav('journeys'); const m = MIR.find(x => x.id === id);
+  if (m) {
+    document.title = `${m.t} — the miracles of Jesus — Just One More Lord`; const i = MIR.indexOf(m), nx = MIR[(i + 1) % MIR.length], pv = MIR[(i - 1 + MIR.length) % MIR.length], pos = mirPos(m), [kl, kc] = MKIND[m.k] || ['', ''];
+    main.innerHTML = `<section class="band"><div class="wrap quizwrap"><div class="crumbs"><button data-go="miracles">Miracles of Jesus</button> › ${esc(m.t)}</div>
+      <p class="kicker"><span class="mirdot" style="background:${kc}"></span>${esc(kl)} · miracle ${i + 1} of ${MIR.length}</p><h1>${esc(m.t)}</h1><p class="small muted">📍 ${esc(m.w)}</p>
+      <p class="lead">${esc(m.s)}</p><div class="panel prayerbox"><p class="kicker">The Father's heart</p><p>${esc(m.g)}</p></div>
+      <div class="panel"><h2>Read it</h2><p class="small muted">Tap to read each account.</p>${vchips(m.r)}</div>
+      ${pos ? `<div class="mapbox" id="mirmap1" style="height:300px;margin-top:16px"></div>` : ''}
+      <div class="linkrow" style="margin-top:14px">${m.p && byId[m.p] ? `<button class="btn ghost sm" data-go="place-${m.p}">Explore ${esc(byId[m.p].n)} today →</button>` : ''}<button class="btn ghost sm" id="mirsh">${ICON.share} Share</button><button class="btn ghost sm" data-go="healing">Healing scriptures</button></div>
+      <div class="linkrow"><button class="btn ghost sm" data-go="miracles-${pv.id}">← ${esc(pv.t)}</button><button class="btn ghost sm" data-go="miracles-${nx.id}">${esc(nx.t)} →</button></div></div></section>`;
+    $('#mirsh').onclick = () => shareIt({ title: m.t, text: `${m.t} (${m.r[0]})\n\n${m.s}\n\n${m.g}`, hash: 'miracles-' + m.id });
+    if (pos) await makeMap($('#mirmap1'), { markers: [{ ...pos, label: m.w, sub: m.t, kind: 'main', size: 18, go: m.p && byId[m.p] ? 'place-' + m.p : '' }], maxZoom: 10 });
+    return;
+  }
+  document.title = 'The miracles of Jesus on the map — Just One More Lord';
+  const counts = Object.fromEntries(Object.keys(MKIND).map(k => [k, MIR.filter(x => x.k === k).length]));
+  main.innerHTML = `<section class="band"><div class="wrap"><div class="sh"><div><p class="kicker">Acts 10:38 · he went about doing good and healing all</p><h1>The miracles of <span class="neon-txt">Jesus</span></h1>
+    <p class="lead">${MIR.length} miracles from the Gospels, pinned to where they happened. Every one shows the Father's heart: Jesus never refused anyone who came to him for healing, and he never made anyone sick.</p></div></div>
+    <div class="chips" id="mirf" role="group" aria-label="Filter miracles"><button class="chip" data-k="" aria-pressed="true">All ${MIR.length}</button>${Object.entries(MKIND).map(([k, [l, c]]) => `<button class="chip" data-k="${k}" aria-pressed="false"><span class="mirdot" style="background:${c}"></span>${esc(l)} ${counts[k]}</button>`).join('')}</div>
+    <div class="mapbox tall" id="mirmap" style="margin-top:14px"></div><p class="small muted">Numbers show how many miracles happened at each place. Where the Gospels name only a region, the pin is approximate. Tap a pin to see its miracles.</p>
+    <div class="mirlist" id="mirlist"></div></div></section>`;
+  let kind = '', place = '';
+  const draw = () => {
+    const L = MIR.filter(x => (!kind || x.k === kind) && (!place || (x.p || x.id) === place));
+    $('#mirlist').innerHTML = (place ? `<p class="notice">Showing miracles at ${esc(byId[place]?.n || 'this place')} · <button class="inl" id="mirclr">show all</button></p>` : '') + L.map(x => { const [kl, kc] = MKIND[x.k] || ['', '']; return `<button class="ritem mirit" data-go="miracles-${x.id}" style="--kc:${kc}"><div><b>${esc(x.t)}</b><span>${esc(x.w)} · ${esc(x.r[0])}</span></div><span class="tag">${esc(kl)}</span></button>`; }).join('');
+    $('#mirclr') && ($('#mirclr').onclick = () => { place = ''; draw(); });
+  };
+  $$('#mirf [data-k]').forEach(b => b.onclick = () => { kind = b.dataset.k; $$('#mirf [data-k]').forEach(x => x.setAttribute('aria-pressed', String(x === b))); draw(); });
+  draw();
+  const groups = {}; for (const x of MIR) { const pos = mirPos(x); if (!pos) continue; const g = x.p || x.id; (groups[g] ||= { ...pos, list: [], g }).list.push(x); }
+  await makeMap($('#mirmap'), { markers: Object.values(groups).map(g => ({ lat: g.lat, lon: g.lon, label: byId[g.g]?.n || g.list[0].w, sub: g.list.map(x => x.t).join(' · '), kind: 'stop', num: g.list.length, size: g.list.length > 1 ? 24 : 18,
+    onClick: () => { place = g.g; kind = ''; $$('#mirf [data-k]').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.k === ''))); draw(); } })), maxZoom: 9 });
+}
+
+/* ---------- the parables of Jesus ---------- */
+const PARA = window.JOM_PARABLES || [];
+function viewParables(id) {
+  setNav('gospel'); const p = PARA.find(x => x.id === id);
+  if (p) {
+    document.title = `${p.t} — the parables of Jesus — Just One More Lord`; const i = PARA.indexOf(p), nx = PARA[(i + 1) % PARA.length], pv = PARA[(i - 1 + PARA.length) % PARA.length];
+    main.innerHTML = `<section class="band"><div class="wrap quizwrap"><div class="crumbs"><button data-go="parables">Parables of Jesus</button> › ${esc(p.t)}</div>
+      <p class="kicker">${esc(p.tp)} · parable ${i + 1} of ${PARA.length}</p><h1>${esc(p.t)}</h1>
+      <h2 class="nch">The story</h2><p class="lead">${esc(p.s)}</p>
+      <div class="panel prayerbox"><p class="kicker">Through the lens of grace</p><p>${esc(p.m)}</p></div>
+      <div class="panel"><h2>Think about it</h2><p><i>${esc(p.q)}</i></p><div class="linkrow"><button class="btn ghost sm" data-go="journal-${encodeURIComponent(p.r[0])}">Write in my journal</button></div></div>
+      <div class="panel"><h2>Read it</h2>${vchips(p.r)}</div>
+      <div class="linkrow" style="margin-top:14px"><button class="btn ghost sm" id="parsp">▶ Listen</button><button class="btn ghost sm" id="parsh">${ICON.share} Share</button></div>
+      <div class="linkrow"><button class="btn ghost sm" data-go="parables-${pv.id}">← ${esc(pv.t)}</button><button class="btn ghost sm" data-go="parables-${nx.id}">${esc(nx.t)} →</button></div></div></section>`;
+    $('#parsp').onclick = e => speakList([p.t, p.s, p.m], e.target);
+    $('#parsh').onclick = () => shareIt({ title: p.t, text: `${p.t} (${p.r[0]})\n\n${p.m}`, hash: 'parables-' + p.id });
+    return;
+  }
+  document.title = 'The parables of Jesus — Just One More Lord'; const tps = [...new Set(PARA.map(x => x.tp))];
+  main.innerHTML = `<section class="band"><div class="wrap"><div class="sh"><div><p class="kicker">Mark 4:34 · he explained everything to his disciples</p><h1>The parables of <span class="neon-txt">Jesus</span></h1>
+    <p class="lead">${PARA.length} stories Jesus told, each explained through the finished work and the love of the Father, with a question to think about.</p></div></div>
+    <div class="chips" id="parf" role="group" aria-label="Filter by theme"><button class="chip" data-tp="" aria-pressed="true">All</button>${tps.map(t => `<button class="chip" data-tp="${esc(t)}" aria-pressed="false">${esc(t)}</button>`).join('')}</div>
+    <div class="gcards" id="parlist"></div></div></section>`;
+  const draw = tp => { $('#parlist').innerHTML = PARA.filter(x => !tp || x.tp === tp).map(x => `<button class="gcard" data-go="parables-${x.id}"><span class="kicker">${esc(x.tp)} · ${esc(x.r[0])}</span><b>${esc(x.t)}</b><span>${esc(x.m.split(/(?<=[.!?])\s/)[0])}</span></button>`).join(''); };
+  $$('#parf [data-tp]').forEach(b => b.onclick = () => { $$('#parf [data-tp]').forEach(x => x.setAttribute('aria-pressed', String(x === b))); draw(b.dataset.tp); });
+  draw('');
+}
+
+/* ---------- the names of God ---------- */
+const GNAMES = window.JOM_NAMES || [];
+const NGROUP = { god: 'The names of God', jesus: 'The names of Jesus', spirit: 'The Holy Spirit' };
+function viewNames(id) {
+  setNav('concordance'); const n = GNAMES.find(x => x.id === id);
+  if (n) {
+    document.title = `${n.n} — the names of God — Just One More Lord`; const i = GNAMES.indexOf(n), nx = GNAMES[(i + 1) % GNAMES.length];
+    main.innerHTML = `<section class="band"><div class="wrap quizwrap"><div class="crumbs"><button data-go="names">Names of God</button> › ${esc(n.n)}</div>
+      <p class="kicker">${esc(NGROUP[n.g])}</p><h1>${esc(n.n)}</h1><p class="gname" lang="${n.s[0][0] === 'H' ? 'he' : 'el'}">${esc(n.o)}</p><p class="small muted">${esc(n.tr)}</p>
+      <p class="lead"><b>${esc(n.m)}</b></p><div class="panel prayerbox"><p>${esc(n.x)}</p></div>
+      <div class="panel"><h2>The original words</h2><p class="small muted">Open each Strong's number to see its definition and every verse where it appears.</p><div class="chips">${n.s.map(s => `<button class="chip" data-go="strong-${s}">${s}</button>`).join('')}</div></div>
+      <div class="panel"><h2>Read it</h2>${vchips(n.r)}</div>
+      <div class="linkrow" style="margin-top:14px"><button class="btn ghost sm" id="gnsh">${ICON.share} Share</button><button class="btn ghost sm" data-go="names-${nx.id}">Next: ${esc(nx.n)} →</button></div></div></section>`;
+    $('#gnsh').onclick = () => shareIt({ title: n.n, text: `${n.n} (${n.o}): ${n.m}\n\n${n.x}`, hash: 'names-' + n.id });
+    return;
+  }
+  document.title = 'The names of God — Just One More Lord';
+  main.innerHTML = `<section class="band"><div class="wrap"><div class="sh"><div><p class="kicker">Proverbs 18:10 · the name of the LORD is a strong tower</p><h1>The names of <span class="neon-txt">God</span></h1>
+    <p class="lead">In the Bible a name reveals character. Each name below shows something of who God is for you, with the original Hebrew or Greek and a link into the Strong's concordance.</p></div></div>
+    ${Object.entries(NGROUP).map(([g, l]) => `<h2 class="nch">${esc(l)}</h2><div class="gcards">${GNAMES.filter(x => x.g === g).map(x => `<button class="gcard" data-go="names-${x.id}"><span class="gname sm" lang="${x.s[0][0] === 'H' ? 'he' : 'el'}">${esc(x.o)}</span><b>${esc(x.n)}</b><span>${esc(x.m)}</span></button>`).join('')}</div>`).join('')}
+  </div></section>`;
+}
+
+/* ---------- Bible money, weights and measures today ---------- */
+const MEAS = window.JOM_MEASURES || null;
+function viewMeasures() {
+  setNav('study'); if (!MEAS) { viewNotFound(); return; } document.title = 'Bible money, weights and measures today — Just One More Lord';
+  let wage = +(localStorage.getItem('jom:wage') || MEAS.wage) || MEAS.wage;
+  const R = v => v >= 1e9 ? 'R' + (v / 1e9).toLocaleString('en-ZA', { maximumFractionDigits: 1 }) + ' billion' : v >= 1e6 ? 'R' + (v / 1e6).toLocaleString('en-ZA', { maximumFractionDigits: 1 }) + ' million' : 'R' + v.toLocaleString('en-ZA', { minimumFractionDigits: v < 100 ? 2 : 0, maximumFractionDigits: v < 100 ? 2 : 0 });
+  const days = d => d < 1 / 8 ? `${Math.round(d * 480)} minutes' work` : d < 1 ? `${+(d * 8).toFixed(1)} hours' work` : d === 1 ? `1 day's wages` : d < 30 ? `${+d.toFixed(1)} days' wages` : d < 365 ? `about ${Math.round(d / 26)} months' wages` : `about ${(d / 312 > 1000 ? Math.round(d / 312 / 1000) * 1000 : Math.round(d / 312)).toLocaleString('en-ZA')} years' wages`;
+  const metric = (v, u) => u === 'm' ? (v < 1 ? `${+(v * 100).toFixed(1)} cm` : v < 1000 ? `${+v.toFixed(2)} m` : `${+(v / 1000).toFixed(2)} km`) : u === 'kg' ? (v < 1 ? `${+(v * 1000).toFixed(2)} g` : `${+v.toFixed(1)} kg`) : `${+v.toFixed(2)} litres`;
+  const imp = (v, u) => u === 'm' ? (v < 1 ? `${+(v * 39.37).toFixed(1)} in` : v < 1000 ? `${+(v * 3.281).toFixed(1)} ft` : `${+(v / 1609.34).toFixed(2)} miles`) : u === 'kg' ? (v < 0.5 ? `${+(v * 35.274).toFixed(2)} oz` : `${+(v * 2.2046).toFixed(1)} lb`) : `${+(v * 0.2642).toFixed(2)} US gal`;
+  const unitRows = list => list.map(x => `<div class="msrow"><div><b>${esc(x.n)}</b> ${x.s ? `<button class="chip sm" data-go="strong-${x.s}">${x.s}</button>` : ''}<p class="small">${esc(x.w)}</p>${vchips(x.r)}</div><div class="msval"><b>${metric(x.v, x.u)}</b><span class="small muted">${imp(x.v, x.u)}</span></div></div>`).join('');
+  const all = [...MEAS.length, ...MEAS.weight, ...MEAS.volume];
+  main.innerHTML = `<section class="band"><div class="wrap quizwrap"><p class="kicker">Luke 10:35 · two denarii for the inn</p><h1>Bible money, weights &amp; <span class="neon-txt">measures</span> today</h1>
+    <p class="lead">What was a denarius worth? How big was a cubit? Here is every unit in the Bible in today's terms, with money shown in rand.</p>
+    <nav class="toc" aria-label="On this page"><a href="#measures" data-jump="ms-money">1. Money in rand</a><a href="#measures" data-jump="ms-stories">2. Famous amounts</a><a href="#measures" data-jump="ms-conv">3. Quick converter</a><a href="#measures" data-jump="ms-len">4. Length and distance</a><a href="#measures" data-jump="ms-wt">5. Weight</a><a href="#measures" data-jump="ms-vol">6. Volume</a><a href="#measures" data-jump="ms-fam">7. Famous sizes</a></nav>
+    <h2 class="nch" id="ms-money">1. Money in rand</h2>
+    <p>A denarius was a day's pay for a labourer (Matthew 20:2), so the fairest way to understand Bible money is in days' wages. Change the daily wage to match your own if you like.</p>
+    <div class="panel"><label for="mswage"><b>One day's wage (R)</b></label><div class="linkrow"><input id="mswage" type="number" min="1" step="0.01" inputmode="decimal" value="${wage}" style="max-width:160px"><button class="btn ghost sm" id="msreset">Reset</button></div><p class="small muted">Default: ${esc(MEAS.wageNote)}</p></div>
+    <div id="msmoney"></div>
+    <h2 class="nch" id="ms-stories">2. Famous amounts in the Bible</h2><div id="msstories" class="gcards"></div>
+    <h2 class="nch" id="ms-conv">3. Quick converter</h2>
+    <div class="panel msconv"><div class="linkrow"><input id="msn" type="number" min="0" step="any" value="1" aria-label="How many" style="max-width:110px"><select id="msu" aria-label="Unit">${all.map(x => `<option value="${x.id}">${esc(x.n)}</option>`).join('')}</select></div><p class="msout" id="msout" aria-live="polite"></p></div>
+    <h2 class="nch" id="ms-len">4. Length and distance</h2>${unitRows(MEAS.length)}
+    <h2 class="nch" id="ms-wt">5. Weight</h2>${unitRows(MEAS.weight)}
+    <h2 class="nch" id="ms-vol">6. Volume</h2>${unitRows(MEAS.volume)}
+    <h2 class="nch" id="ms-fam">7. Famous sizes</h2><div class="gcards">${MEAS.famous.map(([h, a, d, r]) => `<div class="gcard"><span class="kicker">${esc(a)}</span><b>${esc(h)}</b><span>${esc(d)}</span><button class="chip" data-verse="${esc(r)}">${esc(r)}</button></div>`).join('')}</div>
+    ${backTop}<p class="small muted">Ancient units varied by time and place; these are the usual scholarly estimates, rounded. Money values compare buying power through wages, not exchange rates.</p></div></section>`;
+  const drawMoney = () => {
+    $('#msmoney').innerHTML = MEAS.money.map(x => `<div class="msrow"><div><b>${esc(x.n)}</b> <button class="chip sm" data-go="strong-${x.s}">${x.s}</button><p class="small">${esc(x.w)}</p>${vchips(x.r)}</div><div class="msval"><b>${R(x.d * wage)}</b><span class="small muted">${days(x.d)}</span></div></div>`).join('');
+    $('#msstories').innerHTML = MEAS.stories.map(([h, d, t, r]) => `<div class="gcard"><span class="kicker">${d.toLocaleString('en-ZA')} denarii · ${days(d)}</span><b>${esc(h)}: about ${R(d * wage)}</b><span>${esc(t)}</span><button class="chip" data-verse="${esc(r)}">${esc(r)}</button></div>`).join('');
+  };
+  const conv = () => { const x = all.find(y => y.id === $('#msu').value), n = +$('#msn').value || 0; $('#msout').innerHTML = `${n} × ${esc(x.n)} ≈ <b>${metric(x.v * n, x.u)}</b> <span class="muted">(${imp(x.v * n, x.u)})</span>`; };
+  $('#mswage').oninput = e => { const v = +e.target.value; if (v > 0) { wage = v; try { localStorage.setItem('jom:wage', v); } catch {} drawMoney(); } };
+  $('#msreset').onclick = () => { wage = MEAS.wage; $('#mswage').value = wage; try { localStorage.removeItem('jom:wage'); } catch {} drawMoney(); };
+  $('#msu').value = 'cubit'; $('#msu').onchange = conv; $('#msn').oninput = conv;
+  drawMoney(); conv(); wireJumps();
+}
+
 /* ---------------- router ---------------- */
 async function render() {
   const h = decodeURIComponent(location.hash.slice(1) || 'home');
@@ -3269,6 +3477,11 @@ async function render() {
     else if (h === 'notes' || h.startsWith('notes-')) viewNotes(h.slice(6));
     else if (h === 'stories' || h.startsWith('stories-')) viewStories(h.slice(8));
     else if (h === 'identity') viewIdentity();
+    else if (h === 'receive' || h === 'receive-spirit') viewReceive(h === 'receive-spirit' ? 'spirit' : '');
+    else if (h === 'miracles' || h.startsWith('miracles-')) await viewMiracles(h.slice(9));
+    else if (h === 'parables' || h.startsWith('parables-')) viewParables(h.slice(9));
+    else if (h === 'names' || h.startsWith('names-')) viewNames(h.slice(6));
+    else if (h === 'measures') viewMeasures();
     else if (h === 'healing') viewHealing();
     else if (h === 'wrapped' || h.startsWith('wrapped-')) viewWrapped(h.slice(8));
     else if (h === 'journal' || h.startsWith('journal-')) await viewJournal(h.slice(8));

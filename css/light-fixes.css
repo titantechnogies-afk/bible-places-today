@@ -1,0 +1,5 @@
+:root[data-theme=light] .tiles-night{filter:saturate(.85)}
+:root[data-theme=light] .gname{color:#8a5d00}
+:root[data-theme=light] .ncdiag .nc-sp{fill:rgba(255,199,44,.35);filter:none}
+:root[data-theme=light] .ncam li{background:rgba(255,255,255,.8)}
+:root[data-theme=light] .msval b{color:#8a5d00}
