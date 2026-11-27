@@ -120,8 +120,10 @@ $$;
 revoke all on function public.set_push_hour(text, int) from public;
 grant execute on function public.set_push_hour(text, int) to anon, authenticated;
 -- run the daily-verse job every hour instead of once a day (it only sends to phones whose hour it is)
-select cron.alter_job((select jobid from cron.job where jobname = 'daily-verse'), schedule := '0 * * * *')
-  where exists (select 1 from cron.job where jobname = 'daily-verse');
+-- Everyone gets the verse at 05:30 South African time (03:30 UTC; pg_cron runs in UTC).
+alter table public.push_subscriptions alter column send_utc set default 3;
+update public.push_subscriptions set send_utc = 3 where send_utc is distinct from 3;
+select cron.alter_job(jobid, schedule := '30 3 * * *') from cron.job where jobname = 'daily-verse';
 
 -- ===== Crash reports (anonymous): anyone can add one, only you can read them in the Table Editor =====
 create table if not exists public.app_errors (
