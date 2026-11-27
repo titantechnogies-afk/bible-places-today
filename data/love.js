@@ -165,7 +165,18 @@ photos: [
   { f: 'braai-night', s: 'fellow', c: 'Braai, bread and the love of God.' },
   { f: 'newborn-friends', s: 'family', c: 'Celebrating new life together.' },
   { f: 'newborn', s: 'family', c: 'Children are a gift from the Lord (Psalm 127:3).' },
-  { f: 'arsenal-smile', s: 'family', c: 'Joy that comes from being loved.' }
+  { f: 'arsenal-smile', s: 'family', c: 'Joy that comes from being loved.' },
+  { f: 'baptism-tank', s: 'raised', c: 'Moments before going under: surrounded by brothers.' },
+  { f: 'sunday-welcome', s: 'sunday', c: 'Welcome to Sunday at Harvest.' },
+  { f: 'young-worship', s: 'sunday', c: 'Young worshippers leading the way.' },
+  { f: 'ministry-time', s: 'sunday', c: 'Ministry time: hearts wide open to God.' },
+  { f: 'men-pray', s: 'men', c: 'Brothers laying hands and praying for one another.' },
+  { f: 'coffee-pink', s: 'fellow', c: 'Coffee and good friends.' },
+  { f: 'laughter', s: 'fellow', c: 'The joy of the Lord is contagious.' },
+  { f: 'two-friends', s: 'together', c: 'Friends in the faith.' },
+  { f: 'new-bible', s: 'together', c: 'A brand-new Bible for a brand-new life.' },
+  { f: 'three-generations', s: 'family', c: 'Three generations, one family.' },
+  { f: 'worship-baby', s: 'family', c: 'Worshipping with a little one in his arms.' }
 ],
 photoSections: { raised: ['Raised to life', 'Baptisms: the old life buried, the new life begun (Romans 6:4).'], sunday: ['Sundays', 'Worship and the Word at Harvest Church.'], men: ['Men\'s group & Bible study', 'Real men, open Bibles, honest hearts.'], fellow: ['Fellowship', 'Braais, coffee and conversations that go deep.'], together: ['Life together', 'Friendship and doing life as a family.'], family: ['Family & new life', 'Babies, kids and the joy of God\'s family.'], out: ['Taking it to the streets', 'The love of God for everyone, everywhere.'] }
 };
