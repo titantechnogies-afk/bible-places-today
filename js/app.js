@@ -441,6 +441,7 @@ async function viewHome() {
     <form class="bigsearch" id="bigSearch" role="search"><label class="sr" for="bq">Search for a Bible place</label><input id="bq" type="search" placeholder="Try Capernaum, Ninevah, Sinai, Ephesus…" spellcheck="false"><button class="btn" type="submit">Search</button></form>
     <div class="chips">${['Jerusalem','Bethlehem','Sea of Galilee','Mount Sinai','Golgotha','Corinth','Nineveh'].map(n => `<button class="chip" data-go="place-${PLACES.find(p => p.n.startsWith(n)).id}">${esc(n)}</button>`).join('')}</div></div></section>
   ${graceHomeBand()}
+  ${loveHomeBand()}
   <section class="band"><div class="wrap"><div class="sh"><div><h2>Featured places</h2><p>Each page brings together photographs of the site today, an interactive map, the Bible passages, documented discoveries, a timeline and sources.</p></div><button class="btn ghost" data-go="atlas">Open the atlas</button></div>
     <div class="grid" id="feat">${feat.map(placeCard).join('')}</div></div></section>
   <section class="band" style="background:var(--bg2)"><div class="wrap"><div class="sh"><div><h2>How the evidence is graded</h2><p>Every archaeological entry carries one of five labels, so you can see at a glance what a find shows and what remains debated. Archaeology is kept separate from theological interpretation.</p></div><button class="btn ghost" data-go="discoveries">Browse ${DISCS.length} discoveries</button></div>
@@ -1365,7 +1366,7 @@ async function viewFly(id) {
 function homeMore() {
   const host = $('#feat')?.closest('.band'); if (!host || $('.moretiles')) return;
   const T = [['read', 'Read the Bible', 'Every chapter, with its places on a map and the Hebrew & Greek behind each verse.'], ['timeline', 'Bible timeline', 'Empires, kings, prophets and events from Abraham to Revelation.'], ['family', 'Family tree', 'The line from Adam to Jesus, with the twelve tribes and more.'],
-    ['guide', 'How to use the app', 'A one-minute tour: getting around, reading the Bible and where to find everything.'], ['identity', 'Who you are in Christ', 'Your new creation identity broken down: spirit, soul and body, 12 truths and daily declarations.'], ['receive', 'Receive Jesus & the Holy Spirit', 'A simple prayer, what just happened, and your next steps.'], ['miracles', 'Miracles of Jesus', 'All the miracles on the map, with what each shows about the Father\'s heart.'], ['parables', 'Parables of Jesus', 'Every parable explained through grace, with a question to think about.'], ['names', 'Names of God', 'El Shaddai, Jehovah Jireh, Abba and more, with the Hebrew and Greek.'], ['measures', 'Bible money & measures', 'A denarius in rand, a cubit in centimetres, and every unit in today\'s terms.'], ['grace-minute', 'Grace minute', 'One minute a day: a verse, the finished work, a reflection and a prayer.'], ['grace', 'Grace lens', 'Every passage in the light of the finished work of Jesus and the love of God.'], ['journal', 'Bible journal', 'Draw, write and add stickers on any verse.'], ['wrapped', 'My year in the Word', 'Your chapters, streaks and favourite verses this year — share it.'], ['friends', 'Friends', 'See who is online and pray for each other.'], ['testimonies', 'Testimonies', 'Answered prayers and healings.'], ['churches', 'Church finder', 'Find a grace-teaching church near you.'], ['concordance', 'Strong\'s Concordance', 'Every Hebrew and Greek word, its meaning and every place it appears.'], ['fly-' + (JOURNEYS.find(j => j.id === 'apostles') || JOURNEYS[0])?.id, '3D fly-overs', 'Fly over the real terrain of the journeys of Abraham, Moses, Jesus and Paul.'], ['kingdoms', 'Kingdom maps', 'See the borders change from David to the Romans.'], ['distance', 'How far was it?', 'Distances and walking days between Bible places.'], ['kids', 'Kids\' corner', 'Stories, a fun quiz and pictures to colour.'], ['plans', 'Reading plans', 'John in 21 days, Acts with Paul, Psalms of hope and journey plans.'], ['quiz', 'Quiz', 'Test yourself and challenge a friend.'], ['near', 'Near me', 'Find Bible places close to where you are.'], ['library', 'My library', 'Your saved places, verses, highlights and notes.'], ['books', 'Books of the Bible', 'An introduction to all 66 books: author, date, themes and outline.'], ['tabernacle', 'Tabernacle & Temple', 'Tap each part and see how it points to Jesus.'], ['jerusalem', 'Jerusalem through time', 'The city from David to Jesus on the map.'], ['learn', 'Learn Hebrew & Greek', 'Alphabets, the 100 most common words and flashcards.'], ['family-devotion', 'Family devotion', 'A 10-minute story, questions and prayer for the whole family.'], ['fasting', 'Fasting', 'Track a fast with Scripture and prayer reminders.'], ['battle', 'Quiz battles', 'Same questions, beat your friend\'s score.'], ['study', 'Study tools', 'Commentaries, topical Bible, dictionary, prophecy and the four Gospels side by side.'], ['daily', 'Daily challenge', 'One Bible question a day — keep your streak going.'], ['versepic', 'Verse pictures', 'Make a verse picture on a photo of a real Bible place.'], ['groups', 'Church groups', 'Read the same plan and pray together as a church.'], ['places', 'Every Bible place', 'All 1,300 Bible places on one map, plus the events map.'], ['people', 'People of the Bible', 'Look up anyone in the Bible: family, age, map, journeys and every verse.'], ['chronology', 'From Adam to today', 'Lifespans from Adam to Jesus and the age of mankind in the Bible.'], ['memory', 'Scripture memory', 'Learn verses by heart with a few minutes\' practice a day.'], ['devotionals', 'Devotionals', 'Short reflections and prayers from the Bible lands.'], ['feasts', 'Feasts & holy days', 'Passover, Pentecost, Tabernacles and Easter — dates for the year ahead.'], ['teachings', 'Teachings', 'Watch Andrew Wommack and Dan Mohler from their official channels.'], ['prayer', 'Prayer', 'A private prayer journal and a shared prayer wall.'], ['community', 'Friends & community', 'Invite friends, read plans together and join the conversation.'], ['embed', 'For churches', 'Put any Bible place or journey on your church or school website.'], ['devnotes', 'Developer notes', 'What\'s new, what\'s next, and a place for your feedback.']];
+    ['love', 'Share the love', 'The gospel in 1 minute, blessings to send, a love letter from the Father and more.'], ['church-family', 'Our church family', 'Baptisms, men\'s groups, Sundays and outreach.'], ['guide', 'How to use the app', 'A one-minute tour: getting around, reading the Bible and where to find everything.'], ['identity', 'Who you are in Christ', 'Your new creation identity broken down: spirit, soul and body, 12 truths and daily declarations.'], ['receive', 'Receive Jesus & the Holy Spirit', 'A simple prayer, what just happened, and your next steps.'], ['miracles', 'Miracles of Jesus', 'All the miracles on the map, with what each shows about the Father\'s heart.'], ['parables', 'Parables of Jesus', 'Every parable explained through grace, with a question to think about.'], ['names', 'Names of God', 'El Shaddai, Jehovah Jireh, Abba and more, with the Hebrew and Greek.'], ['measures', 'Bible money & measures', 'A denarius in rand, a cubit in centimetres, and every unit in today\'s terms.'], ['grace-minute', 'Grace minute', 'One minute a day: a verse, the finished work, a reflection and a prayer.'], ['grace', 'Grace lens', 'Every passage in the light of the finished work of Jesus and the love of God.'], ['journal', 'Bible journal', 'Draw, write and add stickers on any verse.'], ['wrapped', 'My year in the Word', 'Your chapters, streaks and favourite verses this year — share it.'], ['friends', 'Friends', 'See who is online and pray for each other.'], ['testimonies', 'Testimonies', 'Answered prayers and healings.'], ['churches', 'Church finder', 'Find a grace-teaching church near you.'], ['concordance', 'Strong\'s Concordance', 'Every Hebrew and Greek word, its meaning and every place it appears.'], ['fly-' + (JOURNEYS.find(j => j.id === 'apostles') || JOURNEYS[0])?.id, '3D fly-overs', 'Fly over the real terrain of the journeys of Abraham, Moses, Jesus and Paul.'], ['kingdoms', 'Kingdom maps', 'See the borders change from David to the Romans.'], ['distance', 'How far was it?', 'Distances and walking days between Bible places.'], ['kids', 'Kids\' corner', 'Stories, a fun quiz and pictures to colour.'], ['plans', 'Reading plans', 'John in 21 days, Acts with Paul, Psalms of hope and journey plans.'], ['quiz', 'Quiz', 'Test yourself and challenge a friend.'], ['near', 'Near me', 'Find Bible places close to where you are.'], ['library', 'My library', 'Your saved places, verses, highlights and notes.'], ['books', 'Books of the Bible', 'An introduction to all 66 books: author, date, themes and outline.'], ['tabernacle', 'Tabernacle & Temple', 'Tap each part and see how it points to Jesus.'], ['jerusalem', 'Jerusalem through time', 'The city from David to Jesus on the map.'], ['learn', 'Learn Hebrew & Greek', 'Alphabets, the 100 most common words and flashcards.'], ['family-devotion', 'Family devotion', 'A 10-minute story, questions and prayer for the whole family.'], ['fasting', 'Fasting', 'Track a fast with Scripture and prayer reminders.'], ['battle', 'Quiz battles', 'Same questions, beat your friend\'s score.'], ['study', 'Study tools', 'Commentaries, topical Bible, dictionary, prophecy and the four Gospels side by side.'], ['daily', 'Daily challenge', 'One Bible question a day — keep your streak going.'], ['versepic', 'Verse pictures', 'Make a verse picture on a photo of a real Bible place.'], ['groups', 'Church groups', 'Read the same plan and pray together as a church.'], ['places', 'Every Bible place', 'All 1,300 Bible places on one map, plus the events map.'], ['people', 'People of the Bible', 'Look up anyone in the Bible: family, age, map, journeys and every verse.'], ['chronology', 'From Adam to today', 'Lifespans from Adam to Jesus and the age of mankind in the Bible.'], ['memory', 'Scripture memory', 'Learn verses by heart with a few minutes\' practice a day.'], ['devotionals', 'Devotionals', 'Short reflections and prayers from the Bible lands.'], ['feasts', 'Feasts & holy days', 'Passover, Pentecost, Tabernacles and Easter — dates for the year ahead.'], ['teachings', 'Teachings', 'Watch Andrew Wommack and Dan Mohler from their official channels.'], ['prayer', 'Prayer', 'A private prayer journal and a shared prayer wall.'], ['community', 'Friends & community', 'Invite friends, read plans together and join the conversation.'], ['embed', 'For churches', 'Put any Bible place or journey on your church or school website.'], ['devnotes', 'Developer notes', 'What\'s new, what\'s next, and a place for your feedback.']];
   host.insertAdjacentHTML('afterend', `<section class="band moretiles"><div class="wrap"><div class="sh"><div><h2>More ways to explore</h2><p>Tools for personal study, families, churches and travellers — free, and they work on your phone.</p></div></div>
     <div class="tiles">${T.map(([h, t, d]) => `<button class="tile" data-go="${h}"><b>${t}</b><span>${d}</span></button>`).join('')}</div></div></section>`);
 }
@@ -3143,7 +3144,7 @@ function viewGospel() {
     ${GOSPEL.truths.map((t, i) => `<article class="truth" id="gt${i}"><h2><span>${i + 1}</span>${esc(t[0])}</h2><p>${esc(t[1])}</p>${vchips(t[2])}</article>`).join('')}
     <div class="panel prayerbox"><h2>A prayer to receive Jesus and the Holy Spirit</h2><p><i>${esc(GOSPEL.salvationPrayer)}</i></p><p class="small muted">If you prayed this, you are born again and a new creation. Tell someone, find a grace-teaching church, and start reading the Gospel of John.</p>
       <div class="linkrow"><button class="btn" id="gsaved">I prayed this prayer</button><button class="btn ghost" data-go="receive">What happens next</button><button class="btn ghost" data-go="receive-spirit">Receive the Holy Spirit</button><button class="btn ghost" data-go="churches">Find a church</button><button class="btn ghost" data-go="read-Jhn.1">Read John</button></div></div>
-    <div class="panel"><h2>Go deeper</h2><div class="linkrow"><button class="btn" data-go="identity">👑 Who you are in Christ</button><button class="btn" data-go="notes">📝 Teaching notes: grace, faith, healing and more</button><button class="btn ghost" data-go="parables">Parables of Jesus</button><button class="btn ghost" data-go="miracles">Miracles of Jesus</button><button class="btn ghost" data-go="names">Names of God</button></div><p class="small muted">Free teaching from the teachers this app follows:</p>
+    <div class="panel"><h2>Go deeper</h2><div class="linkrow"><button class="btn" data-go="identity">👑 Who you are in Christ</button><button class="btn" data-go="notes">📝 Teaching notes: grace, faith, healing and more</button><button class="btn ghost" data-go="parables">Parables of Jesus</button><button class="btn ghost" data-go="miracles">Miracles of Jesus</button><button class="btn ghost" data-go="names">Names of God</button><button class="btn ghost" data-go="love">Share the love</button></div><p class="small muted">Free teaching from the teachers this app follows:</p>
       <div class="rlist">${[['Andrew Wommack · Spirit, Soul and Body', 'https://www.youtube.com/channel/UC8H3lzJU5Qm-s3WVroB87kw/search?query=spirit%20soul%20and%20body'], ['Andrew Wommack · The True Nature of God', 'https://www.youtube.com/channel/UC8H3lzJU5Qm-s3WVroB87kw/search?query=true%20nature%20of%20god'], ['Andrew Wommack · You\'ve Already Got It', 'https://www.youtube.com/channel/UC8H3lzJU5Qm-s3WVroB87kw/search?query=already%20got%20it'], ['Andrew Wommack · God Wants You Well', 'https://www.youtube.com/channel/UC8H3lzJU5Qm-s3WVroB87kw/search?query=god%20wants%20you%20well'], ['Dan Mohler · identity and the love of God', 'https://www.youtube.com/results?search_query=Dan+Mohler+identity+love+of+God'], ['Richard Olivier · Harvest Church', 'https://www.youtube.com/@harvestchurchza/videos']].map(([t, u]) => `<a class="ritem" href="${u}" target="_blank" rel="noopener"><div><b>${esc(t)}</b><span>YouTube</span></div><span class="tag">Watch</span></a>`).join('')}</div></div>
     <p class="small muted">Written for this app in the spirit of the finished-work grace teaching of Andrew Wommack, Dan Mohler and Richard Olivier; it is not their own wording. Test everything with Scripture (Acts 17:11).</p></div></section>`;
   $$('[data-jump]').forEach(a => a.onclick = e => { e.preventDefault(); $('#' + a.dataset.jump).scrollIntoView({ behavior: 'smooth', block: 'start' }); });
@@ -3422,7 +3423,7 @@ const GUIDE = [
   { ic: '✝', t: 'Welcome to Just One More Lord', p: 'A free, grace-based Bible app: the Bible with Hebrew and Greek, maps of every Bible place, archaeology, and teaching on the finished work of Jesus and the love of God. This quick guide shows you how it works and where to find everything. It takes about a minute.',
     i: [['📖', 'Read the Bible', 'Five translations, listen aloud and word study.', 'read'], ['❤', 'Start with grace', 'The good news, and who you are in Christ.', 'gospel'], ['🗺', 'Explore Bible places', 'Maps, photos and discoveries.', 'atlas']] },
   { ic: '🧭', t: 'Getting around', p: 'Everything starts from the bar at the top of every page.',
-    i: [['☰', 'The menu bar', 'Explore, Grace, Atlas, Journeys, Bible, Study, Plans, Quiz, Saved and more. On a phone, swipe the menu sideways to see all of it.', ''], ['🔍', 'Search', 'Type any Bible place, even if you are not sure of the spelling (try "Capernum").', ''], ['Aa', 'Display', 'Text size, light mode, high contrast and language. You can reopen this guide from there too.', 'settings'], ['🔔', 'Bell and profile', 'Your notifications, and your profile to sign in and keep your things on every device.', 'profile'], ['✦', 'Logo', 'Tap the logo at any time to come back home.', 'home']] },
+    i: [['☰', 'The menu bar', 'Explore, Grace, Share, Atlas, Journeys, Bible, Study, Plans, Quiz, Saved and more. On a phone, swipe the menu sideways to see all of it.', ''], ['🔍', 'Search', 'Type any Bible place, even if you are not sure of the spelling (try "Capernum").', ''], ['Aa', 'Display', 'Text size, light mode, high contrast and language. You can reopen this guide from there too.', 'settings'], ['🔔', 'Bell and profile', 'Your notifications, and your profile to sign in and keep your things on every device.', 'profile'], ['✦', 'Logo', 'Tap the logo at any time to come back home.', 'home']] },
   { ic: '❤', t: 'Start here: grace', p: 'This app reads everything through the finished work of Jesus. Open the Grace tab for:',
     i: [['✝', 'The gospel of grace', 'The foundations: God is love and it is finished.', 'gospel'], ['👑', 'Who you are in Christ', 'Your new creation identity, broken down step by step.', 'identity'], ['🙏', 'Receive Jesus and the Holy Spirit', 'A simple prayer and your next steps.', 'receive'], ['✚', 'Healing scriptures', 'Promises to read, speak and listen to.', 'healing'], ['🎧', 'Teachings', 'Andrew Wommack, Dan Mohler and Richard Olivier.', 'teachings']] },
   { ic: '📖', t: 'Reading the Bible', p: 'Tap Bible in the menu. Choose a book and chapter at the top.',
@@ -3431,6 +3432,8 @@ const GUIDE = [
     i: [['📍', 'Atlas', 'Every Bible place on a map. Tap a pin to open the place page with photos, history and verses.', 'atlas'], ['🚶', 'Journeys', 'Abraham, the Exodus, Jesus and Paul, drawn route by route.', 'journeys'], ['✨', 'Miracles of Jesus', 'All the miracles on the map.', 'miracles'], ['🏺', 'Discoveries', 'Archaeological finds and what they show.', 'discoveries'], ['👥', 'People', 'Anyone in the Bible: family, places and every verse.', 'people']] },
   { ic: '🌱', t: 'Grow every day', p: 'Small daily habits that build your faith.',
     i: [['☀', 'Verse of the day', 'On the home screen every day, with a reminder if you want one.', 'home'], ['📅', 'Reading plans', 'John in 21 days, Psalms of hope and more. The app remembers where you are.', 'plans'], ['❓', 'Quiz and daily challenge', 'Test yourself and keep your streak going.', 'daily'], ['🧠', 'Scripture memory', 'Learn verses by heart.', 'memory'], ['🙏', 'Prayer', 'A private prayer journal and a shared prayer wall.', 'prayer']] },
+  { ic: '💌', t: 'Share the love of God', p: 'Tap Share in the menu for simple ways to pass God\'s love on.',
+    i: [['⏱', 'The gospel in 1 minute', 'Seven swipes to send to a friend.', 'gospel-1min'], ['💌', 'Send a blessing', 'A verse card for someone who is sick, grieving or celebrating.', 'blessing'], ['🫶', 'When you feel…', 'Truth and a prayer for whatever you are feeling.', 'feel'], ['✚', 'Praying for the sick', 'How Jesus healed, and how you can too.', 'pray-sick'], ['▦', 'QR code & flyer', 'Let people open the app with their camera.', 'flyer']] },
   { ic: '💾', t: 'Save, share and use it offline', p: 'Your things stay on your phone, and the app works without data once it has loaded.',
     i: [['⭐', 'Saved', 'Your saved places, verses, highlights and notes, with a backup.', 'library'], ['📤', 'Share', 'Look for the Share button on verses, places, parables and more to send them on WhatsApp.', ''], ['📲', 'Install the app', 'In your browser menu choose "Add to Home screen" (or "Install app") to open it like a normal app.', ''], ['👤', 'Profile', 'Sign in to keep your notes and plans on every device and pray with friends.', 'profile']] },
   { ic: '🧰', t: 'Where to find everything else', p: 'There is a lot more. These are the best places to look:',
@@ -3449,6 +3452,245 @@ function showGuide(step = 0) {
   try { localStorage.setItem('jom:guide', '1'); } catch {}
 }
 function maybeGuide() { let seen = true; try { seen = !!localStorage.getItem('jom:guide'); } catch {} if (seen || document.documentElement.classList.contains('embed') || window.top !== window || navigator.webdriver) return; setTimeout(() => { if ((location.hash.slice(1) || 'home') === 'home' && !dlg.open) showGuide(0); }, 1200); }
+
+/* ---------- QR codes (byte mode, error correction M, versions 1-10), no library needed ---------- */
+const QR = (() => {
+  const T = [null, [10, [[1, 16]]], [16, [[1, 28]]], [26, [[1, 44]]], [18, [[2, 32]]], [24, [[2, 43]]], [16, [[4, 27]]], [18, [[4, 31]]], [22, [[2, 38], [2, 39]]], [22, [[3, 36], [2, 37]]], [26, [[4, 43], [1, 44]]]];
+  const AL = [null, [], [6, 18], [6, 22], [6, 26], [6, 30], [6, 34], [6, 22, 38], [6, 24, 42], [6, 26, 46], [6, 28, 50]];
+  const mul = (x, y) => { let z = 0; for (let i = 7; i >= 0; i--) { z = (z << 1) ^ ((z >>> 7) * 0x11D); z ^= ((y >>> i) & 1) * x; } return z & 255; };
+  const divisor = d => { const r = new Array(d).fill(0); r[d - 1] = 1; let root = 1; for (let i = 0; i < d; i++) { for (let j = 0; j < d; j++) { r[j] = mul(r[j], root); if (j + 1 < d) r[j] ^= r[j + 1]; } root = mul(root, 2); } return r; };
+  const rem = (data, dv) => { const r = new Array(dv.length).fill(0); for (const b of data) { const f = b ^ r.shift(); r.push(0); dv.forEach((c, i) => { r[i] ^= mul(c, f); }); } return r; };
+  function make(text) {
+    const bytes = [...new TextEncoder().encode(text)]; let ver = 0, cap = 0;
+    for (let v = 1; v <= 10; v++) { cap = T[v][1].reduce((a, [n, k]) => a + n * k, 0); if (4 + (v < 10 ? 8 : 16) + bytes.length * 8 <= cap * 8) { ver = v; break; } }
+    if (!ver) throw new Error('Text too long for a QR code');
+    const bits = []; const put = (val, len) => { for (let i = len - 1; i >= 0; i--) bits.push((val >>> i) & 1); };
+    put(4, 4); put(bytes.length, ver < 10 ? 8 : 16); bytes.forEach(b => put(b, 8));
+    put(0, Math.min(4, cap * 8 - bits.length)); while (bits.length % 8) bits.push(0);
+    const data = []; for (let i = 0; i < bits.length; i += 8) data.push(parseInt(bits.slice(i, i + 8).join(''), 2));
+    for (let p = 0xEC; data.length < cap; p ^= 0xEC ^ 0x11) data.push(p);
+    const [ecn, groups] = T[ver], dv = divisor(ecn), blocks = []; let k = 0;
+    for (const [n, len] of groups) for (let i = 0; i < n; i++) { const d = data.slice(k, k + len); k += len; blocks.push([d, rem(d, dv)]); }
+    const all = []; const maxD = Math.max(...blocks.map(b => b[0].length));
+    for (let i = 0; i < maxD; i++) for (const [d] of blocks) if (i < d.length) all.push(d[i]);
+    for (let i = 0; i < ecn; i++) for (const [, e] of blocks) all.push(e[i]);
+    const N = ver * 4 + 17, M = [...Array(N)].map(() => new Array(N).fill(false)), F = [...Array(N)].map(() => new Array(N).fill(false));
+    const set = (x, y, d) => { M[y][x] = d; F[y][x] = true; };
+    for (let i = 0; i < N; i++) { set(6, i, i % 2 === 0); set(i, 6, i % 2 === 0); }
+    for (const [cx, cy] of [[3, 3], [N - 4, 3], [3, N - 4]]) for (let dy = -4; dy <= 4; dy++) for (let dx = -4; dx <= 4; dx++) { const x = cx + dx, y = cy + dy; if (x >= 0 && x < N && y >= 0 && y < N) { const dd = Math.max(Math.abs(dx), Math.abs(dy)); set(x, y, dd !== 2 && dd !== 4); } }
+    const al = AL[ver]; for (let i = 0; i < al.length; i++) for (let j = 0; j < al.length; j++) { if ((i === 0 && j === 0) || (i === 0 && j === al.length - 1) || (i === al.length - 1 && j === 0)) continue; for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) set(al[i] + dx, al[j] + dy, Math.max(Math.abs(dx), Math.abs(dy)) !== 1); }
+    const fmt = mask => { const d = mask; let r = d; for (let i = 0; i < 10; i++) r = (r << 1) ^ ((r >>> 9) * 0x537); const b = ((d << 10) | r) ^ 0x5412, g = i => ((b >>> i) & 1) === 1;
+      for (let i = 0; i <= 5; i++) set(8, i, g(i)); set(8, 7, g(6)); set(8, 8, g(7)); set(7, 8, g(8)); for (let i = 9; i < 15; i++) set(14 - i, 8, g(i));
+      for (let i = 0; i < 8; i++) set(N - 1 - i, 8, g(i)); for (let i = 8; i < 15; i++) set(8, N - 15 + i, g(i)); set(8, N - 8, true); };
+    fmt(0);
+    if (ver >= 7) { let r = ver; for (let i = 0; i < 12; i++) r = (r << 1) ^ ((r >>> 11) * 0x1F25); const b = (ver << 12) | r; for (let i = 0; i < 18; i++) { const bit = ((b >>> i) & 1) === 1, a = N - 11 + i % 3, c = Math.floor(i / 3); set(a, c, bit); set(c, a, bit); } }
+    let i = 0; for (let right = N - 1; right >= 1; right -= 2) { if (right === 6) right = 5; for (let v = 0; v < N; v++) for (let j = 0; j < 2; j++) { const x = right - j, up = ((right + 1) & 2) === 0, y = up ? N - 1 - v : v; if (!F[y][x] && i < all.length * 8) { M[y][x] = ((all[i >>> 3] >>> (7 - (i & 7))) & 1) === 1; i++; } } }
+    const MF = [(x, y) => (x + y) % 2 === 0, (x, y) => y % 2 === 0, x => x % 3 === 0, (x, y) => (x + y) % 3 === 0, (x, y) => (Math.floor(x / 3) + Math.floor(y / 2)) % 2 === 0, (x, y) => x * y % 2 + x * y % 3 === 0, (x, y) => (x * y % 2 + x * y % 3) % 2 === 0, (x, y) => ((x + y) % 2 + x * y % 3) % 2 === 0];
+    const apply = m => { for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) if (!F[y][x] && MF[m](x, y)) M[y][x] = !M[y][x]; };
+    const score = () => { let p = 0, dark = 0; for (let y = 0; y < N; y++) { let rx = 1, ry = 1; for (let x = 0; x < N; x++) { if (M[y][x]) dark++;
+        if (x) { if (M[y][x] === M[y][x - 1]) { rx++; if (rx === 5) p += 3; else if (rx > 5) p++; } else rx = 1; if (M[x][y] === M[x - 1][y]) { ry++; if (ry === 5) p += 3; else if (ry > 5) p++; } else ry = 1; }
+        if (x && y && M[y][x] === M[y][x - 1] && M[y][x] === M[y - 1][x] && M[y][x] === M[y - 1][x - 1]) p += 3; } }
+      return p + Math.floor(Math.abs(dark * 20 - N * N * 10) / (N * N)) * 10; };
+    let best = 0, bs = Infinity; for (let m = 0; m < 8; m++) { apply(m); fmt(m); const s = score(); if (s < bs) { bs = s; best = m; } apply(m); }
+    apply(best); fmt(best); return M;
+  }
+  function svg(text, { fg = '#000', bg = '#fff', px = 8 } = {}) { const M = make(text), N = M.length, q = 4, S = (N + q * 2);
+    let d = ''; for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) if (M[y][x]) d += `M${x + q},${y + q}h1v1h-1z`;
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${S} ${S}" width="${S * px}" height="${S * px}" shape-rendering="crispEdges" role="img" aria-label="QR code"><rect width="${S}" height="${S}" fill="${bg}"/><path d="${d}" fill="${fg}"/></svg>`; }
+  return { make, svg };
+})();
+
+/* ---------- share the love of God ---------- */
+const LOVE = window.JOM_LOVE || { gospel: [], shareFaith: [], starters: [], letter: [], blessings: [], feel: [], challenge: [], heal: [], photos: [], photoSections: {} };
+const cimg = f => `img/community/${f}.webp`;
+const LOVE_TOOLS = [['gospel-1min', '⏱', 'The gospel in 1 minute', 'Seven swipes from "You are loved" to "Raised to life". Send it to a friend.'], ['blessing', '💌', 'Send a blessing', 'Pick a friend and what they are going through, and send a verse card on WhatsApp.'], ['love-letter', '✉', 'A love letter from the Father', 'God\'s heart for a person, line by line from Scripture.'], ['feel', '🫶', 'When you feel…', 'Truth, verses and a prayer for fear, loneliness, guilt, sickness, grief and more.'], ['share-faith', '🗣', 'How to share your faith', 'Love first, tell your story, offer to pray. No pressure, no fear.'], ['pray-sick', '✚', 'Praying for the sick', 'How Jesus healed, and how you can pray for people too.'], ['love-challenge', '🔥', '30-day love challenge', 'One small act of love a day. Keep your streak going.'], ['flyer', '▦', 'QR code & flyer', 'Print a flyer or show a QR code so people can open the app instantly.'], ['church-family', '📷', 'Our church family', 'Baptisms, men\'s groups, Sundays and outreach.']];
+function loveHomeBand() { const sign = LOVE.photos.find(p => p.f === 'sign');
+  return `<section class="band loveband"><div class="wrap"><div class="lovehero">${sign ? `<button class="lovephoto" data-go="church-family" aria-label="Our church family"><img src="${cimg('sign')}" alt="People pointing up at the words Just one more Lord written above a church doorway" loading="lazy" width="1100" height="825"></button>` : ''}
+    <div><p class="kicker">Freely you have received, freely give · Matthew 10:8</p><h2>Share the love of God</h2><p>${sign ? esc(sign.c) + ' ' : ''}Everything you need to pass God's love on: to a friend, a neighbour or a stranger.</p>
+      <div class="linkrow"><button class="btn" data-go="love">Share the love</button><button class="btn ghost" data-go="gospel-1min">Gospel in 1 minute</button><button class="btn ghost" data-go="blessing">Send a blessing</button></div></div></div></div></section>`; }
+function viewLove() {
+  setNav('love'); document.title = 'Share the love of God — Just One More Lord';
+  main.innerHTML = `<section class="band"><div class="wrap"><div class="lovehero"><img class="lovephoto" src="${cimg('outreach')}" alt="Sharing the good news with a crowd outdoors under the words Jesus equals Love" width="1100" height="1065">
+    <div><p class="kicker">2 Corinthians 5:14 · the love of Christ compels us</p><h1>Share the <span class="neon-txt">love of God</span></h1><p class="lead">You don't need a pulpit. You need to know how loved you are, and then love the person in front of you. These tools help you do exactly that.</p></div></div>
+    <div class="tiles" style="margin-top:22px">${LOVE_TOOLS.map(([go, ic, h, d]) => `<button class="tile" data-go="${go}"><b>${ic} ${esc(h)}</b><span>${esc(d)}</span></button>`).join('')}</div></div></section>`;
+}
+
+/* the gospel in 1 minute: swipeable story */
+function viewGospel1(start) {
+  setNav('love'); document.title = 'The gospel in 1 minute — Just One More Lord'; const S = LOVE.gospel; let i = Math.min(S.length - 1, Math.max(0, +start || 0));
+  main.innerHTML = `<section class="band g1band"><div class="wrap quizwrap"><p class="kicker">The good news in one minute</p><div class="g1" id="g1" tabindex="0" aria-roledescription="carousel" aria-live="polite"></div>
+    <div class="linkrow g1ctl"><button class="btn ghost" id="g1p">← Back</button><div class="gddots" id="g1d"></div><button class="btn" id="g1n">Next →</button></div>
+    <div class="panel" style="margin-top:18px"><h2>Send this to someone</h2><p>Share the link on WhatsApp or anywhere else. Your friend can swipe through it in one minute.</p><div class="linkrow"><button class="btn" id="g1sh">${ICON.share} Share the gospel in 1 minute</button><button class="btn ghost" data-go="flyer">Show a QR code</button><button class="btn ghost" data-go="share-faith">Tips for sharing</button></div></div></div></section>`;
+  const draw = () => { const s = S[i]; $('#g1').innerHTML = `<div class="g1card" style="background-image:linear-gradient(180deg,rgba(2,10,16,.15),rgba(2,10,16,.88) 62%),url('${cimg(s.img)}')"><span class="g1n">${i + 1} / ${S.length}</span><div class="g1txt"><h2>${esc(s.h)}</h2><p>${esc(s.t)}</p><button class="chip" data-verse="${esc(s.r)}">${esc(s.r)}</button>
+      ${s.last ? '<div class="linkrow" style="margin-top:14px"><button class="btn" data-go="receive">Yes, I want to receive Jesus</button><button class="btn ghost" data-go="identity">Who you become in Christ</button></div>' : ''}</div></div>`;
+    $('#g1d').innerHTML = S.map((_, k) => `<span class="${k === i ? 'on' : ''}"></span>`).join(''); $('#g1p').disabled = i === 0; $('#g1n').hidden = i === S.length - 1; };
+  const step = d => { const n = i + d; if (n < 0 || n >= S.length) return; i = n; draw(); };
+  $('#g1p').onclick = () => step(-1); $('#g1n').onclick = () => step(1);
+  $('#g1').onkeydown = e => { if (e.key === 'ArrowRight') step(1); if (e.key === 'ArrowLeft') step(-1); };
+  let x0 = null; $('#g1').addEventListener('touchstart', e => { x0 = e.touches[0].clientX; }, { passive: true });
+  $('#g1').addEventListener('touchend', e => { if (x0 === null) return; const dx = e.changedTouches[0].clientX - x0; if (Math.abs(dx) > 40) step(dx < 0 ? 1 : -1); x0 = null; });
+  $('#g1sh').onclick = () => shareIt({ title: 'The gospel in 1 minute', text: 'God loves you more than you know. Take one minute to see why:', hash: 'gospel-1min' });
+  draw();
+}
+
+/* how to share your faith */
+function viewShareFaith() {
+  setNav('love'); document.title = 'How to share your faith — Just One More Lord'; let st = {}; try { st = JSON.parse(localStorage.getItem('jom:story') || '{}') || {}; } catch {}
+  main.innerHTML = `<section class="band"><div class="wrap quizwrap"><div class="crumbs"><button data-go="love">Share the love</button> › Sharing your faith</div><p class="kicker">Mark 5:19 · go and tell them what the Lord has done for you</p><h1>How to share your <span class="neon-txt">faith</span></h1>
+    <p class="lead">Sharing Jesus isn't a sales pitch. It's love that overflows. Here is a simple, grace-based way to do it, with no pressure and no fear.</p>
+    <img class="lovewide" src="${cimg('coffee')}" alt="Three friends smiling around a café table" loading="lazy" width="1100" height="825">
+    <ol class="ncsteps">${LOVE.shareFaith.map(([h, p, r]) => `<li><h3>${esc(h)}</h3><p>${esc(p)}</p>${refChips(r)}</li>`).join('')}</ol>
+    <h2 class="nch">Easy conversation starters</h2><p class="small muted">Tap one to copy it.</p><div class="chips">${LOVE.starters.map(s => `<button class="chip" data-copy="${esc(s)}">${esc(s)}</button>`).join('')}</div>
+    <h2 class="nch">Write your story in 3 parts</h2><div class="panel"><p>Keep each part to two or three sentences. It is saved on this phone so you can practise it and share it.</p>
+      ${[['b', 'Before I met Jesus…', 'What was life like? What were you looking for?'], ['m', 'How I met Jesus…', 'What happened? Who or what did God use?'], ['a', 'Since then…', 'What has changed? What does his love mean to you now?']].map(([k, l, ph]) => `<label class="stl" for="st${k}"><b>${l}</b></label><textarea id="st${k}" rows="3" placeholder="${esc(ph)}">${esc(st[k] || '')}</textarea>`).join('')}
+      <div class="linkrow"><button class="btn" id="stsh">${ICON.share} Share my story</button><button class="btn ghost" data-go="testimonies">Post it as a testimony</button></div></div>
+    <div class="linkrow" style="margin-top:18px"><button class="btn" data-go="gospel-1min">The gospel in 1 minute</button><button class="btn ghost" data-go="pray-sick">Praying for the sick</button><button class="btn ghost" data-go="love-challenge">30-day love challenge</button></div></div></section>`;
+  $$('[data-copy]').forEach(b => b.onclick = async () => { try { await navigator.clipboard.writeText(b.dataset.copy); toast('Copied'); } catch { toast(b.dataset.copy); } });
+  const save = () => { try { localStorage.setItem('jom:story', JSON.stringify({ b: $('#stb').value, m: $('#stm').value, a: $('#sta').value })); } catch {} };
+  $$('textarea[id^=st]').forEach(t => t.oninput = save);
+  $('#stsh').onclick = () => { const t = [$('#stb').value, $('#stm').value, $('#sta').value].map(s => s.trim()).filter(Boolean).join('\n\n'); if (!t) { toast('Write your story first'); return; } shareIt({ title: 'My story', text: t + '\n\n', hash: 'gospel-1min' }); };
+}
+
+/* a love letter from the Father */
+function viewLetter() {
+  setNav('love'); document.title = 'A love letter from your Father — Just One More Lord';
+  main.innerHTML = `<section class="band"><div class="wrap quizwrap"><div class="crumbs"><button data-go="love">Share the love</button> › A love letter from the Father</div><p class="kicker">1 John 3:1 · see what great love the Father has given us</p><h1>A love letter from your <span class="neon-txt">Father</span></h1>
+    <p class="lead">Every line comes from Scripture. Read it slowly, as if God were speaking to you, because he is. Then send it to someone who needs it.</p>
+    <article class="letter">${LOVE.letter.map(([t, r]) => `<p>${esc(t)}${r ? ` <button class="lref" data-verse="${esc(r.split(';')[0])}">${esc(r)}</button>` : ''}</p>`).join('')}</article>
+    <div class="linkrow"><button class="btn" id="ltsp">▶ Read it to me</button><button class="btn ghost" id="ltsh">${ICON.share} Send it to someone</button><button class="btn ghost" data-go="blessing">Send a blessing card</button></div>
+    <p class="small muted" style="margin-top:14px">Written for this app from the verses shown; tap any reference to read the verse in full.</p></div></section>`;
+  $('#ltsp').onclick = e => speakList(LOVE.letter.map(([t]) => t), e.target);
+  $('#ltsh').onclick = () => shareIt({ title: 'A love letter from your Father', text: LOVE.letter.map(([t, r]) => t + (r ? ` (${r})` : '')).join('\n') + '\n\n', hash: 'love-letter' });
+}
+
+/* send a blessing: verse card picture + message */
+function wrapText(x, text, maxW) { const words = String(text).split(/\s+/), lines = []; let line = ''; for (const w of words) { const t = line ? line + ' ' + w : w; if (x.measureText(t).width > maxW && line) { lines.push(line); line = w; } else line = t; } if (line) lines.push(line); return lines; }
+async function blessingCard(cv, { name, ref, verse, msg, photo }) {
+  const x = cv.getContext('2d'), W = 1080, H = 1350; cv.width = W; cv.height = H;
+  const g = x.createLinearGradient(0, 0, W, H); g.addColorStop(0, '#03141d'); g.addColorStop(1, '#0a2b36'); x.fillStyle = g; x.fillRect(0, 0, W, H);
+  if (photo) { try { const im = await new Promise((ok, no) => { const i = new Image(); i.onload = () => ok(i); i.onerror = no; i.src = cimg(photo); }); const s = Math.max(W / im.width, H / im.height); x.globalAlpha = .38; x.drawImage(im, (W - im.width * s) / 2, (H - im.height * s) / 2, im.width * s, im.height * s); x.globalAlpha = 1;
+      const v = x.createLinearGradient(0, 0, 0, H); v.addColorStop(0, 'rgba(2,10,16,.55)'); v.addColorStop(1, 'rgba(2,10,16,.92)'); x.fillStyle = v; x.fillRect(0, 0, W, H); } catch {} }
+  x.strokeStyle = '#00d1ff'; x.lineWidth = 4; x.shadowColor = '#00d1ff'; x.shadowBlur = 24; x.strokeRect(40, 40, W - 80, H - 80); x.shadowBlur = 0;
+  x.textAlign = 'center'; x.fillStyle = '#ffc72c'; x.font = '600 40px "Sora", sans-serif'; x.fillText(name ? `For ${name}` : 'For you', W / 2, 150);
+  x.fillStyle = '#ffffff'; let fs = 62; const vt = verse ? `“${verse}”` : ''; let lines;
+  do { fs -= 4; x.font = `600 ${fs}px "Cormorant Garamond", Georgia, serif`; lines = wrapText(x, vt, W - 200); } while (lines.length * fs * 1.32 > 560 && fs > 30);
+  x.font = '400 36px "Source Sans 3", sans-serif'; const mlines = wrapText(x, msg, W - 220).slice(0, 7);
+  let y = Math.max(250, (H - (lines.length * fs * 1.32 + 130 + mlines.length * 50)) / 2 + fs * .6);
+  x.font = `600 ${fs}px "Cormorant Garamond", Georgia, serif`; for (const l of lines) { x.fillText(l, W / 2, y); y += fs * 1.32; }
+  x.fillStyle = '#8ae8ff'; x.font = '700 38px "Sora", sans-serif'; x.fillText(ref, W / 2, y + 20); y += 110;
+  x.fillStyle = '#eefbff'; x.font = '400 36px "Source Sans 3", sans-serif'; for (const l of mlines) { x.fillText(l, W / 2, y); y += 50; }
+  x.fillStyle = '#ffc72c'; x.font = '700 30px "Sora", sans-serif'; x.fillText('Just One More Lord', W / 2, H - 92); x.fillStyle = '#9fb9c4'; x.font = '400 24px "Source Sans 3", sans-serif'; x.fillText('Free grace-based Bible app', W / 2, H - 60);
+}
+function viewBlessing() {
+  setNav('love'); document.title = 'Send a blessing — Just One More Lord'; const B = LOVE.blessings; let cur = B[B.length - 1], vi = 0, mi = 0, vtext = '';
+  const photos = ['outreach', 'baptism-1', 'worship', 'coffee', 'together', 'friends', 'sign'];
+  main.innerHTML = `<section class="band"><div class="wrap quizwrap"><div class="crumbs"><button data-go="love">Share the love</button> › Send a blessing</div><p class="kicker">Proverbs 25:11 · a word fitly spoken</p><h1>Send a <span class="neon-txt">blessing</span></h1>
+    <p class="lead">Choose who it's for and what they are going through. The app makes a verse card you can send on WhatsApp in seconds.</p>
+    <div class="panel"><h2>1. What are they going through?</h2><div class="chips" id="bls">${B.map(b => `<button class="chip" data-b="${b.id}" aria-pressed="${b === cur}">${b.ic} ${esc(b.l)}</button>`).join('')}</div>
+      <h2 style="margin-top:16px">2. Their name <span class="small muted">(optional)</span></h2><input id="bln" type="text" maxlength="30" placeholder="e.g. Sipho" autocomplete="off">
+      <h2 style="margin-top:16px">3. Choose a verse</h2><div class="chips" id="blv"></div>
+      <h2 style="margin-top:16px">4. Your message</h2><div class="chips" id="blm"></div><textarea id="blt" rows="3" maxlength="300"></textarea>
+      <h2 style="margin-top:16px">5. Background</h2><div class="chips" id="blp"><button class="chip" data-p="" aria-pressed="true">Plain</button>${photos.map(p => `<button class="chip blthumb" data-p="${p}" aria-pressed="false" style="background-image:url('${cimg(p)}')" aria-label="Photo background"></button>`).join('')}</div></div>
+    <div class="blwrap"><canvas id="blc" class="blcard" width="1080" height="1350" aria-label="Preview of your blessing card"></canvas></div>
+    <div class="linkrow"><button class="btn" id="blsh">${ICON.share} Send the picture</button><a class="btn ghost" id="blwa" target="_blank" rel="noopener">WhatsApp as text</a><button class="btn ghost" id="bldl">Save the picture</button></div></div></section>`;
+  let photo = '';
+  const text = () => `${$('#bln').value.trim() ? $('#bln').value.trim() + ', ' : ''}${$('#blt').value.trim()}`;
+  const redraw = async () => { await blessingCard($('#blc'), { name: $('#bln').value.trim(), ref: cur.v[vi], verse: vtext, msg: $('#blt').value.trim(), photo });
+    $('#blwa').href = 'https://wa.me/?text=' + encodeURIComponent(`${text()}\n\n${vtext ? '“' + vtext + '” ' : ''}(${cur.v[vi]})\n\n${SITE}#feel`); };
+  const loadVerse = async () => { vtext = ''; redraw(); try { const v = await bibleText(cur.v[vi]); vtext = v.verses.map(x => x.t).join(' ').replace(/\s+/g, ' ').trim(); if (vtext.length > 260) vtext = vtext.slice(0, 257).replace(/\s\S*$/, '') + '…'; } catch {} redraw(); };
+  const pick = () => { $('#blv').innerHTML = cur.v.map((r, k) => `<button class="chip" data-vi="${k}" aria-pressed="${k === vi}">${esc(r)}</button>`).join(''); $('#blm').innerHTML = cur.m.map((m, k) => `<button class="chip" data-mi="${k}" aria-pressed="${k === mi}">Message ${k + 1}</button>`).join(''); $('#blt').value = cur.m[mi];
+    $$('#blv [data-vi]').forEach(b => b.onclick = () => { vi = +b.dataset.vi; pick(); loadVerse(); }); $$('#blm [data-mi]').forEach(b => b.onclick = () => { mi = +b.dataset.mi; pick(); redraw(); }); };
+  $$('#bls [data-b]').forEach(b => b.onclick = () => { cur = B.find(x => x.id === b.dataset.b); vi = 0; mi = 0; $$('#bls [data-b]').forEach(x => x.setAttribute('aria-pressed', String(x === b))); pick(); loadVerse(); });
+  $$('#blp [data-p]').forEach(b => b.onclick = () => { photo = b.dataset.p; $$('#blp [data-p]').forEach(x => x.setAttribute('aria-pressed', String(x === b))); redraw(); });
+  $('#bln').oninput = redraw; $('#blt').oninput = redraw;
+  const blob = () => new Promise(ok => $('#blc').toBlob(ok, 'image/jpeg', .9));
+  $('#blsh').onclick = async () => { const b = await blob(), f = new File([b], 'blessing.jpg', { type: 'image/jpeg' });
+    if (navigator.canShare?.({ files: [f] })) { try { await navigator.share({ files: [f], text: text() }); return; } catch (e) { if (e.name === 'AbortError') return; } }
+    const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = 'blessing.jpg'; a.click(); toast('Picture saved: send it from your gallery'); };
+  $('#bldl').onclick = async () => { const a = document.createElement('a'); a.href = URL.createObjectURL(await blob()); a.download = 'blessing.jpg'; a.click(); };
+  pick(); loadVerse();
+}
+
+/* when you feel… */
+async function viewFeel(id) {
+  setNav('love'); const f = LOVE.feel.find(x => x.id === id);
+  if (!f) { document.title = 'When you feel… — Just One More Lord';
+    main.innerHTML = `<section class="band"><div class="wrap"><div class="crumbs"><button data-go="love">Share the love</button> › When you feel…</div><p class="kicker">Psalm 34:18 · the Lord is close to the broken-hearted</p><h1>When you <span class="neon-txt">feel…</span></h1>
+      <p class="lead">Whatever you are feeling right now, God has something to say about it. Tap how you feel, or find something to send to a friend.</p>
+      <div class="feelgrid">${LOVE.feel.map(x => `<button class="feelbtn" data-go="feel-${x.id}"><span aria-hidden="true">${x.ic}</span>${esc(x.l)}</button>`).join('')}</div></div></section>`; return; }
+  document.title = `When you feel ${f.l.toLowerCase()} — Just One More Lord`;
+  main.innerHTML = `<section class="band"><div class="wrap quizwrap"><div class="crumbs"><button data-go="feel">When you feel…</button> › ${esc(f.l)}</div><p class="kicker">When you feel</p><h1><span aria-hidden="true">${f.ic}</span> ${esc(f.l)}</h1>
+    <div class="panel prayerbox"><p class="lead" style="margin:0">${esc(f.t)}</p></div>
+    <h2 class="nch">What God says</h2><div class="feelvs" id="fvs">${f.v.map(r => `<div class="feelv"><b><button class="inl" data-verse="${esc(r)}">${esc(r)}</button></b><p class="small muted" data-vt="${esc(r)}">Loading…</p></div>`).join('')}</div>
+    <h2 class="nch">Pray this</h2><div class="panel"><p class="rcvp"><i>${esc(f.p)}</i></p><div class="linkrow"><button class="btn" id="fsp">▶ Pray it with me</button><button class="btn ghost" data-go="prayer">My prayer journal</button></div></div>
+    <div class="linkrow" style="margin-top:16px"><button class="btn ghost" id="fsh">${ICON.share} Send this to a friend</button><button class="btn ghost" data-go="blessing">Send a blessing card</button><button class="btn ghost" data-go="love-letter">A love letter from the Father</button></div></div></section>`;
+  $('#fsp').onclick = e => speakList([f.p], e.target);
+  $('#fsh').onclick = () => shareIt({ title: `When you feel ${f.l.toLowerCase()}`, text: `${f.t}\n\n${f.v.join(' · ')}\n\n`, hash: 'feel-' + f.id });
+  for (const r of f.v) { const el = $(`[data-vt="${CSS.escape(r)}"]`); try { const v = await bibleText(r); if (el?.isConnected) el.textContent = v.verses.map(x => x.t).join(' '); } catch { if (el) el.textContent = 'Tap the reference to read it.'; } }
+}
+
+/* 30-day love challenge */
+function viewChallenge() {
+  setNav('love'); document.title = '30-day love challenge — Just One More Lord'; const C = LOVE.challenge;
+  if (!MY.love || typeof MY.love !== 'object') MY.love = { done: {} };
+  const L = MY.love, done = () => Object.keys(L.done).length, next = () => C.findIndex((_, k) => !L.done[k]);
+  const draw = () => { const n = done(), nx = next();
+    main.innerHTML = `<section class="band"><div class="wrap quizwrap"><div class="crumbs"><button data-go="love">Share the love</button> › 30-day love challenge</div><p class="kicker">John 13:35 · by this everyone will know you are my disciples</p><h1>30-day <span class="neon-txt">love challenge</span></h1>
+      <p class="lead">One small act of love a day, for 30 days. Not to earn anything: you are already loved. Just to let it overflow.</p>
+      <div class="panel"><div class="lcbar" role="progressbar" aria-valuemin="0" aria-valuemax="30" aria-valuenow="${n}"><span style="width:${n / 30 * 100}%"></span></div><p><b>${n} of 30</b> done${n === 30 ? ' 🎉 You did it!' : ''}</p>
+        ${nx >= 0 ? `<p class="kicker">Today's challenge · day ${nx + 1}</p><p class="lcnow">${esc(C[nx])}</p><div class="linkrow"><button class="btn" data-lc="${nx}">✓ I did it</button><button class="btn ghost" id="lcsh">${ICON.share} Invite a friend to join</button></div>` : `<div class="linkrow"><button class="btn" id="lcsh">${ICON.share} Share it</button><button class="btn ghost" id="lcreset">Start again</button></div>`}</div>
+      <ol class="lclist">${C.map((c, k) => `<li class="${L.done[k] ? 'done' : ''}${k === nx ? ' now' : ''}"><button class="lcchk" data-lc="${k}" aria-pressed="${!!L.done[k]}" aria-label="Day ${k + 1} done">${L.done[k] ? '✓' : k + 1}</button><span>${esc(c)}</span></li>`).join('')}</ol></div></section>`;
+    $$('[data-lc]').forEach(b => b.onclick = () => { const k = +b.dataset.lc; if (L.done[k]) delete L.done[k]; else { L.done[k] = Date.now(); MY.days[today()] = (MY.days[today()] || 0) + 1; toast(done() === 30 ? 'You finished all 30 days! 🎉' : 'Beautiful. Love never fails (1 Corinthians 13:8).'); } saveMy(); draw(); });
+    $('#lcsh') && ($('#lcsh').onclick = () => shareIt({ title: '30-day love challenge', text: `I'm doing a 30-day love challenge: one small act of love a day. ${done()} of 30 done! Join me:`, hash: 'love-challenge' }));
+    $('#lcreset') && ($('#lcreset').onclick = () => { L.done = {}; saveMy(); draw(); });
+  };
+  draw();
+}
+
+/* praying for the sick */
+function viewHealGuide() {
+  setNav('love'); document.title = 'How to pray for the sick — Just One More Lord';
+  main.innerHTML = `<section class="band"><div class="wrap quizwrap"><div class="crumbs"><button data-go="love">Share the love</button> › Praying for the sick</div><p class="kicker">Mark 16:17-18 · they will lay hands on the sick, and they will recover</p><h1>Praying for the <span class="neon-txt">sick</span></h1>
+    <p class="lead">Jesus healed people everywhere he went, and he sent his followers to do the same. Here is a simple, grace-based way to pray for someone, at church, at work or in the shops.</p>
+    <img class="lovewide" src="${cimg('baptism-prayer')}" alt="Friends laying hands on a man and praying for him" loading="lazy" width="1027" height="1400">
+    <ol class="ncsteps">${LOVE.heal.map(([h, p, r]) => `<li><h3>${esc(h)}</h3><p>${esc(p)}</p>${refChips(r)}</li>`).join('')}</ol>
+    <div class="panel prayerbox"><p class="kicker">A short example</p><p class="rcvp"><i>${esc(LOVE.healPrayer)}</i></p><button class="btn ghost" id="hpsp">▶ Hear it</button></div>
+    <div class="linkrow" style="margin-top:16px"><button class="btn" data-go="miracles">See how Jesus healed</button><button class="btn ghost" data-go="healing">Healing scriptures</button><button class="btn ghost" data-go="notes-healing">Teaching: God wants you well</button><button class="btn ghost" data-go="testimonies">Share a healing testimony</button></div></div></section>`;
+  $('#hpsp').onclick = e => speakList([LOVE.healPrayer.replace('[name]', 'this person')], e.target);
+}
+
+/* QR code & printable flyer */
+function viewFlyer() {
+  setNav('love'); document.title = 'QR code & flyer — Just One More Lord';
+  const opts = [['', 'The app (home page)', 'Free grace-based Bible app'], ['gospel-1min', 'The gospel in 1 minute', 'God loves you. See why in 1 minute'], ['receive', 'Receive Jesus', 'Receive Jesus today'], ['love-letter', 'A love letter from the Father', 'A love letter from your Father'], ['feel', 'When you feel…', 'Whatever you feel, God has a word for you']];
+  main.innerHTML = `<section class="band"><div class="wrap quizwrap"><div class="crumbs noprint"><button data-go="love">Share the love</button> › QR code &amp; flyer</div>
+    <div class="noprint"><p class="kicker">Romans 10:14 · how will they hear?</p><h1>QR code &amp; <span class="neon-txt">flyer</span></h1><p class="lead">Show the QR code on your phone, or print the flyer for church, an outreach or a notice board. People scan it with their camera and the app opens instantly.</p>
+      <div class="panel"><label for="fly"><b>Where should the QR code take people?</b></label><select id="fly">${opts.map(([h, l], k) => `<option value="${k}">${esc(l)}</option>`).join('')}</select>
+      <div class="linkrow" style="margin-top:12px"><button class="btn" id="flyp">🖨 Print the flyer</button><button class="btn ghost" id="flyq">Save the QR code</button><button class="btn ghost" id="flyf">Show full screen</button></div></div></div>
+    <div class="flyer" id="flyer"></div></div></section>`;
+  let cur = 0; const url = () => SITE + (opts[cur][0] ? '#' + opts[cur][0] : '');
+  const draw = () => { $('#flyer').innerHTML = `<img class="flylogo" src="img/logo.png" alt="Just One More Lord" width="475" height="597"><h2>${esc(opts[cur][2])}</h2>
+    <p class="flysub">Just One More Lord: a free, grace-based Bible app. The finished work of Jesus and the love of God, a Bible with Hebrew and Greek, maps of every Bible place and teaching.</p>
+    <div class="flyqr" id="flyqr">${QR.svg(url(), { px: 7 })}</div><p class="flyscan">📷 Scan with your phone camera</p><p class="flyurl">${esc(url().replace('https://', ''))}</p>
+    <ul class="flylist"><li>✝ The gospel of grace</li><li>👑 Who you are in Christ</li><li>📖 The Bible, with listening</li><li>🗺 Maps of Bible places</li><li>🙏 Prayer and healing scriptures</li><li>Free · No ads · Works offline</li></ul>`; };
+  $('#fly').onchange = e => { cur = +e.target.value; draw(); };
+  $('#flyp').onclick = () => window.print();
+  $('#flyq').onclick = () => { const s = QR.svg(url(), { px: 16 }), img = new Image(); img.onload = () => { const c = document.createElement('canvas'); c.width = img.width; c.height = img.height; c.getContext('2d').drawImage(img, 0, 0); c.toBlob(b => { const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = 'just-one-more-lord-qr.png'; a.click(); }); }; img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(s); };
+  $('#flyf').onclick = () => openDlg(`<div class="flyfull">${QR.svg(url(), { px: 10 })}<p><b>${esc(opts[cur][1])}</b></p><p class="small muted">Scan with your phone camera</p></div>`, 'QR code');
+  draw();
+}
+
+/* our church family: photo gallery */
+function viewChurchFamily() {
+  setNav('love'); document.title = 'Our church family — Just One More Lord'; const P = LOVE.photos.filter(p => p.s !== 'home'), sign = LOVE.photos.find(p => p.s === 'home');
+  main.innerHTML = `<section class="band"><div class="wrap"><div class="crumbs"><button data-go="love">Share the love</button> › Our church family</div><p class="kicker">Romans 6:4 · raised to walk in newness of life</p><h1>Our church <span class="neon-txt">family</span></h1>
+    ${sign ? `<figure class="signfig"><img src="${cimg(sign.f)}" alt="People pointing up at the words Just one more Lord above a church doorway" width="1100" height="825"><figcaption>${esc(sign.c)}</figcaption></figure>` : ''}
+    ${Object.entries(LOVE.photoSections).map(([k, [h, d]]) => { const L = P.filter(p => p.s === k); return L.length ? `<h2 class="nch">${esc(h)}</h2><p>${esc(d)}</p><div class="gallery">${L.map(p => `<button class="gph" data-ph="${P.indexOf(p)}"><img src="${cimg(p.f)}" alt="${esc(p.c)}" loading="lazy"><span>${esc(p.c)}</span></button>`).join('')}</div>` : ''; }).join('')}
+    <div class="panel" style="margin-top:24px"><h2>Want this for your life?</h2><p>Every person in these photos was loved by God before they ever knew it. So are you.</p><div class="linkrow"><button class="btn" data-go="receive">Receive Jesus</button><button class="btn ghost" data-go="churches">Find a church</button><button class="btn ghost" data-go="teachings">Watch Richard Olivier at Harvest Church</button></div></div></div></section>`;
+  const show = k => { const p = P[k]; openDlg(`<figure class="phbig"><img src="${cimg(p.f)}" alt="${esc(p.c)}"><figcaption>${esc(p.c)}</figcaption></figure><div class="linkrow"><button class="btn ghost sm" data-p>← Previous</button><button class="btn ghost sm" data-n>Next →</button></div>`, 'Photo');
+    $('[data-p]', dlgBody).onclick = () => show((k - 1 + P.length) % P.length); $('[data-n]', dlgBody).onclick = () => show((k + 1) % P.length); };
+  $$('[data-ph]').forEach(b => b.onclick = () => show(+b.dataset.ph));
+}
 
 /* ---------------- router ---------------- */
 async function render() {
@@ -3516,6 +3758,16 @@ async function render() {
     else if (h === 'parables' || h.startsWith('parables-')) viewParables(h.slice(9));
     else if (h === 'names' || h.startsWith('names-')) viewNames(h.slice(6));
     else if (h === 'measures') viewMeasures();
+    else if (h === 'love') viewLove();
+    else if (h === 'gospel-1min' || h.startsWith('gospel-1min-')) viewGospel1(h.slice(12));
+    else if (h === 'share-faith') viewShareFaith();
+    else if (h === 'love-letter') viewLetter();
+    else if (h === 'blessing') viewBlessing();
+    else if (h === 'feel' || h.startsWith('feel-')) await viewFeel(h.slice(5));
+    else if (h === 'love-challenge') viewChallenge();
+    else if (h === 'pray-sick') viewHealGuide();
+    else if (h === 'flyer') viewFlyer();
+    else if (h === 'church-family') viewChurchFamily();
     else if (h === 'healing') viewHealing();
     else if (h === 'wrapped' || h.startsWith('wrapped-')) viewWrapped(h.slice(8));
     else if (h === 'journal' || h.startsWith('journal-')) await viewJournal(h.slice(8));

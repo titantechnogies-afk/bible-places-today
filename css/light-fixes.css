@@ -4,3 +4,7 @@
 :root[data-theme=light] .ncam li{background:rgba(255,255,255,.8)}
 :root[data-theme=light] .msval b{color:#8a5d00}
 :root[data-theme=light] .gdfoot{background:linear-gradient(180deg,rgba(243,251,253,.6),rgba(243,251,253,.98) 30%)}
+:root[data-theme=light] .g1txt,:root[data-theme=light] .g1txt h2,:root[data-theme=light] .g1txt p{color:#fff}
+:root[data-theme=light] .gph span,:root[data-theme=light] .g1n{color:#fff}
+:root[data-theme=light] .letter p:first-child,:root[data-theme=light] .letter p:nth-last-child(-n+2){color:#8a5d00}
+:root[data-theme=light] .flyer h2{color:#0b2530}

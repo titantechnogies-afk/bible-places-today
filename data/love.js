@@ -1,0 +1,153 @@
+/* JUST ONE MORE LORD — share the love of God: the gospel in one minute, sharing your faith, a love letter from the Father,
+   blessings to send, "when you feel…", a 30-day love challenge, praying for the sick, and photos from our church family.
+   Written for this app (original wording) in the spirit of the grace teaching of Andrew Wommack, Dan Mohler and Richard Olivier.
+   Test everything with Scripture (Acts 17:11). Photos: used with the app owner's permission; please don't reuse them elsewhere. */
+window.JOM_LOVE = {
+
+gospel: [
+  { h: 'You are loved', t: 'God doesn\'t just put up with you. He loves you, completely, right now, exactly as you are. Not the person you think you should be. You.', r: 'John 3:16', img: 'outreach' },
+  { h: 'But something is broken', t: 'We all know it. We have all hurt people, ourselves and God. The Bible calls it sin, and it leaves us far from the God who made us. No amount of trying harder fixes it.', r: 'Romans 3:23', img: 'worship' },
+  { h: 'So God came to you', t: 'Instead of waiting for us to climb up to him, God came down to us in Jesus. While we were still far away, still getting it wrong, Jesus died for us.', r: 'Romans 5:8', img: 'preach' },
+  { h: 'It is finished', t: 'On the cross Jesus took every sin, every shame and every sickness on himself. His last words were "It is finished": paid in full. God is not holding anything against you.', r: '2 Corinthians 5:19-21', img: 'baptism-prayer' },
+  { h: 'And he is alive', t: 'Three days later Jesus rose from the dead. Death lost. That is why you can know him personally today, not just know about him.', r: '1 Corinthians 15:3-4', img: 'baptism-3' },
+  { h: 'It is a free gift', t: 'You cannot earn it and you do not have to. Forgiveness, a brand-new life and the Holy Spirit living in you are a gift. Gifts are simply received.', r: 'Ephesians 2:8-9', img: 'baptism-1' },
+  { h: 'Raised to life', t: 'If you believe Jesus died for you and rose again, and you make him your Lord, you are born again: a new person, forgiven, loved and never alone again. You can say yes right now.', r: 'Romans 10:9-10', img: 'baptism-4', last: true }
+],
+
+shareFaith: [
+  ['Start with being loved', 'You can only give what you have received. Before you say a word to anyone, let God\'s love for you sink in. People who know they are loved love others without fear.', ['1 John 4:19', '2 Corinthians 5:14']],
+  ['Love the person in front of you', 'You don\'t need a stage. Sharing Jesus is mostly loving the one person in front of you: the cashier, your colleague, your neighbour. Notice them, smile, ask their name and care.', ['John 13:34-35', 'Matthew 9:36', 'Galatians 5:6']],
+  ['Listen first', 'Ask questions and really listen. "How are you really doing?" opens more doors than any argument. People care how much you care before they care how much you know.', ['James 1:19', 'Proverbs 20:5']],
+  ['Tell your story', 'Jesus told a man he had set free: "Go home and tell them what the Lord has done for you." Nobody can argue with your story. Keep it to three parts: before, how you met Jesus, and what changed.', ['Mark 5:19', 'John 9:25', 'Revelation 12:11']],
+  ['Keep the good news simple', '"God loves you. Jesus paid for everything on the cross and rose again. If you trust him, you are forgiven and made new, as a free gift." That is the gospel. Use the one-minute version in this app.', ['1 Corinthians 15:3-4', 'Romans 6:23']],
+  ['Offer to pray, right there', 'Most people will let you pray for them, even if they don\'t believe. "Can I pray for you about that, right now?" Jesus sent his followers to heal the sick and then tell them the kingdom had come near.', ['Luke 10:9', 'Mark 16:17-18', 'Acts 3:6']],
+  ['No pressure, no fear', 'You are not responsible for anyone\'s response. You plant and water; God makes it grow. Be bold, be kind, and leave the results to him.', ['1 Corinthians 3:6-7', '2 Timothy 1:7', 'John 6:44']],
+  ['Invite them', 'Philip simply said, "Come and see." Invite people to church, to a coffee, to a men\'s or women\'s group, or send them the app.', ['John 1:45-46', 'John 4:28-29']],
+  ['Stay friends', 'Love doesn\'t stop if someone says no. Keep being their friend, keep praying for them and be there when life gets hard.', ['1 Corinthians 13:4-7', 'Proverbs 17:17']]
+],
+starters: ['How are you really doing today?', 'Is there anything I can pray with you about?', 'Do you have a faith background, or is that not really your thing?', 'Can I tell you about the best thing that ever happened to me?', 'What do you think God thinks of you?', 'If you could ask God one question, what would it be?'],
+
+letter: [
+  ['My child,', ''],
+  ['I knew you before I formed you. You are not an accident or a mistake.', 'Jeremiah 1:5'],
+  ['I put you together piece by piece, and everything I made, I called good.', 'Psalm 139:13-16'],
+  ['I know when you sit and when you stand. I know your thoughts before you think them.', 'Psalm 139:1-4'],
+  ['Even the hairs on your head are counted. That is how closely I watch over you.', 'Matthew 10:29-31'],
+  ['I have loved you with an everlasting love. It did not start when you got things right, and it will not end when you get things wrong.', 'Jeremiah 31:3'],
+  ['I am not angry with you. I sent my Son, not to condemn you, but to save you.', 'John 3:17'],
+  ['When you were furthest from me, Jesus died for you. That is how much you are worth to me.', 'Romans 5:8'],
+  ['I have taken your sins as far away as the east is from the west, and I choose to remember them no more.', 'Psalm 103:12; Hebrews 8:12'],
+  ['I love you as much as I love Jesus. Not less. Not a different kind of love. The same.', 'John 17:23'],
+  ['I am close to you when your heart is broken. I save those whose spirit is crushed.', 'Psalm 34:18'],
+  ['When you pass through deep waters, I will be with you. They will not sweep over you.', 'Isaiah 43:2'],
+  ['I will never leave you and I will never give up on you.', 'Hebrews 13:5'],
+  ['I sing over you with joy. You make me glad.', 'Zephaniah 3:17'],
+  ['I want to give you good things, far more than any earthly father could.', 'Matthew 7:11'],
+  ['I have plans for you: plans for peace, a future and a hope.', 'Jeremiah 29:11'],
+  ['Nothing, not death, not life, not your past or your future, can separate you from my love.', 'Romans 8:38-39'],
+  ['Come to me when you are tired and carrying too much. I will give you rest.', 'Matthew 11:28-29'],
+  ['Every day I am watching the road, waiting for you to come home. When I see you, I will run to you.', 'Luke 15:20'],
+  ['Everything I have is yours.', 'Luke 15:31'],
+  ['With all my love,', ''],
+  ['Your Father', '1 John 3:1']
+],
+
+blessings: [
+  { id: 'sick', ic: '✚', l: 'Is sick', v: ['1 Peter 2:24', 'Psalm 103:2-3', 'Jeremiah 30:17'], m: ['Praying for you today. Jesus carried this sickness on the cross so you don\'t have to. By his stripes you were healed. Believing with you for complete healing.', 'Thinking of you and speaking life over your body today. God wants you well, and so do I.'] },
+  { id: 'grief', ic: '🕊', l: 'Is grieving', v: ['Psalm 34:18', 'Matthew 5:4', 'John 14:1-3'], m: ['I\'m so sorry. There are no words big enough, but God is close to the broken-hearted, and so am I. I\'m here whenever you need me.', 'Holding you in my prayers. May the God of all comfort wrap his arms around you today.'] },
+  { id: 'anxious', ic: '☁', l: 'Is anxious or afraid', v: ['Philippians 4:6-7', 'Isaiah 41:10', '1 Peter 5:7'], m: ['You don\'t have to carry this alone. God cares about every detail and his peace is bigger than this. Praying peace over your mind right now.', 'God has not given you a spirit of fear. You are loved, held and safe in him. Thinking of you.'] },
+  { id: 'lonely', ic: '🤝', l: 'Feels alone', v: ['Hebrews 13:5', 'Deuteronomy 31:8', 'Psalm 68:6'], m: ['Just reminding you that you are not alone. God is with you and I\'m thinking of you. Coffee this week?', 'You matter. To God and to me. He has promised never to leave you, and I\'m here too.'] },
+  { id: 'money', ic: '💰', l: 'Is struggling with money', v: ['Philippians 4:19', 'Matthew 6:31-33', 'Psalm 37:25'], m: ['Your Father knows exactly what you need. Praying for provision, open doors and peace in the meantime.', 'God has never let his children go hungry. Believing with you for a breakthrough.'] },
+  { id: 'job', ic: '💼', l: 'Starts a new job', v: ['Proverbs 3:5-6', 'Colossians 3:23', 'Deuteronomy 28:12'], m: ['Congratulations! Praying God\'s favour goes ahead of you into every meeting and every task. You\'ve got this, with him.', 'So happy for you! May God bless the work of your hands.'] },
+  { id: 'birthday', ic: '🎂', l: 'Has a birthday', v: ['Numbers 6:24-26', 'Psalm 139:14', 'Jeremiah 29:11'], m: ['Happy birthday! God was thinking of you long before you were born, and he is not finished with you yet. Have a blessed day!', 'Happy birthday! Thanking God for you today. You are fearfully and wonderfully made.'] },
+  { id: 'baby', ic: '👶', l: 'Has a new baby', v: ['Psalm 127:3', 'Psalm 139:13-14', 'Numbers 6:24-26'], m: ['Congratulations! What a gift from God. Praying blessing, health and peace over your little one and your whole family.'] },
+  { id: 'exams', ic: '📚', l: 'Is writing exams', v: ['James 1:5', 'Philippians 4:13', '2 Timothy 1:7'], m: ['Good luck! Praying for a clear mind, good memory and peace. You have the mind of Christ!'] },
+  { id: 'saved', ic: '✝', l: 'Just gave their life to Jesus', v: ['2 Corinthians 5:17', 'Luke 15:10', 'Philippians 1:6'], m: ['Welcome to the family! Heaven is celebrating you today. You are brand new, completely forgiven and so loved.'] },
+  { id: 'baptism', ic: '💧', l: 'Is being baptised', v: ['Romans 6:4', 'Galatians 3:27', 'Acts 2:41'], m: ['Raised to life! So proud of you. The old is gone, the new has come. What a day!'] },
+  { id: 'marriage', ic: '💍', l: 'Is getting married', v: ['1 Corinthians 13:4-7', 'Ecclesiastes 4:12', 'Genesis 2:24'], m: ['Congratulations! Praying God\'s love, joy and faithfulness over your marriage, today and every day.'] },
+  { id: 'any', ic: '❤', l: 'Just because', v: ['Jeremiah 31:3', 'Zephaniah 3:17', 'Romans 8:38-39'], m: ['Just a reminder today: God loves you, and so do I. Have a blessed day!', 'Thought of you and prayed for you today. You are loved more than you know.'] }
+],
+
+feel: [
+  { id: 'afraid', ic: '😨', l: 'Afraid', t: 'Fear is not from God, and it does not get the final word. You are held by a Father who is bigger than whatever you are facing. Perfect love drives out fear.', v: ['2 Timothy 1:7', 'Isaiah 41:10', 'Psalm 23:4', '1 John 4:18', 'Psalm 56:3'], p: 'Father, thank you that you are with me and you are for me. I give you this fear. I receive your peace, your power, your love and a sound mind. In Jesus\' name, amen.' },
+  { id: 'anxious', ic: '😟', l: 'Anxious or worried', t: 'You were never meant to carry tomorrow today. Give it to God, piece by piece, and let his peace guard your heart and mind.', v: ['Philippians 4:6-7', '1 Peter 5:7', 'Matthew 6:33-34', 'Isaiah 26:3', 'John 14:27'], p: 'Father, I cast all my cares on you because you care for me. I thank you for your peace that is bigger than my understanding. I choose to trust you. Amen.' },
+  { id: 'lonely', ic: '🥺', l: 'Lonely', t: 'You are never alone. God lives in you, and he has promised never to leave you. He also puts lonely people into families, so reach out: someone at church would love to hear from you.', v: ['Hebrews 13:5', 'Psalm 68:6', 'Matthew 28:20', 'Deuteronomy 31:6', 'John 14:18'], p: 'Father, thank you that you are with me right now and you will never leave me. Lead me to people who will love me, and help me love them too. Amen.' },
+  { id: 'guilty', ic: '😔', l: 'Guilty or ashamed', t: 'Jesus carried your shame on the cross. There is no condemnation for you in Christ. God is not holding your sin against you. Run to him, not away from him.', v: ['Romans 8:1', '1 John 1:9', 'Hebrews 10:17', 'Isaiah 1:18', 'Psalm 103:12'], p: 'Father, thank you that Jesus paid for this completely. I receive your forgiveness and I let go of the shame. I am your child, and you are not angry with me. Amen.' },
+  { id: 'sick', ic: '🤒', l: 'Sick or in pain', t: 'Jesus healed all who came to him, and he carried your sickness on the cross. Healing is part of the finished work. Receive it, speak to your body and keep seeing your doctor too.', v: ['1 Peter 2:24', 'Isaiah 53:4-5', 'Psalm 103:2-3', 'Matthew 8:16-17', 'Romans 8:11'], p: 'Father, thank you that by Jesus\' stripes I was healed. I speak to this sickness and pain in Jesus\' name and command it to leave my body. I receive your life and health. Amen.' },
+  { id: 'grieving', ic: '💔', l: 'Grieving', t: 'Jesus wept at his friend\'s grave. Grief is not a lack of faith; it is love with nowhere to go. God is close to you, and for those in Christ, goodbye is not the end.', v: ['Psalm 34:18', 'Matthew 5:4', 'John 11:25-26', '1 Thessalonians 4:13-14', 'Revelation 21:4'], p: 'Father, my heart hurts. Thank you that you are close to the broken-hearted. Comfort me, hold me and carry me through this. Amen.' },
+  { id: 'angry', ic: '😠', l: 'Angry or hurt by someone', t: 'Your hurt is real and God sees it. Forgiveness doesn\'t say it was okay; it sets you free. You forgive out of how much you have been forgiven.', v: ['Ephesians 4:26-27', 'Ephesians 4:31-32', 'Colossians 3:13', 'Romans 12:19', 'Matthew 5:44'], p: 'Father, you know how much this hurt. By your grace I choose to forgive them, as you have forgiven me. Heal my heart and bless them. Amen.' },
+  { id: 'tired', ic: '😩', l: 'Tired or overwhelmed', t: 'Jesus doesn\'t add to your load; he lifts it. Rest is not laziness. Come to him and let him carry what you can\'t.', v: ['Matthew 11:28-30', 'Isaiah 40:29-31', 'Psalm 23:1-3', '2 Corinthians 12:9', 'Hebrews 4:9-10'], p: 'Jesus, I come to you tired. Thank you for your rest and your strength. I give you what I can\'t carry. Amen.' },
+  { id: 'money', ic: '💸', l: 'Worried about money', t: 'Your Father feeds the birds and he knows what you need. Put him first, be wise, and trust him to provide.', v: ['Philippians 4:19', 'Matthew 6:25-33', 'Psalm 37:25', '2 Corinthians 9:8', 'Deuteronomy 8:18'], p: 'Father, thank you that you know what I need before I ask. I trust you as my provider. Give me wisdom, open doors and peace while I wait. Amen.' },
+  { id: 'rejected', ic: '🚪', l: 'Rejected or not good enough', t: 'People may reject you, but God never will. He chose you before the creation of the world. You are accepted in the Beloved, not because of what you do, but because of whose you are.', v: ['Ephesians 1:4-6', 'Psalm 27:10', 'Isaiah 43:4', 'John 6:37', '1 Peter 2:9'], p: 'Father, thank you that you chose me and you accept me completely in Jesus. I receive your love and I let your opinion of me be the one that counts. Amen.' },
+  { id: 'hopeless', ic: '🌧', l: 'Hopeless', t: 'When everything feels dark, God has not left you, and this is not the end of your story. You are deeply loved. Please don\'t carry this alone: talk to someone you trust today, a friend, family member or your pastor.', v: ['Psalm 42:11', 'Jeremiah 29:11', 'Psalm 34:18', 'Lamentations 3:22-23', 'Romans 15:13'], p: 'Father, I feel hopeless. Please hold me. Fill me with your hope and send me the right people to help. Amen.' },
+  { id: 'far', ic: '🧭', l: 'Far from God', t: 'God hasn\'t moved. Like the father of the lost son, he is watching the road for you and will run to meet you. You can come home right now, just as you are.', v: ['Luke 15:20', 'James 4:8', 'Hebrews 4:16', 'Romans 8:38-39', 'Isaiah 55:6-7'], p: 'Father, I\'m coming home. Thank you that you run to me and not away from me. Draw me close again. Amen.' }
+],
+
+challenge: [
+  'Pray for one person by name today and send them a message saying so.',
+  'Find out the name of someone who serves you (a cashier, petrol attendant or guard) and thank them by name.',
+  'Send a "Just because" blessing from this app to someone.',
+  'Pay for someone\'s coffee or bread.',
+  'Call an older relative or neighbour just to chat.',
+  'Offer to pray for someone who tells you about a problem, right there.',
+  'Write a thank-you note to someone who helped you grow in faith.',
+  'Forgive someone in your heart, and bless them in prayer.',
+  'Share the "Gospel in 1 minute" with one friend.',
+  'Give away something you don\'t use to someone who needs it.',
+  'Encourage your pastor or a leader at church with a message.',
+  'Do a chore at home that no one asked you to do.',
+  'Invite someone to church or to your small group.',
+  'Visit or message someone who is sick.',
+  'Tell someone your story: how Jesus changed your life.',
+  'Give a generous tip and a kind word.',
+  'Pray for your city, your street and your neighbours by name.',
+  'Listen to someone for ten minutes without talking about yourself.',
+  'Take food or a meal to someone going through a hard time.',
+  'Send the Father\'s love letter to someone who is hurting.',
+  'Pray for someone who has hurt you.',
+  'Help a stranger with something practical.',
+  'Encourage a child or teenager: tell them what you see God doing in them.',
+  'Give to someone in need, with no strings attached.',
+  'Pray for the sick: offer to pray for someone\'s pain or illness.',
+  'Let someone go ahead of you in the queue or in traffic, with a smile.',
+  'Write down five things you love about your family and tell them.',
+  'Share a testimony of something God has done for you.',
+  'Ask someone, "How are you really doing?", and mean it.',
+  'Thank God for 30 days of loving people, and ask him who to love tomorrow.'
+],
+
+heal: [
+  ['Know God\'s will', 'Jesus never turned anyone away and never told anyone that sickness was God\'s will. He healed all who came to him, and he only did what he saw the Father doing. Healing is God\'s will.', ['Matthew 8:2-3', 'Acts 10:38', 'Matthew 12:15', 'John 5:19']],
+  ['Know your authority', 'Jesus gave his followers authority to heal the sick, and said those who believe will lay hands on the sick and they will recover. You are not asking God to do it; you are releasing what he has already given.', ['Luke 10:9', 'Mark 16:17-18', 'Matthew 10:8', 'John 14:12']],
+  ['Ask and listen', 'Ask the person\'s name, what is wrong and whether you may pray for them. Ask how bad the pain is out of ten. Love them first; this is about them, not your gift.', ['Mark 10:51', 'Matthew 14:14']],
+  ['Lay hands gently (with permission)', 'Ask if you may put a hand on their shoulder or the area that hurts, if appropriate. Keep it respectful and never awkward. With someone of the opposite sex, a hand on the shoulder or their own hand on the area is best.', ['Mark 16:18', 'Luke 4:40']],
+  ['Speak to the sickness', 'Jesus and the apostles didn\'t beg God; they spoke to the problem. Keep it short, kind and bold: "In Jesus\' name, pain, go. Back, be healed. I release the life of God into this body."', ['Mark 11:23', 'Acts 3:6', 'Luke 4:39', 'Acts 9:34']],
+  ['Check and pray again', 'Ask them to try something they couldn\'t do before. If it is better but not gone, pray again. Jesus prayed twice for the blind man at Bethsaida. Thank God for every improvement.', ['Mark 8:22-25', 'Luke 17:14']],
+  ['Point them to Jesus', 'Whatever happens, tell them how much God loves them and that Jesus paid for their healing and their forgiveness. Offer them the "Gospel in 1 minute" and invite them to receive him.', ['Acts 3:12-16', 'Acts 4:29-30']],
+  ['Love, whatever the outcome', 'If you don\'t see the healing right away, don\'t blame the person, and don\'t give up. Keep loving them, keep believing and keep praying for the next person. Results are God\'s department; love is yours.', ['1 Corinthians 13:1-3', 'Galatians 6:9']],
+  ['Walk in wisdom', 'Never tell anyone to stop taking medicine or to stop seeing their doctor. Let a doctor confirm a healing. God works through doctors too.', ['Luke 17:14', 'Colossians 4:14']]
+],
+healPrayer: 'In the name of Jesus, I speak to this sickness and this pain: leave this body now. Body, be healed and made whole. Father, thank you that by Jesus\' stripes [name] was healed. I release your life and your peace into them right now. Amen.',
+
+photos: [
+  { f: 'sign', s: 'home', c: '"Just one more Lord…" The words above the door that inspired the name of this app.' },
+  { f: 'baptism-1', s: 'raised', c: 'Raised to life (Romans 6:4).' },
+  { f: 'baptism-3', s: 'raised', c: '"The gospel is the same."' },
+  { f: 'baptism-4', s: 'raised', c: 'Pure joy coming up out of the water.' },
+  { f: 'baptism-5', s: 'raised', c: 'Old life gone, new life begun.' },
+  { f: 'baptism-6', s: 'raised', c: 'Buried with Christ, raised with Christ.' },
+  { f: 'baptism-2', s: 'raised', c: 'Saved by the grace of God.' },
+  { f: 'baptism-before', s: 'raised', c: 'Prayer before the waters.' },
+  { f: 'baptism-prayer', s: 'raised', c: 'Surrounded by brothers in prayer.' },
+  { f: 'together', s: 'together', c: 'Family: loved and never alone.' },
+  { f: 'preach', s: 'sunday', c: 'The finished work of Jesus, preached at Harvest Church.' },
+  { f: 'worship', s: 'sunday', c: 'Worship at Harvest Church.' },
+  { f: 'mens-study', s: 'together', c: 'Men gathered around the Word.' },
+  { f: 'mens-group', s: 'together', c: 'Men\'s group: real men, real faith, real life.' },
+  { f: 'friends', s: 'together', c: 'Brothers in Christ.' },
+  { f: 'coffee', s: 'together', c: 'Coffee, fellowship and the love of God.' },
+  { f: 'joy', s: 'together', c: 'The joy of the Lord is our strength (Nehemiah 8:10).' },
+  { f: 'outreach', s: 'out', c: 'Jesus = Love. Taking the good news to the streets.' }
+],
+photoSections: { raised: ['Raised to life', 'Baptisms: the old life buried, the new life begun (Romans 6:4).'], together: ['Life together', 'Men\'s groups, friendship and doing life as a family.'], sunday: ['Sundays', 'Worship and the Word at Harvest Church.'], out: ['Taking it to the streets', 'The love of God for everyone, everywhere.'] }
+};
