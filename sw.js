@@ -19,7 +19,7 @@ self.addEventListener('fetch', e => {
   const u = new URL(req.url);
   if (u.origin === location.origin) {
     if (req.mode === 'navigate') return e.respondWith(networkFirst(V + '-shell', new Request('index.html')).then(r => r.ok ? r : caches.match('index.html')));
-    if (u.pathname.includes('/data/concordance/') || u.pathname.includes('/data/xrefs/') || /\/data\/(people|topics|dict|sites|web)\//.test(u.pathname)) return e.respondWith(cacheFirst(BIBLE, req));
+    if (u.pathname.includes('/data/concordance/') || u.pathname.includes('/data/xrefs/') || /\/data\/(people|topics|dict|sites|web|gracech)\//.test(u.pathname)) return e.respondWith(cacheFirst(BIBLE, req));
     if (/\.(js|css|html|webmanifest)$/.test(u.pathname) || u.pathname.endsWith('/')) return e.respondWith(networkFirst(V + '-shell', req));
     return e.respondWith(staleWhileRevalidate(V + '-shell', req));
   }

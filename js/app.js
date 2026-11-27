@@ -1021,7 +1021,7 @@ async function viewRead(arg) {
       ${writtenLine(b.i)}<p class="small muted">Tap any verse for its Hebrew or Greek words, related verses, to highlight it, save it or add a note.</p>${ttsBar(next)}<div id="rtext"><p class="muted"><span class="spin"></span>Loading the chapter…</p></div>
       <div class="linkrow"><button class="btn ghost sm" ${prev ? `data-go="read-${prev}"` : 'disabled'}>← Previous</button><button class="btn sm" ${next ? `data-go="read-${next}"` : 'disabled'}>Next chapter →</button></div></article>
       <aside class="readside"><details class="gracepanel" open><summary><h2 style="display:inline">Grace lens</h2></summary><div id="rgrace"></div></details><details class="cmtpanel"><summary><h2 style="display:inline">Commentary</h2></summary><div class="linkrow">${commPicker()}</div><div id="rcmt"></div></details><h2>Places in this chapter</h2><div class="mapbox" id="rmap" style="height:320px"></div><div class="chips" id="rplaces"></div></aside></div></div></section>`;
-  $('#rgrace').innerHTML = graceHTML(b, ch); $('#rgl').onclick = () => { const g = $('.gracepanel'); g.open = true; g.scrollIntoView({ behavior: 'smooth', block: 'start' }); }; if (localStorage.getItem('jom:gopen') === '0') $('.gracepanel').open = false; $('.gracepanel').addEventListener('toggle', e => localStorage.setItem('jom:gopen', e.target.open ? '1' : '0'));
+  $('#rgrace').innerHTML = graceHTML(b, ch); fillGraceChapter(); $('#rgl').onclick = () => { const g = $('.gracepanel'); g.open = true; g.scrollIntoView({ behavior: 'smooth', block: 'start' }); }; if (localStorage.getItem('jom:gopen') === '0') $('.gracepanel').open = false; $('.gracepanel').addEventListener('toggle', e => localStorage.setItem('jom:gopen', e.target.open ? '1' : '0'));
   $('#rbk').onchange = e => go(`read-${e.target.value}.1`); $('#rch').onchange = e => go(`read-${b.code}.${e.target.value}`);
   const ct = await chapterText(b, ch); const ref = v => `${b.name} ${ch}:${v}`;
   $('#rtr').onchange = e => { localStorage.setItem('jom:tr', e.target.value); localStorage.setItem('jom:ws', '0'); viewRead(`${b.code}.${ch}`); };
@@ -1066,7 +1066,7 @@ function viewLibrary() {
   $('#bk').onclick = () => { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(MY, null, 1)], { type: 'application/json' })); a.download = `just-one-more-lord-backup-${new Date().toISOString().slice(0, 10)}.json`; a.click(); };
   $('#rs').onchange = async e => { try { const d = JSON.parse(await e.target.files[0].text()); for (const k of ['places', 'verses', 'notes', 'hl', 'plans', 'quiz']) Object.assign(MY[k], d[k] || {}); if (Array.isArray(d.prayers)) MY.prayers = [...MY.prayers, ...d.prayers.filter(p => !MY.prayers.some(x => x.id === p.id))]; saveMy(); toast('Backup restored'); viewLibrary(); } catch { toast('That file is not a valid backup'); } };
   $('#offl').onclick = async () => { const reg = await navigator.serviceWorker?.ready; if (!reg?.active) { toast('Offline saving needs the installed site — open it online first'); return; }
-    await loadConc(); const files = ['lex-h.json', 'lex-g.json']; conc.starts.forEach(b => b.counts.forEach((_, i) => files.push(`text/${b.code}.${i + 1}.json`))); const webs = []; conc.starts.forEach(b => b.counts.forEach((_, i) => webs.push(new URL(`data/web/${b.code}.${i + 1}.json`, location.href).href)));
+    await loadConc(); const files = ['lex-h.json', 'lex-g.json']; conc.starts.forEach(b => b.counts.forEach((_, i) => files.push(`text/${b.code}.${i + 1}.json`))); const webs = []; conc.starts.forEach(b => b.counts.forEach((_, i) => webs.push(new URL(`data/web/${b.code}.${i + 1}.json`, location.href).href))); conc.starts.forEach(b => webs.push(new URL(`data/gracech/${b.code}.json`, location.href).href));
     const base = new URL(CONC, location.href).href; navigator.serviceWorker.onmessage = m => { if (m.data?.type === 'cache-progress') { $('#offp') && ($('#offp').textContent = m.data.done >= m.data.total ? 'Saved — the Bible now works offline.' : `Saving… ${Math.round(100 * m.data.done / m.data.total)}%`); } };
     reg.active.postMessage({ type: 'cache-bible', files: [...webs, ...files.map(f => base + f)] }); $('#offp').textContent = 'Starting…'; };
 }
@@ -2722,6 +2722,9 @@ async function viewPushKeys() {
 
 /* ---------- Grace lens: every passage in the light of the finished work and the love of God ---------- */
 const GRACE = window.JOM_GRACE || { books: [], passages: {} };
+const GCH = {};
+async function graceChapter(code, ch) { if (!GCH[code]) GCH[code] = fetch(`data/gracech/${code}.json`).then(r => { if (!r.ok) throw 0; return r.json(); }).catch(e => { delete GCH[code]; throw e; }); return (await GCH[code])[ch - 1] || ''; }
+async function fillGraceChapter() { const el = document.getElementById('gch'); if (!el) return; try { const t = await graceChapter(el.dataset.code, +el.dataset.ch); if (el.isConnected) el.querySelector('p:last-child').outerHTML = `<p>${esc(t)}</p>`; } catch { el.remove(); } }
 const GOSPEL_PHASE = { Mat: [26, 28], Mrk: [14, 16], Luk: [22, 24], Jhn: [18, 20] };
 function covenantNote(b, ch) {
   const c = b.code, i = b.i;
@@ -2743,6 +2746,7 @@ function hearItLinks(q) { const e = encodeURIComponent(q);
 function graceHTML(b, ch) {
   const [tag, cov] = covenantNote(b, ch); const notes = graceNotesFor(b.code, ch);
   return `<p class="gtag">${esc(tag)}</p><p class="small">${esc(cov)}</p>
+    <div class="gnote gch" id="gch" data-code="${b.code}" data-ch="${ch}"><p class="kicker">${esc(b.name === 'Psalms' ? 'Psalm' : b.name)} ${ch} through grace</p><p class="muted small"><span class="spin"></span></p></div>
     ${notes.map(n => graceNoteHTML(b, ch, n)).join('')}
     <h3>How ${esc(b.name)} points to Jesus</h3><p class="small">${esc(GRACE.books[b.i] || '')}</p>
     <h3>Four questions for any passage</h3><ol class="small gq"><li>Who is speaking, and to whom?</li><li>Is this before or after the cross, under the law or under grace?</li><li>What did Jesus fulfil, finish or provide here?</li><li>What does this show about the Father\'s love? Jesus is the exact picture of him (Hebrews 1:3; John 14:9).</li></ol>
@@ -2755,7 +2759,7 @@ function viewGrace() {
   const nm = c => (conc.byCode?.[c]?.name) || names[c] || c;
   const groups = Object.entries(GRACE.passages);
   main.innerHTML = `<section class="band"><div class="wrap"><p class="kicker">The finished work and the love of God</p><h1>Grace lens</h1>
-    <p class="lead">Read every passage in the light of the cross. Open any chapter in the Bible reader and the Grace lens panel shows its covenant context, how the book points to Jesus, and notes on passages that are often misread.</p>
+    <p class="lead">Read every passage in the light of the cross. Open any chapter in the Bible reader and the Grace lens panel shows a note on that chapter through the finished work of Jesus (all 1,189 chapters), its covenant context, how the book points to Jesus, and notes on passages that are often misread.</p>
     <div class="panel"><h2>Four questions for any passage</h2><ol class="gq"><li>Who is speaking, and to whom?</li><li>Is this before or after the cross, under the law or under grace?</li><li>What did Jesus fulfil, finish or provide here?</li><li>What does this show about the Father\'s love? Jesus is the exact picture of him (Hebrews 1:3).</li></ol></div>
     <input class="gfind" id="gfind" type="search" placeholder="Search the grace notes (e.g. tithe, healing, forgiveness)" aria-label="Search the grace notes">
     <div class="rlist" id="glist">${groups.map(([k, ns]) => { const [c, ch] = k.split('.'); return ns.map(n => `<button class="ritem" data-go="read-${c}.${ch}.${parseInt(n[0])}" data-s="${esc((nm(c) + ' ' + ch + ' ' + n[1] + ' ' + n[2]).toLowerCase())}"><div><b>${esc(nm(c))} ${ch}:${esc(n[0])} · ${esc(n[1])}</b><span>${esc(n[2].slice(0, 170))}${n[2].length > 170 ? '…' : ''}</span></div><span class="tag">Read</span></button>`).join(''); }).join('')}</div>
