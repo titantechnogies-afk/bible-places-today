@@ -434,9 +434,10 @@ async function viewHome() {
   main.innerHTML = `
   <section class="hero"><div class="bg">${heroSVG()}</div><div class="credit" id="heroCredit" hidden></div>
     <div class="wrap in"><p class="kicker eyebrow">Just One More Lord</p><img class="herologo" src="img/logo.png" alt="Just One More Lord" width="475" height="597"><h1>Explore the world of <span class="neon-txt">the Bible.</span></h1><div class="orn" aria-hidden="true"><span></span><svg viewBox="0 0 24 24"><path d="M12 3v18M6 9h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span></span></div>
-    <p class="lede">See the places where biblical history unfolded. Explore the locations today. Discover the archaeological evidence. Walk through history.</p>
+    <p class="lede">A grace-based Bible app: the finished work of Jesus and the love of God, with the places, the evidence and the original words of Scripture.</p>
     <form class="bigsearch" id="bigSearch" role="search"><label class="sr" for="bq">Search for a Bible place</label><input id="bq" type="search" placeholder="Try Capernaum, Ninevah, Sinai, Ephesus…" spellcheck="false"><button class="btn" type="submit">Search</button></form>
     <div class="chips">${['Jerusalem','Bethlehem','Sea of Galilee','Mount Sinai','Golgotha','Corinth','Nineveh'].map(n => `<button class="chip" data-go="place-${PLACES.find(p => p.n.startsWith(n)).id}">${esc(n)}</button>`).join('')}</div></div></section>
+  ${graceHomeBand()}
   <section class="band"><div class="wrap"><div class="sh"><div><h2>Featured places</h2><p>Each page brings together photographs of the site today, an interactive map, the Bible passages, documented discoveries, a timeline and sources.</p></div><button class="btn ghost" data-go="atlas">Open the atlas</button></div>
     <div class="grid" id="feat">${feat.map(placeCard).join('')}</div></div></section>
   <section class="band" style="background:var(--bg2)"><div class="wrap"><div class="sh"><div><h2>How the evidence is graded</h2><p>Every archaeological entry carries one of five labels, so you can see at a glance what a find shows and what remains debated. Archaeology is kept separate from theological interpretation.</p></div><button class="btn ghost" data-go="discoveries">Browse ${DISCS.length} discoveries</button></div>
@@ -1451,7 +1452,7 @@ function viewDevNotes() {
    ====================================================================================== */
 /* ---------- activity, streaks and badges ---------- */
 const today = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
-for (const k of ['days', 'readCh', 'visited', 'strongs', 'badges', 'journal', 'grace']) if (!MY[k] || typeof MY[k] !== 'object') MY[k] = {};
+for (const k of ['days', 'readCh', 'visited', 'strongs', 'badges', 'journal', 'grace', 'saved']) if (!MY[k] || typeof MY[k] !== 'object') MY[k] = {};
 function streak() { let n = 0; const d = new Date(); if (!MY.days[today()]) d.setDate(d.getDate() - 1);
   for (;;) { const k = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; if (!MY.days[k]) break; n++; d.setDate(d.getDate() - 1); } return n; }
 function bestStreak() { const ks = Object.keys(MY.days).sort(); let best = 0, run = 0, prev = null;
@@ -1843,7 +1844,7 @@ document.addEventListener('click', e => { const b = e.target.closest('.ytbox[dat
 function viewTeachings(id) {
   setNav(''); document.title = 'Teachings — Just One More Lord';
   const extra = (CFG.teachings || []).filter(t => ytId(t.youtube)); const T = id ? TEACHERS.filter(t => t.id === id) : TEACHERS;
-  main.innerHTML = `<section class="band"><div class="wrap"><div class="sh"><div><p class="kicker">Grow in the Word</p><h1>Teachings</h1><p>Hand-picked teachers, played straight from their own official channels. Watch with your Bible open — and use the reader and concordance alongside.</p></div></div>
+  main.innerHTML = `<section class="band"><div class="wrap"><div class="sh"><div><p class="kicker">Grow in the Word</p><h1>Grace teachings</h1><p>Teachers of the finished work of Jesus and the love of God, played straight from their own official channels. Watch with your Bible open.</p></div><button class="btn" data-go="notes">📝 Teaching notes</button></div>
     ${T.map(t => { const mine = extra.filter(x => x.teacher === t.id);
       return `<article class="teacher"><div class="thead">${t.face ? `<img class="tav tphoto" src="${esc(t.face)}" alt="${esc(t.n)}">` : `<div class="tav">${esc(t.n.split(' ').map(w => w[0]).join(''))}</div>`}<div><h2>${esc(t.n)}</h2><p class="kicker">${esc(t.org)}</p></div></div>${t.photo ? `<div class="tbio"><figure class="tfig"><img class="tpic" src="${esc(t.photo)}" alt="${esc(t.photoAlt || t.n)}" loading="lazy">${t.caption ? `<figcaption class="small muted">${esc(t.caption)}</figcaption>` : ''}</figure><p>${esc(t.about)}</p></div>` : `<p>${esc(t.about)}</p>`}
         <div class="linkrow">${t.links.map(([l, u]) => `<a class="btn ghost sm" href="${esc(u)}" target="_blank" rel="noopener">${esc(l)} ↗</a>`).join('')}</div>
@@ -1909,7 +1910,7 @@ const DEVOS = {
   nazareth: ['Can anything good come from Nazareth?', 'John 1:46', 'Nathanael doubted that anything good could come from Nazareth. Philip did not argue; he said, "Come and see." People\'s opinions about where we are from do not define us. Jesus grew up in an ordinary town and was not ashamed of it — and he is not ashamed of us.', 'Jesus, thank you that my past and my background do not limit what you can do in me.'],
   capernaum: ['Jesus at home among us', 'Mark 2:1-5', 'Capernaum became Jesus\' home town. In a crowded house there, four friends dug through a roof to bring a paralysed man to him. Jesus saw their faith. Who could you carry to Jesus today — in prayer, in kindness, or by inviting them to come and see?', 'Lord, show me someone I can bring to you, and give me the courage of those four friends.'],
   'sea-of-galilee': ['Peace in the storm', 'Mark 4:39', 'The disciples were experienced fishermen, yet this storm terrified them. Jesus was asleep in the same boat. He spoke, and the wind and waves obeyed. The storm was real, but so was his presence. Whatever is raging around you, Jesus is in the boat with you.', 'Jesus, speak peace over my storm, and teach me to trust you while I wait.'],
-  jericho: ['Walls that fall', 'Joshua 6:20', 'Jericho\'s walls looked impossible. God\'s plan — marching, waiting, shouting — looked foolish. But obedience, not strength, brought them down. Centuries later, in the same town, Jesus called Zacchaeus down from a tree and the walls around a lonely heart fell too.', 'Father, I bring you the walls I cannot move. Help me to obey you and watch you work.'],
+  jericho: ['Walls that fall', 'Joshua 6:20', 'Jericho\'s walls looked impossible. God\'s plan — marching, waiting, shouting — looked foolish. But it was faith in God\'s word, not their strength, that brought them down (Hebrews 11:30). Centuries later, in the same town, Jesus called Zacchaeus down from a tree and the walls around a lonely heart fell too.', 'Father, I bring you the walls I cannot move. Thank you that the battle is yours; I trust your word and watch you work.'],
   'mount-sinai': ['God speaks', 'Exodus 20:2', 'Before God gave a single commandment at Sinai, he reminded Israel who he was: the God who brought them out of slavery. His commands came after his rescue, not before it. We do not obey in order to be loved; we obey because we already are.', 'Lord, thank you for rescuing me. Help me to live as someone who is free and loved.'],
   'valley-of-elah': ['The battle belongs to the Lord', '1 Samuel 17:47', 'An army froze in fear while a shepherd boy remembered what God had already done — the lion, the bear. David\'s courage came from memory. Remembering God\'s past faithfulness is how we face today\'s giants.', 'God, remind me of every time you have helped me, so I can face what is in front of me with courage.'],
   gethsemane: ['Not my will, but yours', 'Luke 22:42', 'In the olive grove Jesus was honest about his anguish and asked if there was another way. Then he surrendered: "Not my will, but yours." Prayer is not pretending to be strong; it is bringing our real feelings to the Father and trusting him with the outcome.', 'Father, here is what I really feel. I trust you with what happens next.'],
@@ -2141,6 +2142,7 @@ async function viewChronology() {
    STUDY TOOLS: commentaries, topical Bible, Bible dictionary, prophecy & fulfilment, Gospel harmony.
    ====================================================================================== */
 const USFM = ['GEN','EXO','LEV','NUM','DEU','JOS','JDG','RUT','1SA','2SA','1KI','2KI','1CH','2CH','EZR','NEH','EST','JOB','PSA','PRO','ECC','SNG','ISA','JER','LAM','EZK','DAN','HOS','JOL','AMO','OBA','JON','MIC','NAM','HAB','ZEP','HAG','ZEC','MAL','MAT','MRK','LUK','JHN','ACT','ROM','1CO','2CO','GAL','EPH','PHP','COL','1TH','2TH','1TI','2TI','TIT','PHM','HEB','JAS','1PE','2PE','1JN','2JN','3JN','JUD','REV'];
+const COMMS_NOTE = 'Classic commentaries from historic writers with a range of views. Read them alongside the Grace lens.';
 const COMMS = [['matthew-henry', 'Matthew Henry (1706)'], ['jamieson-fausset-brown', 'Jamieson, Fausset & Brown (1871)'], ['adam-clarke', 'Adam Clarke (1832)'], ['john-gill', 'John Gill (1763)'], ['keil-delitzsch', 'Keil & Delitzsch (OT, 1891)'], ['tyndale', 'Tyndale Open Study Notes']];
 const curComm = () => { const c = localStorage.getItem('jom:comm'); return COMMS.some(x => x[0] === c) ? c : 'matthew-henry'; };
 const flat = x => typeof x === 'string' ? x : Array.isArray(x) ? x.map(flat).join(' ') : x && typeof x === 'object' ? (x.text != null ? flat(x.text) : x.content != null ? flat(x.content) : x.lineBreak ? '\n' : '') : '';
@@ -3106,6 +3108,79 @@ async function viewGraceMinute() {
     const u = new SpeechSynthesisUtterance(`${vt} ${ref}. ${it.n[1]}. ${it.n[2]} Reflect: ${GRACE_REFLECT[it.i]} Let's pray. ${GRACE_PRAYERS[it.i]}`); const vv = ttsVoice(); if (vv) u.voice = vv; u.rate = +(localStorage.getItem('jom:rate') || 1);
     u.onend = () => { const b2 = $('#gmplay'); if (b2) b2.textContent = '▶ Listen again'; }; speechSynthesis.speak(u); $('#gmplay').textContent = '❚❚ Stop'; };
 }
+
+/* ---------- the gospel of grace, who I am in Christ, healing scriptures ---------- */
+const GOSPEL = window.JOM_GOSPEL || { truths: [], identity: [], healing: [] };
+const vchips = refs => `<div class="chips">${refs.map(r => `<button class="chip" data-verse="${esc(r)}">${esc(r)}</button>`).join('')}</div>`;
+function graceHomeBand() { const it = typeof graceMinuteItem === 'function' ? graceMinuteItem() : null; const idn = GOSPEL.identity.length ? GOSPEL.identity[dayIndex() % GOSPEL.identity.length] : null;
+  return `<section class="band graceband"><div class="wrap"><div class="sh"><div><p class="kicker">It is finished</p><h2>You are loved, forgiven and made new</h2><p>This is a grace-based Bible app. Everything here is read in the light of the finished work of Jesus and the love of the Father.</p></div><button class="btn" data-go="gospel">Start here: the gospel of grace</button></div>
+    <div class="gcards">${it ? `<button class="gcard" data-go="grace-minute"><span class="kicker">Today's Grace minute</span><b>${esc(it.n[1])}</b><span>A verse, the finished work, a reflection and a prayer.</span></button>` : ''}
+      ${idn ? `<button class="gcard" data-go="identity"><span class="kicker">Who I am in Christ</span><b>${esc(idn[0])}</b><span>${esc(idn[1])}</span></button>` : ''}
+      <button class="gcard" data-go="healing"><span class="kicker">Healing scriptures</span><b>By his stripes you were healed</b><span>${GOSPEL.healing.length} promises to read, speak and listen to.</span></button>
+      <button class="gcard" data-go="grace"><span class="kicker">Grace lens</span><b>Read every chapter through the cross</b><span>Covenant context and notes on often-misread passages.</span></button>
+      <button class="gcard" data-go="teachings"><span class="kicker">Grace teachers</span><b>Andrew Wommack · Dan Mohler · Richard Olivier</b><span>Teaching on the finished work and the love of God.</span></button></div></div></section>`; }
+function viewGospel() {
+  setNav('gospel'); document.title = 'The gospel of grace — Just One More Lord';
+  main.innerHTML = `<section class="band"><div class="wrap quizwrap"><p class="kicker">Start here</p><h1>The gospel of <span class="neon-txt">grace</span></h1>
+    <p class="lead">The good news is not what you must do for God. It is what God has already done for you through Jesus. Here are the foundations this app is built on.</p>
+    <nav class="toc">${GOSPEL.truths.map((t, i) => `<a href="#gospel" data-jump="gt${i}">${i + 1}. ${esc(t[0])}</a>`).join('')}</nav>
+    ${GOSPEL.truths.map((t, i) => `<article class="truth" id="gt${i}"><h2><span>${i + 1}</span>${esc(t[0])}</h2><p>${esc(t[1])}</p>${vchips(t[2])}</article>`).join('')}
+    <div class="panel prayerbox"><h2>A prayer to receive Jesus and the Holy Spirit</h2><p><i>${esc(GOSPEL.salvationPrayer)}</i></p><p class="small muted">If you prayed this, you are born again and a new creation. Tell someone, find a grace-teaching church, and start reading the Gospel of John.</p>
+      <div class="linkrow"><button class="btn" id="gsaved">I prayed this prayer</button><button class="btn ghost" data-go="churches">Find a church</button><button class="btn ghost" data-go="read-Jhn.1">Read John</button></div></div>
+    <div class="panel"><h2>Go deeper</h2><div class="linkrow"><button class="btn" data-go="notes">📝 Teaching notes: grace, faith, healing and more</button></div><p class="small muted">Free teaching from the teachers this app follows:</p>
+      <div class="rlist">${[['Andrew Wommack · Spirit, Soul and Body', 'https://www.youtube.com/channel/UC8H3lzJU5Qm-s3WVroB87kw/search?query=spirit%20soul%20and%20body'], ['Andrew Wommack · The True Nature of God', 'https://www.youtube.com/channel/UC8H3lzJU5Qm-s3WVroB87kw/search?query=true%20nature%20of%20god'], ['Andrew Wommack · You\'ve Already Got It', 'https://www.youtube.com/channel/UC8H3lzJU5Qm-s3WVroB87kw/search?query=already%20got%20it'], ['Andrew Wommack · God Wants You Well', 'https://www.youtube.com/channel/UC8H3lzJU5Qm-s3WVroB87kw/search?query=god%20wants%20you%20well'], ['Dan Mohler · identity and the love of God', 'https://www.youtube.com/results?search_query=Dan+Mohler+identity+love+of+God'], ['Richard Olivier · Harvest Church', 'https://www.youtube.com/@harvestchurchza/videos']].map(([t, u]) => `<a class="ritem" href="${u}" target="_blank" rel="noopener"><div><b>${esc(t)}</b><span>YouTube</span></div><span class="tag">Watch</span></a>`).join('')}</div></div>
+    <p class="small muted">Written for this app in the spirit of the finished-work grace teaching of Andrew Wommack, Dan Mohler and Richard Olivier; it is not their own wording. Test everything with Scripture (Acts 17:11).</p></div></section>`;
+  $$('[data-jump]').forEach(a => a.onclick = e => { e.preventDefault(); $('#' + a.dataset.jump).scrollIntoView({ behavior: 'smooth', block: 'start' }); });
+  $('#gsaved').onclick = () => { track('saved', today()); toast('Welcome to the family of God! Heaven is rejoicing (Luke 15:7).'); $('#gsaved').textContent = '🎉 Welcome to the family'; $('#gsaved').disabled = true; };
+}
+function speakList(items, btn) { if (!('speechSynthesis' in window)) { toast('Listening is not supported on this device'); return; } if (speechSynthesis.speaking) { speechSynthesis.cancel(); btn.textContent = '▶ Speak them over me'; return; }
+  const u = new SpeechSynthesisUtterance(items.join('. ')); const vv = ttsVoice(); if (vv) u.voice = vv; u.rate = +(localStorage.getItem('jom:rate') || 1); u.onend = () => { btn.textContent = '▶ Speak them over me'; }; speechSynthesis.speak(u); btn.textContent = '❚❚ Stop'; }
+function viewIdentity() {
+  setNav('gospel'); document.title = 'Who I am in Christ — Just One More Lord'; const t = GOSPEL.identity[dayIndex() % GOSPEL.identity.length];
+  main.innerHTML = `<section class="band"><div class="wrap quizwrap"><p class="kicker">Renew your mind (Romans 12:2)</p><h1>Who I am in <span class="neon-txt">Christ</span></h1>
+    <p class="lead">This is what God says is already true of you in your spirit. Read them out loud and let them shape how you see yourself.</p>
+    <div class="votdcard"><p class="kicker">Today</p><div class="vtext">${esc(t[0])}</div><button class="chip" data-verse="${esc(t[1])}">${esc(t[1])}</button></div>
+    <div class="linkrow"><button class="btn" id="idsp">▶ Speak them over me</button><button class="btn ghost" id="idsh">${ICON.share} Share the list</button></div>
+    <ol class="idlist">${GOSPEL.identity.map(([s, r]) => `<li><span>${esc(s)}</span><button class="chip" data-verse="${esc(r)}">${esc(r)}</button></li>`).join('')}</ol></div></section>`;
+  $('#idsp').onclick = e => speakList(GOSPEL.identity.map(([s, r]) => `${s}. ${r}`), e.target);
+  $('#idsh').onclick = () => shareIt({ title: 'Who I am in Christ', text: GOSPEL.identity.map(([s, r]) => `• ${s} (${r})`).join('\n'), hash: 'identity' });
+}
+function viewHealing() {
+  setNav('gospel'); document.title = 'Healing scriptures — Just One More Lord';
+  main.innerHTML = `<section class="band"><div class="wrap quizwrap"><p class="kicker">By his stripes you were healed</p><h1>Healing <span class="neon-txt">scriptures</span></h1>
+    <p class="lead">Healing is part of what Jesus purchased at the cross. Faith comes by hearing the Word (Romans 10:17), so read these, speak them and listen to them often. Tap a reference to read the verse.</p>
+    <div class="linkrow"><button class="btn" id="hlsp">▶ Speak them over me</button><button class="btn ghost" data-go="teachings">Teaching on healing</button></div>
+    <div class="rlist">${GOSPEL.healing.map(([r, n]) => `<div class="ritem"><div><b><button class="inl" data-verse="${esc(r)}">${esc(r)}</button></b><span>${esc(n)}</span></div></div>`).join('')}</div>
+    <p class="small muted" style="margin-top:14px">Believing God for healing goes hand in hand with wisdom. Keep seeing your doctor and taking prescribed medicine; God also works through medical care.</p></div></section>`;
+  $('#hlsp').onclick = async e => { const b = e.target; let lines = GOSPEL.healing.map(([r, n]) => `${r}. ${n}`); try { const vs = []; for (const [r] of GOSPEL.healing) { const v = await bibleText(r); vs.push(`${v.verses.map(x => x.t).join(' ')} ${r}.`); } lines = vs; } catch {} speakList(lines, b); };
+}
+
+/* ---------- teaching notes (summaries in our own words, with links to the full free teaching) ---------- */
+const TNOTES = window.JOM_TEACHNOTES || [];
+const TNAME = { wommack: 'Andrew Wommack', mohler: 'Dan Mohler', olivier: 'Richard Olivier' };
+function tnoteWatch(n) { return n.t === 'wommack' ? `https://www.youtube.com/channel/UC8H3lzJU5Qm-s3WVroB87kw/search?query=${encodeURIComponent(n.q)}` : n.t === 'olivier' ? `https://www.youtube.com/@harvestchurchza/search?query=${encodeURIComponent(n.q)}` : `https://www.youtube.com/results?search_query=${encodeURIComponent(TNAME[n.t] + ' ' + n.q)}`; }
+function viewNotes(id) {
+  setNav('teachings'); const n = TNOTES.find(x => x.id === id);
+  if (!n) { document.title = 'Teaching notes — Just One More Lord'; const topics = [...new Set(TNOTES.map(x => x.topic))];
+    main.innerHTML = `<section class="band"><div class="wrap"><div class="crumbs"><button data-go="teachings">Grace teachings</button> › Teaching notes</div><h1>📝 Teaching notes</h1>
+      <p class="lead">Study notes on the main teachings of Andrew Wommack and Dan Mohler: grace, faith, healing, identity, authority, prayer and the love of God. Read the key points and scriptures, then watch the full teaching free.</p>
+      <div class="chips" id="tnf"><button class="chip on" data-tp="">All</button>${topics.map(t => `<button class="chip" data-tp="${esc(t)}">${esc(t)}</button>`).join('')}</div>
+      <div class="tngrid">${TNOTES.map(x => `<button class="tncard" data-go="notes-${x.id}" data-tp="${esc(x.topic)}"><span class="kicker">${esc(x.topic)} · ${esc(TNAME[x.t])}</span><b>${esc(x.title)}</b><span>${esc(x.sum.slice(0, 140))}…</span></button>`).join('')}</div>
+      <p class="small muted" style="margin-top:16px">These are study summaries written for this app in our own words. They are not the teachers' own notes. For the complete teaching and official study guides, see <a href="https://www.awmi.net/" target="_blank" rel="noopener">awmi.net</a> (Andrew Wommack Ministries, free teaching) and the teachers' YouTube channels.</p></div></section>`;
+    $('#tnf').onclick = e => { const b = e.target.closest('[data-tp]'); if (!b) return; $$('#tnf .chip').forEach(x => x.classList.toggle('on', x === b)); $$('.tncard').forEach(c => c.hidden = b.dataset.tp && c.dataset.tp !== b.dataset.tp); };
+    return; }
+  document.title = `${n.title} — teaching notes — Just One More Lord`; const i = TNOTES.indexOf(n), nx = TNOTES[(i + 1) % TNOTES.length];
+  main.innerHTML = `<section class="band"><div class="wrap quizwrap"><div class="crumbs"><button data-go="teachings">Grace teachings</button> › <button data-go="notes">Teaching notes</button> › ${esc(n.title)}</div>
+    <p class="kicker">${esc(n.topic)} · ${esc(TNAME[n.t])}</p><h1>${esc(n.title)}</h1><p class="lead">${esc(n.sum)}</p>
+    <div class="panel"><h2>Key points</h2><ol class="tnpts">${n.pts.map(p => `<li>${esc(p)}</li>`).join('')}</ol></div>
+    <div class="panel"><h2>Scriptures to study</h2><p class="small muted">Tap to read each one.</p>${vchips(n.vs)}</div>
+    <div class="panel"><h2>Reflect</h2><ol class="small gq"><li>Which point stood out to you most, and why?</li><li>What have you believed about God that this changes?</li><li>Which scripture will you meditate on this week?</li></ol>
+      <label class="notebox"><span class="kicker">My notes</span><textarea rows="3" id="tnmy" placeholder="Write what God is showing you…">${esc(MY.notes['tn:' + n.id]?.t || '')}</textarea></label></div>
+    <div class="linkrow"><a class="btn" href="${tnoteWatch(n)}" target="_blank" rel="noopener">▶ Watch the full teaching</a>${n.t === 'wommack' ? '<a class="btn ghost" href="https://www.awmi.net/" target="_blank" rel="noopener">awmi.net</a>' : ''}<button class="btn ghost" id="tnsh">${ICON.share} Share</button><button class="btn ghost sm" data-go="notes-${nx.id}">Next: ${esc(nx.title)} →</button></div>
+    <p class="small muted" style="margin-top:14px">Study notes written for this app in our own words, summarising the main points of this teaching. They are not ${esc(TNAME[n.t])}'s own notes or wording. Test everything with Scripture (Acts 17:11).</p></div></section>`;
+  $('#tnmy').oninput = e => { const v = e.target.value.trim(); if (v) MY.notes['tn:' + n.id] = { t: v, d: Date.now() }; else delete MY.notes['tn:' + n.id]; saveMy(); };
+  $('#tnsh').onclick = () => shareIt({ title: n.title, text: `${n.title} (${TNAME[n.t]})\n\n${n.pts.slice(0, 4).map(p => '• ' + p).join('\n')}`, hash: 'notes-' + n.id });
+}
 /* ---------------- router ---------------- */
 async function render() {
   const h = decodeURIComponent(location.hash.slice(1) || 'home');
@@ -3162,6 +3237,10 @@ async function render() {
     else if (h === 'chronology') await viewChronology();
     else if (h === 'profile') viewProfile();
     else if (h === 'settings') viewSettings();
+    else if (h === 'gospel') viewGospel();
+    else if (h === 'notes' || h.startsWith('notes-')) viewNotes(h.slice(6));
+    else if (h === 'identity') viewIdentity();
+    else if (h === 'healing') viewHealing();
     else if (h === 'wrapped' || h.startsWith('wrapped-')) viewWrapped(h.slice(8));
     else if (h === 'journal' || h.startsWith('journal-')) await viewJournal(h.slice(8));
     else if (h === 'grace-minute') await viewGraceMinute();

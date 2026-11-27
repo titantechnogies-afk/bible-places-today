@@ -899,3 +899,13 @@ mark{background:rgba(255,199,44,.35);color:inherit;border-radius:3px;padding:0 2
 .jst{width:38px;height:38px;border-radius:10px;border:1px solid var(--line);background:rgba(255,255,255,.04);font-size:20px;cursor:pointer}.jst.on{border-color:var(--gold2);background:rgba(0,209,255,.15)}
 .jwrap{max-width:520px}#jc{width:100%;height:auto;border-radius:14px;touch-action:none;box-shadow:0 10px 40px rgba(0,0,0,.5);display:block}
 .jgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin-top:16px}.jthumb{margin:0}.jthumb img{width:100%;border-radius:10px;display:block}.jthumb figcaption{font-size:calc(13px * var(--fs,1));color:var(--mute);margin-top:4px}
+/* grace foundations */
+.graceband{background:radial-gradient(120% 140% at 0% 0%,rgba(255,199,44,.12),transparent 60%),radial-gradient(120% 140% at 100% 100%,rgba(0,209,255,.1),transparent 60%),var(--bg2)}
+.gcards,.tngrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin-top:14px}
+.gcard,.tncard{display:flex;flex-direction:column;gap:6px;text-align:left;padding:16px;border-radius:16px;border:1px solid rgba(255,199,44,.35);background:rgba(5,20,28,.6);color:inherit;font:inherit;cursor:pointer;transition:transform .15s,box-shadow .15s}
+.gcard:hover,.tncard:hover{transform:translateY(-2px);box-shadow:0 0 22px rgba(255,199,44,.2)}.gcard b,.tncard b{font-family:"Sora",sans-serif;font-size:calc(17px * var(--fs,1));color:#fff}.gcard span:last-child,.tncard span:last-child{color:var(--mute);font-size:calc(14px * var(--fs,1))}
+.toc{display:flex;flex-direction:column;gap:4px;margin:16px 0;padding:14px 16px;border-radius:14px;background:rgba(5,20,28,.5);border:1px solid var(--line)}.toc a{color:var(--gold2);text-decoration:none}
+.truth{margin:22px 0;padding-bottom:16px;border-bottom:1px solid var(--line)}.truth h2{display:flex;gap:12px;align-items:baseline}.truth h2 span{flex:0 0 auto;display:inline-grid;place-items:center;width:34px;height:34px;border-radius:50%;background:#ffc72c;color:#05141c;font-size:16px}
+.prayerbox{border-color:rgba(255,199,44,.5)!important}
+.idlist{padding-left:22px}.idlist li{margin:10px 0}.idlist li span{display:block;font-weight:600;margin-bottom:4px}
+.tnpts{padding-left:22px}.tnpts li{margin:10px 0;line-height:1.6}

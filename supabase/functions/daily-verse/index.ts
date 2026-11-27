@@ -8,7 +8,7 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 const SITE = "https://titantechnogies-afk.github.io/bible-places-today/";
 const VERSES: [string, string][] = [
   ["John 3:16", "For God so loved the world, that he gave his one and only Son…"], ["Psalm 23:1", "The Lord is my shepherd; I shall lack nothing."],
-  ["Philippians 4:13", "I can do all things through Christ, who strengthens me."], ["Proverbs 3:5", "Trust in the Lord with all your heart…"],
+  ["Philippians 4:13", "I can do all things through Christ, who strengthens me."], ["Ephesians 1:3", "Blessed be God, who has blessed us with every spiritual blessing in Christ."],
   ["Romans 8:28", "All things work together for good for those who love God…"], ["Joshua 1:9", "Be strong and courageous… the Lord your God is with you."],
   ["Isaiah 40:31", "Those who wait for the Lord will renew their strength…"], ["Matthew 11:28", "Come to me, all you who labour and are heavily burdened, and I will give you rest."],
   ["Lamentations 3:22-23", "His compassion doesn't fail. They are new every morning."], ["Psalm 46:1", "God is our refuge and strength, a very present help in trouble."],
@@ -18,8 +18,8 @@ const VERSES: [string, string][] = [
   ["Jeremiah 29:11", "Plans for peace, and not for evil, to give you hope and a future."], ["Psalm 119:105", "Your word is a lamp to my feet, and a light for my path."],
   ["John 14:6", "I am the way, the truth, and the life."], ["Isaiah 41:10", "Don't you be afraid, for I am with you."],
   ["Romans 5:8", "While we were yet sinners, Christ died for us."], ["Zephaniah 3:17", "He will rejoice over you with singing."],
-  ["John 10:10", "I came that they may have life, and may have it abundantly."], ["Psalm 37:4", "Delight yourself in the Lord, and he will give you the desires of your heart."],
-  ["Colossians 3:23", "Whatever you do, work heartily, as for the Lord."], ["1 Peter 5:7", "Casting all your worries on him, because he cares for you."],
+  ["John 10:10", "I came that they may have life, and may have it abundantly."], ["1 Peter 2:24", "By his stripes you were healed."],
+  ["2 Corinthians 5:21", "He made him who knew no sin to be sin on our behalf, so that in him we might become the righteousness of God."], ["1 Peter 5:7", "Casting all your worries on him, because he cares for you."],
   ["Matthew 6:33", "Seek first God's Kingdom and his righteousness."], ["John 19:30", "It is finished."], ["Psalm 34:8", "Oh taste and see that the Lord is good."],
   ["2 Corinthians 12:9", "My grace is sufficient for you, for my power is made perfect in weakness."], ["Revelation 21:4", "He will wipe away every tear from their eyes."]
 ];
