@@ -147,12 +147,25 @@ photos: [
   { f: 'sunday-galatians', s: 'sunday', c: 'Those who belong to Christ Jesus have crucified the flesh (Galatians 5:24).', nocap: true },
   { f: 'sunday-preach-2', s: 'sunday', c: 'On earth as it is in heaven.' },
   { f: 'sunday-preach-3', s: 'sunday', c: 'Sharing the good news on a Sunday.' },
-  { f: 'mens-study', s: 'together', c: 'Men gathered around the Word.' },
-  { f: 'mens-group', s: 'together', c: 'Men\'s group: real men, real faith, real life.' },
+  { f: 'mens-study', s: 'men', c: 'Men gathered around the Word.' },
+  { f: 'mens-group', s: 'men', c: 'Men\'s group: real men, real faith, real life.' },
   { f: 'friends', s: 'together', c: 'Brothers in Christ.' },
   { f: 'coffee', s: 'together', c: 'Coffee, fellowship and the love of God.' },
   { f: 'joy', s: 'together', c: 'The joy of the Lord is our strength (Nehemiah 8:10).' },
-  { f: 'outreach', s: 'out', c: 'Jesus = Love. Taking the good news to the streets.' }
+  { f: 'outreach', s: 'out', c: 'Jesus = Love. Taking the good news to the streets.' },
+  { f: 'baptism-7', s: 'raised', c: 'Sundays at Harvest just hit different.' },
+  { f: 'baptism-hug', s: 'raised', c: 'A mother\'s embrace straight out of the water.' },
+  { f: 'preach-plaid', s: 'sunday', c: 'Preaching the finished work at Harvest Church.' },
+  { f: 'foundations', s: 'sunday', c: 'Foundations of your faith: building on the Word.' },
+  { f: 'kids-pray', s: 'sunday', c: 'The next generation praying on stage.' },
+  { f: 'study-table', s: 'men', c: 'Men\'s Bible study: open Bibles and honest hearts.' },
+  { f: 'talk-night', s: 'fellow', c: 'Real conversations after the study.' },
+  { f: 'men-night', s: 'fellow', c: 'Brothers sharpening one another (Proverbs 27:17).' },
+  { f: 'fellowship-night', s: 'fellow', c: 'Fellowship under the lights.' },
+  { f: 'braai-night', s: 'fellow', c: 'Braai, bread and the love of God.' },
+  { f: 'newborn-friends', s: 'family', c: 'Celebrating new life together.' },
+  { f: 'newborn', s: 'family', c: 'Children are a gift from the Lord (Psalm 127:3).' },
+  { f: 'arsenal-smile', s: 'family', c: 'Joy that comes from being loved.' }
 ],
-photoSections: { raised: ['Raised to life', 'Baptisms: the old life buried, the new life begun (Romans 6:4).'], together: ['Life together', 'Men\'s groups, friendship and doing life as a family.'], sunday: ['Sundays', 'Worship and the Word at Harvest Church.'], out: ['Taking it to the streets', 'The love of God for everyone, everywhere.'] }
+photoSections: { raised: ['Raised to life', 'Baptisms: the old life buried, the new life begun (Romans 6:4).'], sunday: ['Sundays', 'Worship and the Word at Harvest Church.'], men: ['Men\'s group & Bible study', 'Real men, open Bibles, honest hearts.'], fellow: ['Fellowship', 'Braais, coffee and conversations that go deep.'], together: ['Life together', 'Friendship and doing life as a family.'], family: ['Family & new life', 'Babies, kids and the joy of God\'s family.'], out: ['Taking it to the streets', 'The love of God for everyone, everywhere.'] }
 };
