@@ -375,6 +375,8 @@ html[data-theme=light].embed body{background:#f5f9fb}
 :root[data-theme=light] .phtxt.hot{fill:#004c99}
 :root[data-theme=light] .phstroke{stroke:#004c99}
 :root[data-theme=light] .phhl{stroke:#990035}
+:root[data-theme=light] .helpfab{background:linear-gradient(135deg,rgba(241,247,250,0.92),rgba(222,238,243,0.92));color:#1a1a1a;box-shadow:0 0 22px rgba(255,199,44,0.135),0 8px 24px rgba(0,40,60,0.113)}
+:root[data-theme=light] .helpfab:hover{box-shadow:0 0 30px rgba(255,199,44,0.225)}
 /* hand fixes */
 :root[data-theme=light] .tiles-night{filter:saturate(.85)}
 :root[data-theme=light] .gname{color:#8a5d00}
@@ -389,3 +391,4 @@ html[data-theme=light].embed body{background:#f5f9fb}
 :root[data-theme=light] .members b{color:#0a8a4f}
 :root[data-theme=light] .sentok h3{color:#0a8a4f}
 :root[data-theme=light] .phbody{fill:#1a2a33;stroke:#3b5866}:root[data-theme=light] .phnotch{fill:#1a2a33}:root[data-theme=light] .phdim{fill:rgba(0,0,0,.35)}
+:root[data-theme=light] .helpfab{background:linear-gradient(135deg,#ffffff,#eef8fb);color:#0b2530}

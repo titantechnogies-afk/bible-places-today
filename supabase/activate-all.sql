@@ -1,0 +1,417 @@
+-- =====================================================================================
+-- JUST ONE MORE LORD — ACTIVATE EVERYTHING IN ONE GO
+-- Switches on: profile pictures, friends, testimonies, church finder, prayer partners,
+-- the member count, and the private "Need help or prayer?" messages with your admin inbox.
+--
+-- HOW TO RUN IT:
+--   1. Sign up in the app with your own email first (My profile).
+--   2. Scroll to the VERY BOTTOM of this file and change YOUR-EMAIL-HERE to that email.
+--   3. Supabase → your project → SQL Editor → New query → paste ALL of this → Run.
+-- Safe to run again at any time: it never deletes your users, messages or data.
+-- =====================================================================================
+
+
+-- ===================== PROFILES, GROUPS, PHONE NOTIFICATIONS (setup.sql) =====================
+-- Just One More Lord — database setup for profiles and sync.
+-- Supabase → your project → SQL Editor → New query → paste all of this → Run. Safe to run again.
+create table if not exists public.profiles (
+  id uuid primary key references auth.users(id) on delete cascade,
+  name text,
+  church text,
+  country text,
+  bio text,
+  is_public boolean not null default false,
+  data jsonb not null default '{}'::jsonb,
+  updated_at timestamptz not null default now()
+);
+alter table public.profiles enable row level security;
+grant select, insert, update, delete on public.profiles to authenticated;
+drop policy if exists "read own profile" on public.profiles;
+drop policy if exists "insert own profile" on public.profiles;
+drop policy if exists "update own profile" on public.profiles;
+drop policy if exists "delete own profile" on public.profiles;
+create policy "read own profile"   on public.profiles for select to authenticated using ((select auth.uid()) = id);
+create policy "insert own profile" on public.profiles for insert to authenticated with check ((select auth.uid()) = id);
+create policy "update own profile" on public.profiles for update to authenticated using ((select auth.uid()) = id);
+create policy "delete own profile" on public.profiles for delete to authenticated using ((select auth.uid()) = id);
+-- (An earlier version created a public_profiles view; it is not needed yet.)
+drop view if exists public.public_profiles;
+-- Supabase's "enable RLS automatically" helper should not be callable from the website.
+do $$ begin
+  if exists (select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'public' and p.proname = 'rls_auto_enable') then
+    revoke execute on function public.rls_auto_enable() from public, anon, authenticated;
+  end if;
+end $$;
+
+-- ===================== CHURCH GROUPS (run this part too) =====================
+create table if not exists public.groups (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  code text not null unique,
+  owner uuid not null references auth.users(id) on delete cascade,
+  plan_id text,
+  created_at timestamptz not null default now()
+);
+create table if not exists public.group_members (
+  group_id uuid not null references public.groups(id) on delete cascade,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  name text,
+  role text not null default 'member',
+  stats jsonb not null default '{}'::jsonb,
+  updated_at timestamptz not null default now(),
+  primary key (group_id, user_id)
+);
+create table if not exists public.group_prayers (
+  id uuid primary key default gen_random_uuid(),
+  group_id uuid not null references public.groups(id) on delete cascade,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  name text,
+  text text not null check (char_length(text) <= 600),
+  created_at timestamptz not null default now()
+);
+alter table public.groups enable row level security;
+alter table public.group_members enable row level security;
+alter table public.group_prayers enable row level security;
+grant select, update on public.groups to authenticated;
+grant select, update, delete on public.group_members to authenticated;
+grant select, insert, delete on public.group_prayers to authenticated;
+create or replace function public.is_member(g uuid) returns boolean language sql stable security definer set search_path = public as
+  $$ select exists (select 1 from public.group_members where group_id = g and user_id = (select auth.uid())) $$;
+revoke execute on function public.is_member(uuid) from public, anon;
+grant execute on function public.is_member(uuid) to authenticated;
+drop policy if exists "members read group" on public.groups;
+drop policy if exists "owner updates group" on public.groups;
+drop policy if exists "members read members" on public.group_members;
+drop policy if exists "update own membership" on public.group_members;
+drop policy if exists "leave or owner removes" on public.group_members;
+drop policy if exists "members read prayers" on public.group_prayers;
+drop policy if exists "members post prayers" on public.group_prayers;
+drop policy if exists "delete own or owner" on public.group_prayers;
+create policy "members read group" on public.groups for select to authenticated using (public.is_member(id));
+create policy "owner updates group" on public.groups for update to authenticated using (owner = (select auth.uid()));
+create policy "members read members" on public.group_members for select to authenticated using (public.is_member(group_id));
+create policy "update own membership" on public.group_members for update to authenticated using (user_id = (select auth.uid()));
+create policy "leave or owner removes" on public.group_members for delete to authenticated using (user_id = (select auth.uid()) or exists (select 1 from public.groups g where g.id = group_id and g.owner = (select auth.uid())));
+create policy "members read prayers" on public.group_prayers for select to authenticated using (public.is_member(group_id));
+create policy "members post prayers" on public.group_prayers for insert to authenticated with check (user_id = (select auth.uid()) and public.is_member(group_id));
+create policy "delete own or owner" on public.group_prayers for delete to authenticated using (user_id = (select auth.uid()) or exists (select 1 from public.groups g where g.id = group_id and g.owner = (select auth.uid())));
+create or replace function public.create_group(p_name text, p_code text, p_member_name text) returns uuid language plpgsql security definer set search_path = public as $$
+declare gid uuid; begin
+  if (select auth.uid()) is null then raise exception 'Sign in first'; end if;
+  insert into public.groups (name, code, owner) values (left(p_name, 60), upper(p_code), (select auth.uid())) returning id into gid;
+  insert into public.group_members (group_id, user_id, name, role) values (gid, (select auth.uid()), left(p_member_name, 40), 'leader');
+  return gid; end $$;
+create or replace function public.join_group(p_code text, p_name text) returns uuid language plpgsql security definer set search_path = public as $$
+declare gid uuid; begin
+  if (select auth.uid()) is null then raise exception 'Sign in first'; end if;
+  select id into gid from public.groups where code = upper(trim(p_code));
+  if gid is null then raise exception 'Group not found'; end if;
+  insert into public.group_members (group_id, user_id, name) values (gid, (select auth.uid()), left(p_name, 40)) on conflict (group_id, user_id) do nothing;
+  return gid; end $$;
+revoke execute on function public.create_group(text, text, text) from public, anon;
+revoke execute on function public.join_group(text, text) from public, anon;
+grant execute on function public.create_group(text, text, text) to authenticated;
+grant execute on function public.join_group(text, text) to authenticated;
+
+-- ===================== PHONE NOTIFICATIONS =====================
+create table if not exists public.push_subscriptions (
+  endpoint text primary key,
+  keys jsonb not null,
+  user_id uuid references auth.users(id) on delete cascade,
+  created_at timestamptz not null default now()
+);
+alter table public.push_subscriptions enable row level security;
+grant insert on public.push_subscriptions to anon, authenticated;
+drop policy if exists "anyone can subscribe" on public.push_subscriptions;
+create policy "anyone can subscribe" on public.push_subscriptions for insert to anon, authenticated with check (user_id is null or user_id = (select auth.uid()));
+
+-- ===== Notification time: each phone chooses its hour (stored in UTC) =====
+alter table public.push_subscriptions add column if not exists send_utc smallint check (send_utc between 0 and 23);
+create or replace function public.set_push_hour(p_endpoint text, p_hour int)
+returns void language sql security definer set search_path = public as $$
+  update public.push_subscriptions set send_utc = p_hour where endpoint = p_endpoint and p_hour between 0 and 23;
+$$;
+revoke all on function public.set_push_hour(text, int) from public;
+grant execute on function public.set_push_hour(text, int) to anon, authenticated;
+-- run the daily-verse job every hour instead of once a day (it only sends to phones whose hour it is)
+select cron.alter_job((select jobid from cron.job where jobname = 'daily-verse'), schedule := '0 * * * *')
+  where exists (select 1 from cron.job where jobname = 'daily-verse');
+
+-- ===== Crash reports (anonymous): anyone can add one, only you can read them in the Table Editor =====
+create table if not exists public.app_errors (
+  id bigint generated always as identity primary key,
+  message text not null check (length(message) <= 500),
+  source text check (length(source) <= 300),
+  page text check (length(page) <= 100),
+  agent text check (length(agent) <= 200),
+  version text check (length(version) <= 40),
+  created_at timestamptz not null default now()
+);
+alter table public.app_errors enable row level security;
+grant insert on public.app_errors to anon, authenticated;
+drop policy if exists "anyone can report" on public.app_errors;
+create policy "anyone can report" on public.app_errors for insert to anon, authenticated with check (true);
+
+
+-- ===================== PROFILE PICTURES, FRIENDS, TESTIMONIES, CHURCHES, PRAYER PARTNERS (community.sql) =====================
+-- Just One More Lord — community features: profile pictures, friends with online status, testimonies,
+-- church finder, prayer partners and live group reading.
+-- Supabase → SQL Editor → New query → paste ALL of this → Run. Safe to run again.
+-- Run setup.sql first (profiles and church groups).
+
+-- ===== Profiles: picture, friend code, online status, prayer focus =====
+alter table public.profiles add column if not exists avatar_url text;
+alter table public.profiles add column if not exists last_seen timestamptz;
+alter table public.profiles add column if not exists show_online boolean not null default true;
+alter table public.profiles add column if not exists friend_code text;
+alter table public.profiles add column if not exists prayer_focus text check (char_length(prayer_focus) <= 300);
+update public.profiles set friend_code = upper(substr(md5(random()::text || id::text), 1, 6)) where friend_code is null;
+alter table public.profiles alter column friend_code set default upper(substr(md5(random()::text), 1, 6));
+create unique index if not exists profiles_friend_code on public.profiles (friend_code);
+
+-- ===== Profile pictures (public bucket; each person can only write their own file) =====
+insert into storage.buckets (id, name, public) values ('avatars', 'avatars', true) on conflict (id) do update set public = true;
+drop policy if exists "avatar insert own" on storage.objects;
+drop policy if exists "avatar update own" on storage.objects;
+drop policy if exists "avatar delete own" on storage.objects;
+create policy "avatar insert own" on storage.objects for insert to authenticated with check (bucket_id = 'avatars' and name = (select auth.uid())::text || '.jpg');
+create policy "avatar update own" on storage.objects for update to authenticated using (bucket_id = 'avatars' and name = (select auth.uid())::text || '.jpg');
+create policy "avatar delete own" on storage.objects for delete to authenticated using (bucket_id = 'avatars' and name = (select auth.uid())::text || '.jpg');
+
+-- ===== Friends =====
+create table if not exists public.friendships (
+  requester uuid not null references auth.users(id) on delete cascade,
+  addressee uuid not null references auth.users(id) on delete cascade,
+  status text not null default 'pending' check (status in ('pending', 'accepted')),
+  created_at timestamptz not null default now(),
+  primary key (requester, addressee),
+  check (requester <> addressee)
+);
+alter table public.friendships enable row level security;
+grant select, delete on public.friendships to authenticated;
+drop policy if exists "see my friendships" on public.friendships;
+drop policy if exists "remove my friendships" on public.friendships;
+create policy "see my friendships" on public.friendships for select to authenticated using ((select auth.uid()) in (requester, addressee));
+create policy "remove my friendships" on public.friendships for delete to authenticated using ((select auth.uid()) in (requester, addressee));
+
+create or replace function public.add_friend(p_code text) returns text
+language plpgsql security definer set search_path = public as $$
+declare me uuid := auth.uid(); other uuid; other_name text;
+begin
+  if me is null then raise exception 'Please sign in first'; end if;
+  select id, coalesce(name, 'Your friend') into other, other_name from profiles where friend_code = upper(trim(p_code));
+  if other is null then raise exception 'No one has that friend code'; end if;
+  if other = me then raise exception 'That is your own code'; end if;
+  if exists (select 1 from friendships where requester = other and addressee = me) then
+    update friendships set status = 'accepted' where requester = other and addressee = me;
+  else
+    insert into friendships (requester, addressee) values (me, other) on conflict do nothing;
+  end if;
+  return other_name;
+end $$;
+
+create or replace function public.respond_friend(p_other uuid, p_accept boolean) returns void
+language plpgsql security definer set search_path = public as $$
+begin
+  if p_accept then update friendships set status = 'accepted' where requester = p_other and addressee = auth.uid();
+  else delete from friendships where requester = p_other and addressee = auth.uid(); end if;
+end $$;
+
+create or replace function public.my_friends() returns table (id uuid, name text, avatar_url text, church text, last_seen timestamptz, status text, incoming boolean, prayer_focus text)
+language sql security definer set search_path = public stable as $$
+  select p.id, coalesce(p.name, 'Friend'), p.avatar_url, p.church,
+         case when p.show_online and f.status = 'accepted' then p.last_seen end,
+         f.status, f.addressee = auth.uid(),
+         case when f.status = 'accepted' then p.prayer_focus end
+  from friendships f join profiles p on p.id = case when f.requester = auth.uid() then f.addressee else f.requester end
+  where auth.uid() in (f.requester, f.addressee);
+$$;
+
+create or replace function public.touch_online() returns void
+language sql security definer set search_path = public as $$
+  update profiles set last_seen = now() where id = auth.uid();
+$$;
+
+create or replace function public.set_my_extras(p_show_online boolean, p_prayer_focus text) returns text
+language sql security definer set search_path = public as $$
+  update profiles set show_online = coalesce(p_show_online, show_online), prayer_focus = left(p_prayer_focus, 300) where id = auth.uid() returning friend_code;
+$$;
+
+-- ===== Testimonies (visible to everyone; hidden automatically after 3 reports) =====
+create table if not exists public.testimonies (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  name text, avatar_url text,
+  kind text not null default 'answered prayer' check (kind in ('answered prayer', 'healing', 'salvation', 'provision', 'other')),
+  text text not null check (char_length(text) between 10 and 1200),
+  reports int not null default 0,
+  created_at timestamptz not null default now()
+);
+create table if not exists public.testimony_reports (testimony uuid references public.testimonies(id) on delete cascade, user_id uuid references auth.users(id) on delete cascade, primary key (testimony, user_id));
+alter table public.testimonies enable row level security;
+alter table public.testimony_reports enable row level security;
+grant select on public.testimonies to anon, authenticated;
+grant insert, delete on public.testimonies to authenticated;
+drop policy if exists "read testimonies" on public.testimonies;
+drop policy if exists "add my testimony" on public.testimonies;
+drop policy if exists "delete my testimony" on public.testimonies;
+create policy "read testimonies" on public.testimonies for select to anon, authenticated using (reports < 3 or user_id = (select auth.uid()));
+create policy "add my testimony" on public.testimonies for insert to authenticated with check (user_id = (select auth.uid()) and reports = 0);
+create policy "delete my testimony" on public.testimonies for delete to authenticated using (user_id = (select auth.uid()));
+create or replace function public.report_testimony(p_id uuid) returns void
+language plpgsql security definer set search_path = public as $$
+begin
+  if auth.uid() is null then raise exception 'Please sign in first'; end if;
+  insert into testimony_reports values (p_id, auth.uid()) on conflict do nothing;
+  if found then update testimonies set reports = reports + 1 where id = p_id; end if;
+end $$;
+
+-- ===== Church finder (anyone signed in can add; hidden after 3 reports) =====
+create table if not exists public.churches (
+  id uuid primary key default gen_random_uuid(),
+  name text not null check (char_length(name) <= 100),
+  city text check (char_length(city) <= 80),
+  country text check (char_length(country) <= 60),
+  lat double precision not null check (lat between -90 and 90),
+  lng double precision not null check (lng between -180 and 180),
+  website text check (char_length(website) <= 200),
+  about text check (char_length(about) <= 400),
+  added_by uuid references auth.users(id) on delete set null,
+  reports int not null default 0,
+  created_at timestamptz not null default now()
+);
+create table if not exists public.church_reports (church uuid references public.churches(id) on delete cascade, user_id uuid references auth.users(id) on delete cascade, primary key (church, user_id));
+alter table public.churches enable row level security;
+alter table public.church_reports enable row level security;
+grant select on public.churches to anon, authenticated;
+grant insert, delete on public.churches to authenticated;
+drop policy if exists "read churches" on public.churches;
+drop policy if exists "add church" on public.churches;
+drop policy if exists "delete my church" on public.churches;
+create policy "read churches" on public.churches for select to anon, authenticated using (reports < 3);
+create policy "add church" on public.churches for insert to authenticated with check (added_by = (select auth.uid()) and reports = 0);
+create policy "delete my church" on public.churches for delete to authenticated using (added_by = (select auth.uid()));
+create or replace function public.report_church(p_id uuid) returns void
+language plpgsql security definer set search_path = public as $$
+begin
+  if auth.uid() is null then raise exception 'Please sign in first'; end if;
+  insert into church_reports values (p_id, auth.uid()) on conflict do nothing;
+  if found then update churches set reports = reports + 1 where id = p_id; end if;
+end $$;
+insert into public.churches (name, city, country, lat, lng, website, about)
+select 'Harvest Church', 'uMhlanga, Durban', 'South Africa', -29.7260, 31.0840, 'https://harvestchurch.co.za/', 'Head pastors Richard and Tanya Olivier. Preaching the finished works of Jesus and the love of God.'
+where not exists (select 1 from public.churches where name = 'Harvest Church');
+
+-- ===== Prayer partners (paired with someone new each week) =====
+create table if not exists public.prayer_pool (user_id uuid primary key references auth.users(id) on delete cascade, joined_at timestamptz not null default now());
+create table if not exists public.prayer_partners (a uuid references auth.users(id) on delete cascade, b uuid references auth.users(id) on delete cascade, week date not null, primary key (a, week));
+alter table public.prayer_pool enable row level security;
+alter table public.prayer_partners enable row level security;
+create or replace function public.prayer_partner(p_join boolean default false) returns table (id uuid, name text, avatar_url text, prayer_focus text, waiting boolean)
+language plpgsql security definer set search_path = public as $$
+declare me uuid := auth.uid(); wk date := date_trunc('week', now())::date; other uuid;
+begin
+  if me is null then raise exception 'Please sign in first'; end if;
+  select pp.b into other from prayer_partners pp where pp.a = me and pp.week = wk;
+  if other is null and p_join then
+    select q.user_id into other from prayer_pool q where q.user_id <> me
+      and not exists (select 1 from prayer_partners x where x.a = q.user_id and x.week = wk) order by q.joined_at limit 1 for update skip locked;
+    if other is not null then
+      insert into prayer_partners values (me, other, wk), (other, me, wk) on conflict do nothing;
+      delete from prayer_pool where user_id in (me, other);
+    else
+      insert into prayer_pool (user_id) values (me) on conflict do nothing;
+    end if;
+  end if;
+  if other is not null then
+    return query select p.id, coalesce(p.name, 'Your partner'), p.avatar_url, p.prayer_focus, false from profiles p where p.id = other;
+  else
+    return query select null::uuid, null::text, null::text, null::text, exists (select 1 from prayer_pool q where q.user_id = me);
+  end if;
+end $$;
+
+-- ===== Live group reading (members of a church group chat while reading the same chapter) =====
+create table if not exists public.group_live (
+  id bigint generated always as identity primary key,
+  group_id uuid not null references public.groups(id) on delete cascade,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  name text, ref text check (char_length(ref) <= 40),
+  text text not null check (char_length(text) between 1 and 400),
+  created_at timestamptz not null default now()
+);
+alter table public.group_live enable row level security;
+grant select, insert, delete on public.group_live to authenticated;
+drop policy if exists "members read live" on public.group_live;
+drop policy if exists "members write live" on public.group_live;
+drop policy if exists "delete my live" on public.group_live;
+create policy "members read live" on public.group_live for select to authenticated using (public.is_member(group_id));
+create policy "members write live" on public.group_live for insert to authenticated with check (user_id = (select auth.uid()) and public.is_member(group_id));
+create policy "delete my live" on public.group_live for delete to authenticated using (user_id = (select auth.uid()));
+create index if not exists group_live_g on public.group_live (group_id, id);
+
+-- Only signed-in people may call these
+revoke all on function public.add_friend(text), public.respond_friend(uuid, boolean), public.my_friends(), public.touch_online(),
+  public.set_my_extras(boolean, text), public.report_testimony(uuid), public.report_church(uuid), public.prayer_partner(boolean) from public, anon;
+grant execute on function public.add_friend(text), public.respond_friend(uuid, boolean), public.my_friends(), public.touch_online(),
+  public.set_my_extras(boolean, text), public.report_testimony(uuid), public.report_church(uuid), public.prayer_partner(boolean) to authenticated;
+
+
+-- ===================== MEMBER COUNT ON THE HOME SCREEN (stats.sql) =====================
+-- Just One More Lord — public member count for the home screen.
+-- Supabase → your project → SQL Editor → New query → paste all of this → Run. Safe to run again.
+-- Returns only two numbers (everyone who has signed up, and how many joined in the last 7 days). No names, emails or other details.
+create or replace function public.member_count() returns json
+language sql stable security definer set search_path = public, auth as $$
+  select json_build_object(
+    'members', (select count(*) from auth.users),
+    'week', (select count(*) from auth.users where created_at > now() - interval '7 days'));
+$$;
+revoke all on function public.member_count() from public;
+grant execute on function public.member_count() to anon, authenticated;
+
+
+-- ===================== HELP & PRAYER MESSAGES (help.sql) =====================
+-- Just One More Lord — private "Send us a message for help" inbox (Freedom section).
+-- Supabase → your project → SQL Editor → New query → paste all of this → Run. Safe to run again.
+-- Anyone (signed in or not) can SEND a message. Only the app admins listed in app_admins can READ them.
+
+-- 1) Who can read the messages
+create table if not exists public.app_admins (user_id uuid primary key references auth.users(id) on delete cascade);
+alter table public.app_admins enable row level security;   -- no policies: nobody can read or change this list from the website
+create or replace function public.is_app_admin() returns boolean
+language sql stable security definer set search_path = public as $$
+  select exists (select 1 from public.app_admins where user_id = (select auth.uid()));
+$$;
+revoke all on function public.is_app_admin() from public;
+grant execute on function public.is_app_admin() to anon, authenticated;
+
+-- 2) The messages
+create table if not exists public.help_requests (
+  id uuid primary key default gen_random_uuid(),
+  created_at timestamptz not null default now(),
+  name text check (name is null or char_length(name) <= 80),
+  contact text not null check (char_length(contact) between 3 and 120),
+  topics text[] not null default '{}' check (cardinality(topics) <= 10),
+  message text not null check (char_length(message) between 2 and 2000),
+  user_id uuid default auth.uid(),
+  status text not null default 'new' check (status in ('new', 'contacted', 'closed')),
+  note text check (note is null or char_length(note) <= 1000)
+);
+alter table public.help_requests enable row level security;
+grant insert on public.help_requests to anon, authenticated;
+grant select, update, delete on public.help_requests to authenticated;
+drop policy if exists "anyone can ask for help" on public.help_requests;
+drop policy if exists "admins read help" on public.help_requests;
+drop policy if exists "admins update help" on public.help_requests;
+drop policy if exists "admins delete help" on public.help_requests;
+create policy "anyone can ask for help" on public.help_requests for insert to anon, authenticated with check (status = 'new' and note is null);
+create policy "admins read help" on public.help_requests for select to authenticated using (public.is_app_admin());
+create policy "admins update help" on public.help_requests for update to authenticated using (public.is_app_admin()) with check (public.is_app_admin());
+create policy "admins delete help" on public.help_requests for delete to authenticated using (public.is_app_admin());
+
+
+-- ===================== MAKE YOURSELF THE ADMIN (change the email!) =====================
+-- This lets you (and only you) read the help & prayer messages in the app: My profile → Help messages.
+insert into public.app_admins (user_id) select id from auth.users where lower(email) = lower('YOUR-EMAIL-HERE') on conflict do nothing;
+-- Check it worked: this should show 1 (or more) rows.
+select count(*) as admins_found from public.app_admins;

@@ -1035,3 +1035,10 @@ button.gditem:hover{border-color:var(--cyan);box-shadow:0 0 16px rgba(0,209,255,
 .phhl{fill:none;stroke:#ff3b7f;stroke-width:3;animation:phpulse 1.6s ease-in-out infinite}
 @keyframes phpulse{50%{stroke-opacity:.35}}:root[data-motion=reduce] .phhl{animation:none}
 @media(max-width:560px){.istep{grid-template-columns:1fr;gap:10px;padding:14px;text-align:center}.isvg{max-width:210px;margin:0 auto}}
+/* need help or prayer */
+.helpfab{position:fixed;right:max(14px,env(safe-area-inset-right));bottom:max(16px,env(safe-area-inset-bottom));z-index:60;display:inline-flex;align-items:center;gap:6px;padding:10px 16px;border-radius:999px;border:1px solid rgba(255,199,44,.6);background:linear-gradient(135deg,rgba(4,16,22,.92),rgba(10,40,50,.92));backdrop-filter:blur(8px);color:#fff;font:700 14px "Sora",sans-serif;box-shadow:0 0 22px rgba(255,199,44,.3),0 8px 24px rgba(0,0,0,.45)}
+.helpfab:hover{box-shadow:0 0 30px rgba(255,199,44,.5)}.helpfab[hidden]{display:none}
+body{padding-bottom:64px}
+.helpcta{display:grid;gap:4px;margin:14px 0;border-color:rgba(255,199,44,.5)!important}.helpcta .btn{justify-self:start;margin-top:6px}.helpcta span{color:var(--mute)}
+.helpcard{border-color:rgba(57,255,156,.55)!important}
+@media print{.helpfab{display:none}}

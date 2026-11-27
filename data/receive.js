@@ -34,6 +34,7 @@ spirit: {
   ]
 },
 next: [
+  ['🙏', 'Tell us you prayed', 'We would love to celebrate with you, pray for you and help you with your next steps. Send us a private message.', 'help-jesus'],
   ['📖', 'Read the Gospel of John', 'Get to know Jesus in his own words. Start with a chapter a day.', 'plan-john21'],
   ['👑', 'Discover who you are in Christ', 'The new creation you have just become, broken down step by step.', 'identity'],
   ['💧', 'Be baptised in water', 'Baptism is an outward sign of what happened inside: you died with Christ and rose to new life (Romans 6:4). Ask a grace-teaching church.', 'churches'],

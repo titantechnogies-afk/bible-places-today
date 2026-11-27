@@ -1,3 +1,12 @@
+## ⚡ Quickest way: switch everything on at once
+Run **`supabase/activate-all.sql`** once. It switches on profile pictures, friends, testimonies, church finder,
+prayer partners, the member count and the private "Need help or prayer?" messages with your admin inbox.
+1. Sign up in the app with your own email (My profile).
+2. Open `supabase/activate-all.sql`, scroll to the very bottom and change `YOUR-EMAIL-HERE` to that email.
+3. Supabase → your project → **SQL Editor** → *New query* → paste the whole file → **Run**.
+4. The last result should say `admins_found: 1`. In the app, **My profile** now shows **Help messages**.
+It is safe to run again; it never deletes users or data.
+
 # Just One More Lord — setup checklist
 
 Everything in the app is built. The steps below switch on the parts that need **your own accounts** (they must be in your name). Each step is free unless it says otherwise. After each step, send the codes to Claude and they will be added for you — or paste them into `js/config.js` yourself.
