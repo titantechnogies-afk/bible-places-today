@@ -2,7 +2,7 @@
    App files: served from cache, refreshed in the background. Bible/concordance data: cached on first use.
    Live sources (Wikipedia, Commons, Bible text, map tiles): network first, cached copy when offline. */
 const V = 'jom-v9';
-const SHELL = ['./', 'index.html', 'css/style.css', 'js/app.js', 'data/places.js', 'data/discoveries.js', 'data/journeys.js', 'data/story.js', 'data/study.js', 'data/books-intro.js', 'data/grace.js', 'data/gospel.js', 'data/teachnotes.js', 'js/config.js',
+const SHELL = ['./', 'index.html', 'css/style.css', 'js/app.js', 'data/places.js', 'data/discoveries.js', 'data/journeys.js', 'data/story.js', 'data/study.js', 'data/books-intro.js', 'data/grace.js', 'data/gospel.js', 'data/teachnotes.js', 'data/testimonies.js', 'js/config.js',
   'manifest.webmanifest', 'icons/app-192.png', 'icons/app-512.png', 'icons/app-favicon-32.png', 'img/hero.webp', 'img/logo.png', 'img/logo-sm.png',
   'data/concordance/books.json'];
 const BIBLE = 'jom-bible-1', IMG = 'jom-img-1'; // kept across updates so offline downloads are not lost

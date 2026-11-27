@@ -1844,7 +1844,7 @@ document.addEventListener('click', e => { const b = e.target.closest('.ytbox[dat
 function viewTeachings(id) {
   setNav(''); document.title = 'Teachings — Just One More Lord';
   const extra = (CFG.teachings || []).filter(t => ytId(t.youtube)); const T = id ? TEACHERS.filter(t => t.id === id) : TEACHERS;
-  main.innerHTML = `<section class="band"><div class="wrap"><div class="sh"><div><p class="kicker">Grow in the Word</p><h1>Grace teachings</h1><p>Teachers of the finished work of Jesus and the love of God, played straight from their own official channels. Watch with your Bible open.</p></div><button class="btn" data-go="notes">📝 Teaching notes</button></div>
+  main.innerHTML = `<section class="band"><div class="wrap"><div class="sh"><div><p class="kicker">Grow in the Word</p><h1>Grace teachings</h1><p>Teachers of the finished work of Jesus and the love of God, played straight from their own official channels. Watch with your Bible open.</p></div><div class="linkrow"><button class="btn" data-go="notes">📝 Teaching notes</button><button class="btn ghost" data-go="stories">🙌 Healing testimonies</button></div></div>
     ${T.map(t => { const mine = extra.filter(x => x.teacher === t.id);
       return `<article class="teacher"><div class="thead">${t.face ? `<img class="tav tphoto" src="${esc(t.face)}" alt="${esc(t.n)}">` : `<div class="tav">${esc(t.n.split(' ').map(w => w[0]).join(''))}</div>`}<div><h2>${esc(t.n)}</h2><p class="kicker">${esc(t.org)}</p></div></div>${t.photo ? `<div class="tbio"><figure class="tfig"><img class="tpic" src="${esc(t.photo)}" alt="${esc(t.photoAlt || t.n)}" loading="lazy">${t.caption ? `<figcaption class="small muted">${esc(t.caption)}</figcaption>` : ''}</figure><p>${esc(t.about)}</p></div>` : `<p>${esc(t.about)}</p>`}
         <div class="linkrow">${t.links.map(([l, u]) => `<a class="btn ghost sm" href="${esc(u)}" target="_blank" rel="noopener">${esc(l)} ↗</a>`).join('')}</div>
@@ -2941,6 +2941,7 @@ async function viewFriends() {
 async function viewTestimonies() {
   setNav('community'); document.title = 'Testimonies — Just One More Lord'; if (!sbOn()) return signInFirst('Testimonies');
   main.innerHTML = `<section class="band"><div class="wrap"><p class="kicker">What God has done</p><h1>Testimonies</h1><p class="lead">"They overcame him by the blood of the Lamb and by the word of their testimony" (Revelation 12:11). Share answered prayers, healings and God's goodness.</p>
+    <div class="linkrow"><button class="btn ghost sm" data-go="stories">🙌 Healing testimonies from Andrew Wommack Ministries</button></div>
     ${signedIn() ? `<form class="panel authform" id="tf"><label>What kind?<select id="tk">${['answered prayer', 'healing', 'salvation', 'provision', 'other'].map(k => `<option>${k}</option>`).join('')}</select></label><label>Your testimony<textarea id="tt" rows="4" minlength="10" maxlength="1200" required placeholder="Share what God did…"></textarea></label><button class="btn">Share testimony</button><p class="small muted">Shown with your name and photo. Please keep other people's private details out.</p></form>` : '<div class="linkrow"><button class="btn" data-go="profile">Sign in to share yours</button></div>'}
     <div class="chips" id="tfilt"><button class="chip on" data-k="">All</button>${['answered prayer', 'healing', 'salvation', 'provision'].map(k => `<button class="chip" data-k="${k}">${k}</button>`).join('')}</div><div id="tlist"><p class="muted"><span class="spin"></span>Loading…</p></div></div></section>`;
   let kind = '';
@@ -3167,7 +3168,7 @@ function viewNotes(id) {
   setNav('teachings'); const n = TNOTES.find(x => x.id === id);
   if (!n) { document.title = 'Teaching notes — Just One More Lord'; const topics = [...new Set(TNOTES.map(x => x.topic))];
     main.innerHTML = `<section class="band"><div class="wrap"><div class="crumbs"><button data-go="teachings">Grace teachings</button> › Teaching notes</div><h1>📝 Teaching notes</h1>
-      <p class="lead">Study notes on the main teachings of Andrew Wommack and Dan Mohler: grace, faith, healing, identity, authority, prayer and the love of God. Read the key points and scriptures, then watch the full teaching free.</p>
+      <p class="lead">Study notes on the main teachings of Andrew Wommack, Dan Mohler and Richard Olivier: grace, faith, healing, identity, authority, prayer and the love of God. Read the key points and scriptures, then watch the full teaching free.</p>
       <div class="chips" id="tnf"><button class="chip on" data-tp="">All</button>${topics.map(t => `<button class="chip" data-tp="${esc(t)}">${esc(t)}</button>`).join('')}</div>
       <div class="tngrid">${TNOTES.map(x => `<button class="tncard" data-go="notes-${x.id}" data-tp="${esc(x.topic)}"><span class="kicker">${esc(x.topic)} · ${esc(TNAME[x.t])}</span><b>${esc(x.title)}</b><span>${esc(x.sum.slice(0, 140))}…</span></button>`).join('')}</div>
       <p class="small muted" style="margin-top:16px">These are study summaries written for this app in our own words. They are not the teachers' own notes. For the complete teaching and official study guides, see <a href="https://www.awmi.net/" target="_blank" rel="noopener">awmi.net</a> (Andrew Wommack Ministries, free teaching) and the teachers' YouTube channels.</p></div></section>`;
@@ -3180,10 +3181,30 @@ function viewNotes(id) {
     <div class="panel"><h2>Scriptures to study</h2><p class="small muted">Tap to read each one.</p>${vchips(n.vs)}</div>
     <div class="panel"><h2>Reflect</h2><ol class="small gq"><li>Which point stood out to you most, and why?</li><li>What have you believed about God that this changes?</li><li>Which scripture will you meditate on this week?</li></ol>
       <label class="notebox"><span class="kicker">My notes</span><textarea rows="3" id="tnmy" placeholder="Write what God is showing you…">${esc(MY.notes['tn:' + n.id]?.t || '')}</textarea></label></div>
-    <div class="linkrow"><a class="btn" href="${tnoteWatch(n)}" target="_blank" rel="noopener">▶ Watch the full teaching</a>${n.t === 'wommack' ? '<a class="btn ghost" href="https://www.awmi.net/" target="_blank" rel="noopener">awmi.net</a>' : ''}<button class="btn ghost" id="tnsh">${ICON.share} Share</button><button class="btn ghost sm" data-go="notes-${nx.id}">Next: ${esc(nx.title)} →</button></div>
+    <div class="linkrow"><a class="btn" href="${tnoteWatch(n)}" target="_blank" rel="noopener">▶ Watch the full teaching</a>${n.t === 'wommack' ? '<a class="btn ghost" href="https://www.awmi.net/" target="_blank" rel="noopener">awmi.net</a>' : ''}${n.topic === 'Healing' ? '<button class="btn ghost" data-go="stories">🙌 Healing testimonies</button>' : ''}<button class="btn ghost" id="tnsh">${ICON.share} Share</button><button class="btn ghost sm" data-go="notes-${nx.id}">Next: ${esc(nx.title)} →</button></div>
     <p class="small muted" style="margin-top:14px">Study notes written for this app in our own words, summarising the main points of this teaching. They are not ${esc(TNAME[n.t])}'s own notes or wording. Test everything with Scripture (Acts 17:11).</p></div></section>`;
   $('#tnmy').oninput = e => { const v = e.target.value.trim(); if (v) MY.notes['tn:' + n.id] = { t: v, d: Date.now() }; else delete MY.notes['tn:' + n.id]; saveMy(); };
   $('#tnsh').onclick = () => shareIt({ title: n.title, text: `${n.title} (${TNAME[n.t]})\n\n${n.pts.slice(0, 4).map(p => '• ' + p).join('\n')}`, hash: 'notes-' + n.id });
+}
+/* ---------- healing testimonies (Andrew Wommack Ministries) ---------- */
+const TESTI = window.JOM_TESTIMONIES || [];
+function viewStories(id) {
+  setNav('teachings'); const t = TESTI.find(x => x.id === id);
+  if (!t) { document.title = 'Healing testimonies — Just One More Lord';
+    main.innerHTML = `<section class="band"><div class="wrap"><div class="crumbs"><button data-go="teachings">Grace teachings</button> › Healing testimonies</div><p class="kicker">“They overcame by the blood of the Lamb and the word of their testimony” · Revelation 12:11</p><h1>🙌 Healing testimonies</h1>
+      <p class="lead">Stories of healing shared through Andrew Wommack Ministries. God wants you well, and what He has done for others He has already provided for you through Jesus.</p>
+      <div class="tngrid">${TESTI.map(x => `<button class="tncard" data-go="stories-${x.id}"><span class="kicker">${esc(x.kind)} · ${esc(x.when)}</span><b>${esc(x.title)}</b><span>${esc(x.sum.slice(0, 140))}…</span></button>`).join('')}</div>
+      <div class="linkrow" style="margin-top:16px"><button class="btn" data-go="notes-healing">📝 Teaching notes: God wants you well</button><a class="btn ghost" href="https://www.awmi.net/" target="_blank" rel="noopener">awmi.net ↗</a><button class="btn ghost" data-go="testimonies">Share your own testimony</button></div>
+      <p class="small muted" style="margin-top:16px">${esc(window.JOM_TESTIMONY_NOTE || '')}</p></div></section>`;
+    return; }
+  document.title = `${t.title} — healing testimonies — Just One More Lord`; const i = TESTI.indexOf(t), nx = TESTI[(i + 1) % TESTI.length];
+  main.innerHTML = `<section class="band"><div class="wrap quizwrap"><div class="crumbs"><button data-go="teachings">Grace teachings</button> › <button data-go="stories">Healing testimonies</button> › ${esc(t.title)}</div>
+    <p class="kicker">${esc(t.kind)} · ${esc(t.when)}</p><h1>${esc(t.title)}</h1><p class="small muted">${esc(t.who)}</p><p class="lead">${esc(t.sum)}</p>
+    <div class="panel"><h2>Scriptures behind it</h2><p class="small muted">Tap to read each one.</p>${vchips(t.vs)}</div>
+    <div class="panel"><h2>Hear it first-hand</h2><div class="linkrow">${t.src.map(([l, u]) => `<a class="btn ghost sm" href="${esc(u)}" target="_blank" rel="noopener">${esc(l)} ↗</a>`).join('')}</div></div>
+    <div class="linkrow"><button class="btn ghost" id="tssh">${ICON.share} Share</button><button class="btn ghost sm" data-go="stories-${nx.id}">Next: ${esc(nx.title)} →</button></div>
+    <p class="small muted" style="margin-top:14px">${esc(window.JOM_TESTIMONY_NOTE || '')}</p></div></section>`;
+  $('#tssh').onclick = () => shareIt({ title: t.title, text: `${t.title}\n\n${t.sum}`, hash: 'stories-' + t.id });
 }
 /* ---------------- router ---------------- */
 async function render() {
@@ -3243,6 +3264,7 @@ async function render() {
     else if (h === 'settings') viewSettings();
     else if (h === 'gospel') viewGospel();
     else if (h === 'notes' || h.startsWith('notes-')) viewNotes(h.slice(6));
+    else if (h === 'stories' || h.startsWith('stories-')) viewStories(h.slice(8));
     else if (h === 'identity') viewIdentity();
     else if (h === 'healing') viewHealing();
     else if (h === 'wrapped' || h.startsWith('wrapped-')) viewWrapped(h.slice(8));
