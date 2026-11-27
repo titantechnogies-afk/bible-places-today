@@ -329,9 +329,14 @@ html[data-theme=light].embed body{background:#f5f9fb}
 :root[data-theme=light] .rcvtabs button{background:rgba(237,244,248,0.55)}
 :root[data-theme=light] .gname{color:#5f4d18;text-shadow:none}
 :root[data-theme=light] .msval b{color:#5f4d18}
+:root[data-theme=light] .gdic{box-shadow:0 0 18px rgba(255,199,44,0.113)}
+:root[data-theme=light] .gditem{background:rgba(237,244,248,0.55)}
+:root[data-theme=light] button.gditem:hover{box-shadow:0 0 16px rgba(0,209,255,0.09)}
+:root[data-theme=light] .gdfoot{background:linear-gradient(180deg,rgba(241,247,250,0.6),rgba(241,247,250,0.98) 30%)}
 /* hand fixes */
 :root[data-theme=light] .tiles-night{filter:saturate(.85)}
 :root[data-theme=light] .gname{color:#8a5d00}
 :root[data-theme=light] .ncdiag .nc-sp{fill:rgba(255,199,44,.35);filter:none}
 :root[data-theme=light] .ncam li{background:rgba(255,255,255,.8)}
 :root[data-theme=light] .msval b{color:#8a5d00}
+:root[data-theme=light] .gdfoot{background:linear-gradient(180deg,rgba(243,251,253,.6),rgba(243,251,253,.98) 30%)}
