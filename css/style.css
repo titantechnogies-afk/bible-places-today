@@ -1111,3 +1111,8 @@ body.selon .helpfab,body.selon .toast{bottom:calc(190px + env(safe-area-inset-bo
 .authform select{font:inherit;font-size:calc(16px * var(--fs,1));width:100%;min-height:46px;padding:10px 13px;border-radius:12px;border:1px solid rgba(31,224,208,.35);background:rgba(5,20,28,.75);color:var(--ink)}
 .authform select:focus{outline:none;border-color:var(--cyan);box-shadow:0 0 0 1px var(--cyan),0 0 16px rgba(0,209,255,.3)}
 :root[data-theme=light] .authform select{background:#fff;color:#1a1a1a}
+/* terms, delete account, report */
+.termsbox{padding:12px 16px;border-radius:14px;border:1px solid rgba(255,199,44,.4);background:rgba(255,199,44,.06);font-size:calc(15px * var(--fs,1))}.termsbox ul{margin:6px 0 8px;padding-left:20px}.termsbox li{margin:3px 0}
+.btn.danger{background:#ff4d6d;border-color:#ff4d6d;color:#fff}.btn.danger:disabled{opacity:.45}.btn.ghost.danger{background:transparent;color:#ff8fa3;border-color:rgba(255,77,109,.6)}
+.uflag{text-align:center;margin:18px 0 6px}.uflag .inl{color:var(--mute)}
+.notice.warn{border-color:rgba(255,77,109,.5)}

@@ -2099,7 +2099,7 @@ function mergeMy(remote) { if (!remote || typeof remote !== 'object') return;
   if (Array.isArray(remote.prayers)) MY.prayers = [...(MY.prayers || []), ...remote.prayers.filter(p => !(MY.prayers || []).some(x => x.id === p.id))];
   ['name', 'quizPerfect', 'last'].forEach(k => { if (remote[k] && !MY[k]) MY[k] = remote[k]; });
   try { localStorage.setItem('jom:my', JSON.stringify(MY)); } catch {} }
-async function pullProfile() { if (!sbOn() || !signedIn()) return null; try { const rows = await sbFetch(`/rest/v1/profiles?id=eq.${AUTH.user.id}&select=*`); const r = rows?.[0]; if (r) { AUTH.profile = { name: r.name, church: r.church, country: r.country || AUTH.profile?.country || AUTH.user?.user_metadata?.country || null, bio: r.bio, public: r.is_public, avatar: r.avatar_url || null, code: r.friend_code || null, online: r.show_online !== false, focus: r.prayer_focus || '', shareNotes: !!r.share_notes }; $('#meBtn')?.remove(); profileBtn(); saveAuth(); mergeMy(r.data); } await pushProfile(); setTimeout(askCountry, 2500); return r; } catch (e) { console.warn(e); return null; } }
+async function pullProfile() { if (!sbOn() || !signedIn()) return null; try { const rows = await sbFetch(`/rest/v1/profiles?id=eq.${AUTH.user.id}&select=*`); const r = rows?.[0]; if (r) { AUTH.profile = { terms: r.terms_at || AUTH.profile?.terms || (AUTH.user?.user_metadata?.terms ? 'meta' : null), suspended: !!r.suspended, name: r.name, church: r.church, country: r.country || AUTH.profile?.country || AUTH.user?.user_metadata?.country || null, bio: r.bio, public: r.is_public, avatar: r.avatar_url || null, code: r.friend_code || null, online: r.show_online !== false, focus: r.prayer_focus || '', shareNotes: !!r.share_notes }; $('#meBtn')?.remove(); profileBtn(); saveAuth(); mergeMy(r.data); } await pushProfile(); setTimeout(askCountry, 2500); return r; } catch (e) { console.warn(e); return null; } }
 let pushT = null, pushing = false;
 async function pushProfile() { if (!sbOn() || !signedIn() || pushing) return; pushing = true;
   try { const pr = AUTH.profile || {}; await sbFetch('/rest/v1/profiles', { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=minimal' }, body: JSON.stringify({ id: AUTH.user.id, name: pr.name || MY.name || null, church: pr.church || null, country: pr.country || null, bio: pr.bio || null, is_public: pr.public !== false, data: MY, updated_at: new Date().toISOString() }) }); AUTH.synced = Date.now(); saveAuth(); }
@@ -2115,6 +2115,9 @@ const COUNTRIES = (() => { let dn; try { dn = new Intl.DisplayNames(['en'], { ty
 function countrySelect(id, cur = '') { const list = cur && !COUNTRIES.includes(cur) ? [cur, ...COUNTRIES] : COUNTRIES;
   return `<select id="${id}" required autocomplete="country-name"><option value="">Choose your country…</option>${list.map(c => `<option${c === cur ? ' selected' : ''}>${esc(c)}</option>`).join('')}</select>`; }
 async function askCountry() {
+  if (signedIn() && sbOn() && !termsOk() && !dlg.open && !document.documentElement.classList.contains('gated')) {
+    const b = openDlg(`<p class="kicker">Updated</p><h2>Our community rules</h2><p class="muted">Friends, profiles and messages are for encouraging one another. Please agree to keep using them.</p>${termsBox()}<div class="linkrow"><button class="btn" id="tacc2">I agree</button></div>`, 'Community rules');
+    $('#tacc2', b).onclick = async () => { await acceptTerms(); dlg.close(); toast('Thank you 🙏'); setTimeout(askCountry, 600); }; return; }
   if (!signedIn() || (AUTH.profile || {}).country || dlg.open || document.documentElement.classList.contains('gated')) return;
   const meta = AUTH.user?.user_metadata?.country; if (meta) { AUTH.profile = { ...AUTH.profile, country: meta }; saveAuth(); pushProfile(); return; }
   const b = openDlg(`<p class="kicker">One more thing</p><h2>Which country are you in?</h2><p class="muted">This helps friends find you and shows on your profile.</p>
@@ -2132,16 +2135,16 @@ function viewProfile(gate) {
         <p class="lead">${mode === 'in' ? 'Welcome back! Sign in to continue.' : 'Create your free account to open the app. It takes 30 seconds.'}</p>
         <ul class="gatelist"><li>📖 The Bible with listening, notes and Hebrew &amp; Greek</li><li>✝ The gospel of grace and who you are in Christ</li><li>🗺 Maps, photos and discoveries from the Bible lands</li><li>🤝 Friends, prayer and church family</li></ul></div>` : `<p class="kicker">Free account</p><h1>${mode === 'in' ? 'Sign in' : 'Create your profile'}</h1><p class="lead">Keep your saved places, verses, notes, prayers, plans, streaks and badges safe — and on every device you use.</p>`}
       <form class="authform" id="af"><label>Email<input type="email" id="ae" required autocomplete="email"></label><label>Password<input type="password" id="ap" required minlength="8" autocomplete="${mode === 'in' ? 'current-password' : 'new-password'}" placeholder="At least 8 characters"></label>
-      ${mode === 'up' ? `<label>Your name<input type="text" id="an" maxlength="40" autocomplete="given-name"></label><label>Country${countrySelect('acty')}</label>` : ''}<button class="btn" type="submit">${mode === 'in' ? 'Sign in' : 'Create account'}</button><p class="small" id="amsg" aria-live="polite"></p></form>
+      ${mode === 'up' ? `<label>Your name<input type="text" id="an" maxlength="40" autocomplete="given-name"></label><label>Country${countrySelect('acty')}</label>${termsBox()}<label class="tog"><input type="checkbox" id="aterms" required> I agree to the <a href="terms.html" target="_blank">terms of use</a> and <a href="privacy.html" target="_blank">privacy policy</a></label>` : ''}<button class="btn" type="submit">${mode === 'in' ? 'Sign in' : 'Create account'}</button><p class="small" id="amsg" aria-live="polite"></p></form>
       ${SB.google ? '<button class="btn ghost" id="agoogle">Continue with Google</button>' : ''}
       <p class="small">${mode === 'in' ? 'New here? <button class="inl" id="asw">Create a free account</button>' : 'Already have an account? <button class="inl" id="asw">Sign in</button>'} · <button class="inl" id="amagic">Email me a sign-in link</button></p>
-      <p class="small muted">By creating an account you agree to the <a href="privacy.html" target="_blank">privacy policy</a>. Your data is never sold.</p>
+      <p class="small muted">Your data is never sold. <a href="terms.html" target="_blank">Terms of use</a> · <a href="privacy.html" target="_blank">Privacy policy</a></p>
       ${gate ? '<div class="panel helpcta" style="margin-top:18px"><b>🙏 Need help or prayer right now?</b><span>You can send us a private message without an account.</span><button class="btn sm" data-go="help">Message us</button></div>' : ''}</div></section>`;
       $('#asw').onclick = () => { mode = mode === 'in' ? 'up' : 'in'; draw(); };
       const msg = (t, bad) => { const m = $('#amsg'); m.textContent = t; m.className = 'small ' + (bad ? 'warnt' : 'okt'); };
-      $('#af').onsubmit = async e => { e.preventDefault(); const email = $('#ae').value.trim(), password = $('#ap').value; if (mode === 'up' && !$('#acty')?.value) { msg('Please choose your country.', true); $('#acty')?.focus(); return; } msg('Please wait…');
-        try { if (mode === 'up') { const j = await sbFetch('/auth/v1/signup?redirect_to=' + encodeURIComponent(SITE), { method: 'POST', body: JSON.stringify({ email, password, data: { name: $('#an')?.value.trim() || '', country: $('#acty')?.value || '' } }) }, false);
-            if (!setSession(j)) { msg('Check your email and tap the confirmation link to finish creating your account.'); return; } MY.name = MY.name || $('#an')?.value.trim(); AUTH.profile = { name: MY.name, country: $('#acty')?.value || '' }; }
+      $('#af').onsubmit = async e => { e.preventDefault(); const email = $('#ae').value.trim(), password = $('#ap').value; if (mode === 'up' && !$('#acty')?.value) { msg('Please choose your country.', true); $('#acty')?.focus(); return; } if (mode === 'up' && !$('#aterms')?.checked) { msg('Please agree to the terms of use to create your account.', true); return; } msg('Please wait…');
+        try { if (mode === 'up') { const j = await sbFetch('/auth/v1/signup?redirect_to=' + encodeURIComponent(SITE), { method: 'POST', body: JSON.stringify({ email, password, data: { name: $('#an')?.value.trim() || '', country: $('#acty')?.value || '', terms: TERMS_V } }) }, false);
+            if (!setSession(j)) { msg('Check your email and tap the confirmation link to finish creating your account.'); return; } MY.name = MY.name || $('#an')?.value.trim(); AUTH.profile = { name: MY.name, country: $('#acty')?.value || '', terms: new Date().toISOString() }; rpc('accept_terms').catch(() => {}); }
           else setSession(await sbFetch('/auth/v1/token?grant_type=password', { method: 'POST', body: JSON.stringify({ email, password }) }, false));
           await pullProfile(); toast('Welcome!'); $('#meBtn')?.remove(); profileBtn(); afterAuth(gate); }
         catch (er) { msg(/invalid login/i.test(er.message) ? 'Wrong email or password.' : er.message, true); } };
@@ -2156,13 +2159,13 @@ function viewProfile(gate) {
       <label>Country${countrySelect('pco', pr.country || '')}</label><label>About me (optional)<textarea id="pb" rows="3" maxlength="300">${esc(pr.bio || '')}</textarea></label>
       <label class="tog"><input type="checkbox" id="ppub" ${pr.public !== false ? 'checked' : ''}> Show me in the members list so people can add me as a friend</label><div class="linkrow"><button class="btn" type="submit">Save profile</button><button class="btn ghost" type="button" data-go="user-${u.id}">👁 See my profile</button></div></form>
       <div class="panel"><h2>Sync</h2><p class="small muted">Last synced: ${AUTH.synced ? new Date(AUTH.synced).toLocaleString() : 'not yet'}</p><div class="linkrow"><button class="btn sm" id="psync">Sync now</button><button class="btn ghost sm" data-go="library">My library</button></div>
-        <h2 style="margin-top:18px">Account</h2><div class="linkrow"><button class="btn ghost sm" id="pout">Sign out</button><button class="btn ghost sm" id="pdel">Delete my data</button></div>
-        <p class="small muted">Deleting removes your profile and synced library from our database. To remove the login itself, email the address in the <a href="privacy.html" target="_blank">privacy policy</a>.</p></div></div>
+        <h2 style="margin-top:18px">Account</h2><div class="linkrow"><button class="btn ghost sm" id="pout">Sign out</button><button class="btn ghost sm danger" id="pdel">Delete my account</button></div>
+        <p class="small muted">Deleting your account permanently removes your login, profile, photo, library, friends and messages from our servers. <a href="terms.html" target="_blank">Terms of use</a> · <a href="privacy.html" target="_blank">Privacy policy</a></p></div></div>${pr.suspended ? '<p class="notice warn">Your account has been paused by the app team after a report. Other members cannot see your profile and you cannot send messages. Use “Need help or prayer?” to talk to us.</p>' : ''}
     <h2 class="libh">My progress</h2>${progressHTML()}</div></section>`;
   $('#pf').onsubmit = async e => { e.preventDefault(); AUTH.profile = { ...AUTH.profile, name: $('#pn').value.trim(), church: $('#pc').value.trim(), country: $('#pco').value.trim(), bio: $('#pb').value.trim(), public: $('#ppub').checked }; MY.name = AUTH.profile.name; saveAuth(); _saveMy(); await pushProfile(); toast('Profile saved'); $('#meBtn')?.remove(); profileBtn(); };
   $('#psync').onclick = async () => { await pullProfile(); toast('Synced'); viewProfile(); };
   $('#pout').onclick = async () => { try { await sbFetch('/auth/v1/logout', { method: 'POST' }); } catch {} signOutLocal(); toast('Signed out'); $('#meBtn')?.remove(); profileBtn(); viewProfile(); };
-  $('#pdel').onclick = async () => { if (!confirm('Delete your profile and synced library from the server? What is on this phone stays.')) return; try { await sbFetch(`/rest/v1/profiles?id=eq.${u.id}`, { method: 'DELETE' }); toast('Your data was deleted from the server'); } catch (er) { toast(er.message); } signOutLocal(); $('#meBtn')?.remove(); profileBtn(); viewProfile(); };
+  $('#pdel').onclick = deleteAccountDlg;
 }
 
 /* ---------- extras switched on in js/config.js ---------- */
@@ -3908,7 +3911,7 @@ async function viewHelpInbox() {
   main.innerHTML = `<section class="band"><div class="wrap quizwrap"><p class="kicker">Private</p><h1>Help messages</h1><div id="hib"><p class="muted">Loading…</p></div></div></section>`;
   if (!(typeof signedIn === 'function' && signedIn())) { $('#hib').innerHTML = `<p>Please sign in with your admin account first.</p><button class="btn" data-go="profile">Sign in</button>`; return; }
   if (!(await isAppAdmin())) { $('#hib').innerHTML = `<p>This page is only for the app's admins.</p>`; return; }
-  $('#hib').insertAdjacentHTML('afterend', '<div id="hrep"></div>'); loadMsgReports($('#hrep'));
+  $('#hib').insertAdjacentHTML('afterend', '<div id="hrep"></div>'); loadMsgReports($('#hrep')); $('#hrep').insertAdjacentHTML('afterend', '<div id="hurep"></div>'); loadUserReports($('#hurep'));
   let filter = 'new';
   const load = async () => { let rows = [];
     try { rows = await sbFetch(`/rest/v1/help_requests?select=*&order=created_at.desc&limit=200${filter ? '&status=eq.' + filter : ''}`); } catch (e) { $('#hib').innerHTML = `<p class="notice warn">Could not load messages (${esc(e.message)}).</p>`; return; }
@@ -3919,7 +3922,7 @@ async function viewHelpInbox() {
         <label class="small" for="hn-${m.id}">Private note</label><textarea id="hn-${m.id}" rows="2" maxlength="1000">${esc(m.note || '')}</textarea>
         <div class="linkrow"><button class="btn sm" data-st="contacted">Mark contacted</button><button class="btn ghost sm" data-st="closed">Close</button><button class="btn ghost sm" data-st="new">Back to new</button><button class="btn ghost sm" data-del>Delete</button></div></article>`).join('') : '<p class="empty">No messages here.</p>'}`;
     $$('#hif [data-f]').forEach(b => b.onclick = () => { filter = b.dataset.f; load(); });
-    $$('.hmsg').forEach(a => { const id = a.dataset.id;
+    $$('#hib .hmsg').forEach(a => { const id = a.dataset.id;
       $$('[data-st]', a).forEach(b => b.onclick = async () => { try { await sbFetch(`/rest/v1/help_requests?id=eq.${id}`, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ status: b.dataset.st, note: $('#hn-' + id).value.trim() || null }) }); toast('Saved'); load(); } catch (e) { toast('Could not save: ' + e.message); } });
       $('[data-del]', a).onclick = async () => { if (!confirm('Delete this message for good?')) return; try { await sbFetch(`/rest/v1/help_requests?id=eq.${id}`, { method: 'DELETE' }); load(); } catch (e) { toast('Could not delete: ' + e.message); } }; });
   };
@@ -4152,11 +4155,75 @@ async function viewUser(id) {
     ${u.blocked_by_me ? `<p class="notice">You blocked ${esc(u.name)}. <button class="inl" id="uunblock">Unblock</button></p>` : ''}
     <div class="panel"><h2>About</h2>${u.bio ? `<p class="ubio">${msgText(u.bio)}</p>` : `<p class="muted">${u.is_me ? 'You have not written anything about yourself yet. <button class="inl" data-go="profile">Add a bio</button>' : `${esc(u.name)} has not written a bio yet.`}</p>`}
       ${u.prayer_focus ? `<p class="pfoc">🙏 Praying about: ${esc(u.prayer_focus)}</p>` : ''}</div>
+    ${u.suspended ? `<p class="notice warn">${u.is_me ? 'Your account has been paused by the app team after a report. Other members cannot see your profile.' : 'This member is hidden (paused by an admin).'}</p>` : ''}
     ${u.mutual.length ? `<div class="panel"><h2>Mutual friends (${u.mutual.length})</h2><div class="umut">${u.mutual.map(m => `<button data-go="user-${m.id}">${avatarHTML(m.avatar_url, m.name, 52)}<span>${esc(m.name)}</span></button>`).join('')}</div></div>` : ''}
+    ${u.is_me ? '' : `<p class="small uflag"><button class="inl" id="urep">⚑ Report profile</button> · <button class="inl" id="ublk">${u.blocked_by_me ? 'Unblock' : 'Block'}</button></p>`}
+    ${u.admin && !u.is_me ? `<div class="panel"><h2>Admin</h2><div class="linkrow"><button class="btn ghost sm" id="asusp">${u.suspended ? 'Unhide member' : 'Hide member'}</button><button class="btn ghost sm" id="aclr">Remove photo & bio</button></div></div>` : ''}
   </div></section>`;
+  $('#urep') && ($('#urep').onclick = () => reportUser(u));
+  $('#ublk') && ($('#ublk').onclick = async () => { if (!u.blocked_by_me && !confirm(`Block ${u.name}? You will not be able to message each other.`)) return; try { await rpc('block_user', { p_other: u.id, p_block: !u.blocked_by_me }); toast(u.blocked_by_me ? 'Unblocked' : 'Blocked'); viewUser(id); } catch (er) { toast(needMsgSQL(er)); } });
+  $('#asusp') && ($('#asusp').onclick = async () => { if (!u.suspended && !confirm('Hide this member? They disappear from the members list, their profile cannot be opened and they cannot send messages.')) return; try { await rpc('admin_suspend_user', { p_user: u.id, p_on: !u.suspended }); toast(u.suspended ? 'Member visible again' : 'Member hidden'); viewUser(id); } catch (er) { toast(er.message); } });
+  $('#aclr') && ($('#aclr').onclick = async () => { if (!confirm('Remove their profile photo and bio?')) return; try { await rpc('admin_clear_profile', { p_user: u.id }); toast('Photo and bio removed'); viewUser(id); } catch (er) { toast(er.message); } });
   $('#uphoto').onclick = () => { if (u.avatar_url) openDlg(`<img class="uzoom" src="${esc(u.avatar_url)}" alt="${esc(u.name)}"><h2 style="text-align:center">${esc(u.name)}</h2>`, 'Profile picture'); };
   $('#uadd') && ($('#uadd').onclick = async e => { e.target.disabled = true; try { const n = await rpc('add_friend_id', { p_other: u.id }); toast(`You and ${n} are now friends 🎉`); viewUser(id); } catch (er) { e.target.disabled = false; toast(needSQL(er)); } });
   $('#uunblock') && ($('#uunblock').onclick = async () => { try { await rpc('block_user', { p_other: u.id, p_block: false }); toast('Unblocked'); viewUser(id); } catch (er) { toast(needMsgSQL(er)); } });
+}
+
+/* ---------- terms of use: everyone accepts once before using friends, members and messages ---------- */
+const TERMS_V = '2026-11-28';
+const termsOk = () => !!(AUTH.profile && AUTH.profile.terms);
+async function acceptTerms() {
+  AUTH.profile = { ...AUTH.profile, terms: new Date().toISOString() }; saveAuth();
+  try { await rpc('accept_terms'); } catch {}
+  try { await sbFetch('/auth/v1/user', { method: 'PUT', body: JSON.stringify({ data: { terms: TERMS_V } }) }); } catch {}
+}
+const termsBox = id => `<div class="termsbox"><p><b>Our community rules</b> — in short:</p><ul><li>Be kind. No bullying, threats, hate or harassment.</li><li>No sexual, violent or abusive content, and no scams or spam.</li><li>Respect privacy. Do not share other people's details.</li><li>We have <b>zero tolerance</b> for abuse: reported content is checked and people who break the rules are removed.</li></ul>
+  <p class="small">Read the full <a href="terms.html" target="_blank">terms of use</a> and <a href="privacy.html" target="_blank">privacy policy</a>.</p></div>`;
+function viewTermsGate(next) {
+  setNav('community'); document.title = 'Community rules — Just One More Lord';
+  main.innerHTML = `<section class="band"><div class="wrap quizwrap"><p class="kicker">Before you continue</p><h1>Our community <span class="neon-txt">rules</span></h1>
+    <p class="lead">Friends, profiles and messages are for encouraging one another in love (1 Thessalonians 5:11). Please agree to the rules to use them.</p>${termsBox()}
+    <div class="linkrow"><button class="btn" id="tacc">I agree</button><button class="btn ghost" data-go="home">Not now</button></div></div></section>`;
+  $('#tacc').onclick = async e => { e.target.disabled = true; await acceptTerms(); toast('Thank you 🙏'); location.hash === '#' + next ? render() : go(next); };
+}
+
+/* ---------- delete my account completely ---------- */
+function deleteAccountDlg() {
+  const b = openDlg(`<p class="kicker">Delete account</p><h2>Delete your account?</h2>
+    <p>This permanently deletes your <b>login, profile, photo, synced library, friends, messages and prayer requests</b> from our servers. It cannot be undone.</p>
+    <label class="tog"><input type="checkbox" id="dlocal" checked> Also clear everything saved on this phone</label>
+    <label>Type <b>DELETE</b> to confirm<input id="dconf" autocomplete="off" autocapitalize="characters" style="width:100%;margin-top:6px;padding:11px 13px;border-radius:12px;font-size:16px"></label>
+    <div class="linkrow" style="margin-top:14px"><button class="btn danger" id="dgo" disabled>Delete my account</button><button class="btn ghost" id="dno">Cancel</button></div><p class="small" id="dmsg" aria-live="polite"></p>`, 'Delete account');
+  const conf = $('#dconf', b), go_ = $('#dgo', b);
+  conf.oninput = () => { go_.disabled = conf.value.trim().toUpperCase() !== 'DELETE'; };
+  $('#dno', b).onclick = () => dlg.close();
+  go_.onclick = async () => { go_.disabled = true; $('#dmsg', b).textContent = 'Deleting…'; const uid = AUTH.user.id;
+    try { await fetch(`${SB.url.replace(/\/$/, '')}/storage/v1/object/avatars/${uid}.jpg`, { method: 'DELETE', headers: { apikey: SB.anonKey, Authorization: 'Bearer ' + AUTH.access } }); } catch {}
+    try { await rpc('delete_my_account'); }
+    catch (e) { $('#dmsg', b).textContent = /does not exist|Could not find|404/i.test(e.message) ? 'Account deletion is not switched on yet: the site owner needs to run supabase/messages.sql.' : e.message; go_.disabled = false; return; }
+    try { const s = await (await navigator.serviceWorker?.getRegistration())?.pushManager.getSubscription(); await s?.unsubscribe(); } catch {}
+    const wipe = $('#dlocal', b).checked; signOutLocal(); clearInterval(MSG.timer);
+    if (wipe) { try { localStorage.clear(); sessionStorage.clear(); } catch {} }
+    dlg.close(); alert('Your account has been deleted. God bless you — you are always welcome back.'); location.hash = '#home'; location.reload(); };
+}
+
+/* ---------- report a profile; admin tools ---------- */
+async function reportUser(u) {
+  const why = prompt(`Report ${u.name}'s profile (photo, name or bio) to the app team? Tell us what is wrong:`); if (why === null) return;
+  try { await rpc('report_user', { p_user: u.id, p_reason: why }); toast('Thank you. The app team will look at it.'); } catch (e) { toast(needMsgSQL(e)); }
+}
+async function loadUserReports(box) {
+  let rows; try { rows = await rpc('admin_user_reports'); } catch { box.innerHTML = ''; return; }
+  box.innerHTML = `<h2 style="margin-top:28px">Reported profiles</h2>${rows.length ? rows.map(r => { const s = r.snapshot || {};
+    return `<article class="panel hmsg"><p class="small muted">${new Date(r.created_at).toLocaleString('en-ZA')} · <b>${esc(r.status)}</b>${r.suspended ? ' · <b class="warnt">hidden</b>' : ''}</p>
+      <p><b>${esc(r.reporter_name)}</b> reported <button class="inl" data-go="user-${r.reported}">${esc(r.reported_name)}</button>${r.reason ? `: “${esc(r.reason)}”` : ''}</p>
+      <div class="linkrow">${avatarHTML(s.avatar_url, s.name, 52)}<span class="small">When reported — name: ${esc(s.name || '–')}${s.bio ? ` · bio: “${esc(s.bio)}”` : ''}</span></div>
+      <div class="linkrow"><button class="btn ghost sm" data-go="user-${r.reported}">Open profile</button><button class="btn ghost sm" data-susp="${r.reported}" data-on="${!r.suspended}">${r.suspended ? 'Unhide member' : 'Hide member'}</button><button class="btn ghost sm" data-clear="${r.reported}">Remove photo & bio</button>${r.status === 'new' ? `<button class="btn sm" data-udone="${r.id}">Mark as dealt with</button>` : ''}</div></article>`; }).join('') : '<p class="empty">No reported profiles.</p>'}`;
+  box.onclick = async e => { const t = e.target.closest('[data-susp],[data-clear],[data-udone]'); if (!t) return;
+    try { if (t.dataset.susp) { if (t.dataset.on === 'true' && !confirm('Hide this member? They disappear from the members list, their profile cannot be opened and they cannot send messages.')) return; await rpc('admin_suspend_user', { p_user: t.dataset.susp, p_on: t.dataset.on === 'true' }); toast(t.dataset.on === 'true' ? 'Member hidden' : 'Member visible again'); }
+      if (t.dataset.clear) { if (!confirm('Remove their profile photo and bio?')) return; await rpc('admin_clear_profile', { p_user: t.dataset.clear }); toast('Photo and bio removed'); }
+      if (t.dataset.udone) await rpc('admin_user_report_done', { p_id: t.dataset.udone });
+      loadUserReports(box); } catch (er) { toast(er.message); } };
 }
 
 async function viewFriendNotes(id) {
@@ -4199,6 +4266,7 @@ async function render() {
   try {
     const gated = needsAccount(h); document.documentElement.classList.toggle('gated', gated);
     if (gated) { try { sessionStorage.setItem('jom:after', h); } catch {} viewProfile(true); }
+    else if (sbOn() && signedIn() && !termsOk() && /^(messages|chat-|members|friends|user-|friend-notes-)/.test(h)) viewTermsGate(h);
     else if (h === 'home' || h === '') { await viewHome(); homeVotd(); homeMore(); maybeGuide(); membersBadge($('.hero .bigsearch'), 'afterend'); }
     else if (h === 'guide') { await viewHome(); homeVotd(); homeMore(); showGuide(0); }
     else if (h.startsWith('place-')) { await viewPlace(h.slice(6)); enhancePlace(h.slice(6)); if (byId[h.slice(6)]) { addDevotional(h.slice(6)); thenAndNow(byId[h.slice(6)]); pano360(byId[h.slice(6)]); placeComments(h.slice(6)); } }

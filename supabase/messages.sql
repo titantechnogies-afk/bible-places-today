@@ -1,10 +1,12 @@
--- Just One More Lord — private messages between friends (with verse cards, block and report).
+-- Just One More Lord — private messages between friends, member profiles and safety (delete account, terms, reports, admin hide).
 -- Supabase → your project → SQL Editor → New query → paste all of this → Run. Safe to run again.
 -- Needs activate-all.sql (or setup.sql + community.sql + help.sql) first.
 -- Rules: only friends can message each other; nobody can message someone who blocked them;
 -- people can only read their own conversations; reported messages go to the app admins (Help messages screen).
 
 -- 1) Tables
+alter table public.profiles add column if not exists suspended boolean not null default false;
+alter table public.profiles add column if not exists terms_at timestamptz;
 create table if not exists public.messages (
   id uuid primary key default gen_random_uuid(),
   sender uuid not null references auth.users(id) on delete cascade,
@@ -179,14 +181,15 @@ language sql stable security definer set search_path = public, auth as $$
     'is_me', p.id = auth.uid(),
     'is_friend', jom_are_friends(auth.uid(), p.id),
     'blocked_by_me', exists (select 1 from user_blocks b where b.blocker = auth.uid() and b.blocked = p.id),
-    'shares_notes', p.share_notes,
+    'shares_notes', p.share_notes, 'suspended', p.suspended, 'admin', public.is_app_admin(),
     'prayer_focus', case when p.id = auth.uid() or jom_are_friends(auth.uid(), p.id) then p.prayer_focus end,
     'mutual', coalesce((select json_agg(json_build_object('id', q.id, 'name', coalesce(q.name, 'Friend'), 'avatar_url', q.avatar_url) order by q.name)
         from profiles q
         where q.id <> auth.uid() and q.id <> p.id and jom_are_friends(auth.uid(), q.id) and jom_are_friends(p.id, q.id)), '[]'::json))
   from profiles p join auth.users u on u.id = p.id
   where auth.uid() is not null and p.id = p_id
-    and (p.is_public or p.id = auth.uid() or jom_are_friends(auth.uid(), p.id))
+    and (p.is_public or p.id = auth.uid() or jom_are_friends(auth.uid(), p.id) or public.is_app_admin())
+    and (not p.suspended or p.id = auth.uid() or public.is_app_admin())
     and not exists (select 1 from user_blocks b where b.blocker = p.id and b.blocked = auth.uid());
 $$;
 revoke all on function public.member_profile(uuid) from public, anon;
@@ -201,5 +204,100 @@ begin
   on conflict (id) do nothing;
   return new;
 end $$;
+
+-- ===================== SAFETY: delete account, terms, report profiles, admin hide =====================
+
+-- 14) Delete my account completely (login, profile, library, messages, friends, prayers — everything linked to it)
+create or replace function public.delete_my_account() returns void
+language plpgsql security definer set search_path = public, auth as $$
+declare me uuid := auth.uid();
+begin
+  if me is null then raise exception 'Please sign in first'; end if;
+  delete from public.push_subscriptions where user_id = me;
+  delete from auth.users where id = me;
+end $$;
+
+-- 15) Accepting the terms of use
+create or replace function public.accept_terms() returns void
+language sql security definer set search_path = public as $$
+  update profiles set terms_at = now() where id = auth.uid();
+$$;
+
+-- 16) Report a member's profile (photo, name or bio)
+create table if not exists public.user_reports (
+  id uuid primary key default gen_random_uuid(),
+  reporter uuid not null references auth.users(id) on delete cascade,
+  reported uuid references auth.users(id) on delete cascade,
+  reason text check (reason is null or char_length(reason) <= 500),
+  snapshot jsonb,
+  created_at timestamptz not null default now(),
+  status text not null default 'new' check (status in ('new', 'done'))
+);
+alter table public.user_reports enable row level security;
+revoke all on public.user_reports from anon, authenticated;
+create or replace function public.report_user(p_user uuid, p_reason text default null) returns void
+language plpgsql security definer set search_path = public as $$
+begin
+  if auth.uid() is null then raise exception 'Please sign in first'; end if;
+  if p_user = auth.uid() then raise exception 'That is you'; end if;
+  if (select count(*) from user_reports where reporter = auth.uid() and created_at > now() - interval '1 hour') >= 10 then raise exception 'Too many reports — please try later'; end if;
+  insert into user_reports (reporter, reported, reason, snapshot)
+    select auth.uid(), p.id, left(p_reason, 500), json_build_object('name', p.name, 'bio', p.bio, 'avatar_url', p.avatar_url, 'church', p.church)::jsonb
+    from profiles p where p.id = p_user;
+end $$;
+
+-- 17) Admins: reported profiles, hide/unhide a member, remove their photo & bio
+create or replace function public.admin_user_reports() returns table (
+  id uuid, created_at timestamptz, reporter_name text, reported uuid, reported_name text, reason text, snapshot jsonb, status text, suspended boolean)
+language sql stable security definer set search_path = public as $$
+  select r.id, r.created_at, coalesce(a.name, 'Member'), r.reported, coalesce(b.name, 'Member'), r.reason, r.snapshot, r.status, coalesce(b.suspended, false)
+  from user_reports r left join profiles a on a.id = r.reporter left join profiles b on b.id = r.reported
+  where public.is_app_admin() order by r.status = 'done', r.created_at desc limit 200;
+$$;
+create or replace function public.admin_user_report_done(p_id uuid) returns void
+language sql security definer set search_path = public as $$
+  update user_reports set status = 'done' where id = p_id and public.is_app_admin();
+$$;
+create or replace function public.admin_suspend_user(p_user uuid, p_on boolean default true) returns void
+language plpgsql security definer set search_path = public as $$
+begin
+  if not public.is_app_admin() then raise exception 'Admins only'; end if;
+  update profiles set suspended = p_on where id = p_user;
+end $$;
+create or replace function public.admin_clear_profile(p_user uuid) returns void
+language plpgsql security definer set search_path = public as $$
+begin
+  if not public.is_app_admin() then raise exception 'Admins only'; end if;
+  update profiles set avatar_url = null, bio = null where id = p_user;
+end $$;
+
+-- 18) Hidden (suspended) members: not in the members list, profile not visible, cannot send messages
+create or replace function public.members_list(p_search text default '')
+returns table (id uuid, name text, avatar_url text, church text, country text, joined timestamptz, friend_status text)
+language sql stable security definer set search_path = public, auth as $$
+  select p.id, coalesce(nullif(trim(p.name), ''), 'Member'), p.avatar_url, p.church, p.country, u.created_at,
+    (select case when f.status = 'accepted' then 'friends' when f.requester = auth.uid() then 'sent' else 'received' end
+       from friendships f where (f.requester = auth.uid() and f.addressee = p.id) or (f.requester = p.id and f.addressee = auth.uid()) limit 1)
+  from profiles p join auth.users u on u.id = p.id
+  where auth.uid() is not null and p.is_public and not p.suspended and p.id <> auth.uid()
+    and (coalesce(p_search, '') = '' or p.name ilike '%' || p_search || '%' or p.church ilike '%' || p_search || '%')
+  order by u.created_at desc limit 300;
+$$;
+
+
+create or replace function public.jom_not_suspended() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  if exists (select 1 from profiles where id = new.sender and suspended) then
+    raise exception 'Your account has been paused by the app team, so you cannot send messages.'; end if;
+  return new;
+end $$;
+drop trigger if exists jom_messages_not_suspended on public.messages;
+create trigger jom_messages_not_suspended before insert on public.messages for each row execute function public.jom_not_suspended();
+
+revoke all on function public.delete_my_account(), public.accept_terms(), public.report_user(uuid, text), public.admin_user_reports(),
+  public.admin_user_report_done(uuid), public.admin_suspend_user(uuid, boolean), public.admin_clear_profile(uuid), public.members_list(text) from public, anon;
+grant execute on function public.delete_my_account(), public.accept_terms(), public.report_user(uuid, text), public.admin_user_reports(),
+  public.admin_user_report_done(uuid), public.admin_suspend_user(uuid, boolean), public.admin_clear_profile(uuid), public.members_list(text) to authenticated;
 
 select 'messages switched on' as result;

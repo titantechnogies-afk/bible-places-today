@@ -10,7 +10,8 @@ It is safe to run again; it never deletes users or data.
 ## 💬 Switch on messages between friends (free)
 1. Supabase → your project → **SQL Editor** → *New query* → paste everything from **`supabase/messages.sql`** → **Run**. The result says `messages switched on`.
 2. Phone notifications for new messages (optional): Supabase → **Edge Functions** → *Deploy a new function* → name it **`friend-message`** → paste **`supabase/functions/friend-message/index.ts`** → Deploy. Leave **Verify JWT ON**. It uses the same secrets as `daily-verse`, so nothing else is needed.
-3. Reported messages show at the bottom of **My profile → Help messages** (admins only).
+3. Reported messages and reported profiles show at the bottom of **My profile → Help messages** (admins only). From there you can hide a member, remove their photo and bio, or open their profile.
+4. The same file switches on **Delete my account**, the **terms of use** agreement and **member profile pages**. Run it again whenever it is updated — it is safe to repeat.
 
 # Just One More Lord — setup checklist
 
