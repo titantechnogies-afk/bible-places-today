@@ -4447,6 +4447,19 @@ if ('IntersectionObserver' in window && !matchMedia('(prefers-reduced-motion: re
   const tagRv = () => $$('.band .sh, .pcard, .jcard, .dcard, .legend5>div, .scard, .sec>.wrap', main).forEach(el => { if (el.dataset.rv) return; el.dataset.rv = 1; const r = el.getBoundingClientRect(); if (r.top < innerHeight) return; el.classList.add('rv'); rvIO.observe(el); });
   new MutationObserver(tagRv).observe(main, { childList: true, subtree: true });
 }
+
+/* ---------- phone layout: bottom tab bar + full menu ---------- */
+(() => { const sheet = $('#menuSheet'), btn = $('#menuBtn'); if (!sheet || !btn) return;
+  const open = on => { sheet.hidden = !on; btn.setAttribute('aria-expanded', on); document.body.classList.toggle('menuopen', on); };
+  btn.onclick = () => open(sheet.hidden); $('#menuX').onclick = () => open(false);
+  sheet.addEventListener('click', e => { if (e.target === sheet || e.target.closest('[data-go]')) open(false); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && !sheet.hidden) open(false); });
+  const mark = () => { const h = (location.hash.slice(1) || 'home').split('-')[0]; const map = { read: 'read', parallel: 'read', gospel: 'gospel', grace: 'gospel', messages: 'messages', chat: 'messages', home: 'home', '': 'home' };
+    $$('#tabbar [data-tab]').forEach(b => b.classList.toggle('on', b.dataset.tab === map[h])); open(false); };
+  window.addEventListener('hashchange', mark); mark();
+  setInterval(() => { const t = $('#tabMsg'); if (t) { const n = typeof MSG === 'object' ? MSG.unread : 0; t.textContent = n ? (n > 9 ? '9+' : n) : ''; } }, 2000);
+})();
 isLive(); render();
 }
 document.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.matches?.('[role=link][data-go]')) { e.preventDefault(); e.target.click(); } });
+

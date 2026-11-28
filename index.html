@@ -69,6 +69,22 @@
     </form>
   </div>
 </header>
+<nav class="tabbar" id="tabbar" aria-label="App">
+  <button data-go="home" data-tab="home"><span aria-hidden="true">🏠</span>Home</button>
+  <button data-go="read" data-tab="read"><span aria-hidden="true">📖</span>Bible</button>
+  <button data-go="gospel" data-tab="gospel"><span aria-hidden="true">✝️</span>Grace</button>
+  <button data-go="messages" data-tab="messages"><span aria-hidden="true">💬</span>Messages<i class="tcount" id="tabMsg"></i></button>
+  <button id="menuBtn" aria-haspopup="dialog" aria-expanded="false"><span aria-hidden="true">☰</span>Menu</button>
+</nav>
+<div class="menusheet" id="menuSheet" hidden><div class="menuin" role="dialog" aria-label="All sections"><div class="menuhead"><b>Everything in the app</b><button class="selx" id="menuX" aria-label="Close menu">×</button></div>
+  <div class="menugrid">
+    <button data-go="home"><span>🗺️</span>Explore</button><button data-go="read"><span>📖</span>Bible</button><button data-go="gospel"><span>✝️</span>Grace</button><button data-go="love"><span>💌</span>Share the love</button>
+    <button data-go="invite"><span>🔗</span>Share the app</button><button data-go="messages"><span>💬</span>Messages</button><button data-go="friends"><span>🤝</span>Friends</button><button data-go="community"><span>⛪</span>Community</button>
+    <button data-go="prayer"><span>🙏</span>Prayer</button><button data-go="teachings"><span>🎥</span>Teachings</button><button data-go="plans"><span>📅</span>Plans</button><button data-go="study"><span>📚</span>Study</button>
+    <button data-go="concordance"><span>🔤</span>Hebrew &amp; Greek</button><button data-go="people"><span>👥</span>People</button><button data-go="atlas"><span>🧭</span>Atlas</button><button data-go="journeys"><span>🐪</span>Journeys</button>
+    <button data-go="discoveries"><span>🏺</span>Discoveries</button><button data-go="timeline"><span>⏳</span>Timeline</button><button data-go="gallery"><span>📷</span>Gallery</button><button data-go="quiz"><span>❓</span>Quiz</button>
+    <button data-go="library"><span>⭐</span>Saved</button><button data-go="profile"><span>👤</span>My profile</button><button data-go="settings"><span>⚙️</span>Settings</button><button data-go="help"><span>🆘</span>Need help?</button>
+  </div></div></div>
 <div class="netnote" id="netnote" role="status" hidden></div>
 <main id="main" tabindex="-1"><div class="loading">Loading…</div></main>
 <footer class="foot">
