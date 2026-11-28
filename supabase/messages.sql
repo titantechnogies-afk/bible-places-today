@@ -169,7 +169,7 @@ grant execute on function public.send_message(uuid, text, text), public.my_chats
   public.admin_report_done(uuid), public.claim_push(text) to authenticated;
 
 -- 12) A member's profile page: photo, bio, church, friends count, mutual friends, last online.
---     Visible if they are in the members list or you are friends. Prayer focus only for friends.
+--     Visible only to the person, their friends and the app admins. Prayer focus only for friends.
 create or replace function public.member_profile(p_id uuid) returns json
 language sql stable security definer set search_path = public, auth as $$
   select json_build_object(
@@ -188,7 +188,7 @@ language sql stable security definer set search_path = public, auth as $$
         where q.id <> auth.uid() and q.id <> p.id and jom_are_friends(auth.uid(), q.id) and jom_are_friends(p.id, q.id)), '[]'::json))
   from profiles p join auth.users u on u.id = p.id
   where auth.uid() is not null and p.id = p_id
-    and (p.is_public or p.id = auth.uid() or jom_are_friends(auth.uid(), p.id) or public.is_app_admin())
+    and (p.id = auth.uid() or jom_are_friends(auth.uid(), p.id) or public.is_app_admin())
     and (not p.suspended or p.id = auth.uid() or public.is_app_admin())
     and not exists (select 1 from user_blocks b where b.blocker = p.id and b.blocked = auth.uid());
 $$;
@@ -271,7 +271,7 @@ begin
   update profiles set avatar_url = null, bio = null where id = p_user;
 end $$;
 
--- 18) Hidden (suspended) members: not in the members list, profile not visible, cannot send messages
+-- 18) The members list is for the app admins only (everyone else sees just the total). Hidden (suspended) members: not in the list, profile not visible, cannot send messages
 create or replace function public.members_list(p_search text default '')
 returns table (id uuid, name text, avatar_url text, church text, country text, joined timestamptz, friend_status text)
 language sql stable security definer set search_path = public, auth as $$
@@ -279,7 +279,7 @@ language sql stable security definer set search_path = public, auth as $$
     (select case when f.status = 'accepted' then 'friends' when f.requester = auth.uid() then 'sent' else 'received' end
        from friendships f where (f.requester = auth.uid() and f.addressee = p.id) or (f.requester = p.id and f.addressee = auth.uid()) limit 1)
   from profiles p join auth.users u on u.id = p.id
-  where auth.uid() is not null and p.is_public and not p.suspended and p.id <> auth.uid()
+  where auth.uid() is not null and public.is_app_admin() and not p.suspended and p.id <> auth.uid()
     and (coalesce(p_search, '') = '' or p.name ilike '%' || p_search || '%' or p.church ilike '%' || p_search || '%')
   order by u.created_at desc limit 300;
 $$;
@@ -308,5 +308,25 @@ language sql stable security definer set search_path = public as $$
 $$;
 revoke all on function public.invite_name(text) from public;
 grant execute on function public.invite_name(text) to anon, authenticated;
+
+-- 20) Adding a friend by id (from the members list) is for admins only; everyone else connects with invite links or friend codes
+create or replace function public.add_friend_id(p_other uuid) returns text
+language plpgsql security definer set search_path = public as $$
+declare me uuid := auth.uid(); other_name text;
+begin
+  if me is null then raise exception 'Please sign in first'; end if;
+  if not public.is_app_admin() then raise exception 'Use an invite link or friend code to add friends.'; end if;
+  if p_other = me then raise exception 'That is you'; end if;
+  select coalesce(name, 'Your friend') into other_name from profiles where id = p_other;
+  if other_name is null then raise exception 'That member is not available'; end if;
+  if exists (select 1 from friendships where requester = p_other and addressee = me) then
+    update friendships set status = 'accepted' where requester = p_other and addressee = me;
+  else
+    insert into friendships (requester, addressee, status) values (me, p_other, 'accepted') on conflict (requester, addressee) do update set status = 'accepted';
+  end if;
+  return other_name;
+end $$;
+revoke all on function public.add_friend_id(uuid) from public, anon;
+grant execute on function public.add_friend_id(uuid) to authenticated;
 
 select 'messages switched on' as result;
