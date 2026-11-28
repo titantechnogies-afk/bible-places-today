@@ -971,7 +971,7 @@ function wireVerseTools(box, ref, getText) {
     if (a === 'save') { if (MY.verses[ref]) delete MY.verses[ref]; else MY.verses[ref] = { t: (await getText?.()) || '', d: Date.now() }; saveMy();
       const on = !!MY.verses[ref]; const b = $('[data-act=save]', t); b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); b.innerHTML = `${ICON.star(on)}<span>${on ? 'Saved' : 'Save verse'}</span>`;
       $$(`.rverse[data-ref="${CSS.escape(ref)}"]`).forEach(v => v.classList.toggle('saved', on)); toast(on ? 'Saved to your library' : 'Removed from your library'); }
-    if (a === 'share') { const txt = await getText?.(); shareIt({ title: ref, text: `“${(txt || '').slice(0, 240)}” — ${ref} (WEB)`, hash: 'read-' + readHash(ref) }); }
+    if (a === 'share') { const txt = (await getText?.()) || '', hash = 'read-' + readHash(ref); if (dlg.open) dlg.close(); showSel({ mode: 'one', label: ref, hash, first: ref, msg: shareMsg(`“${txt}”`, ref + ' (WEB)', hash) }); }
     if (a === 'read') { if (dlg.open) dlg.close(); go('read-' + readHash(ref)); }
     if (a === 'journal') { if (dlg.open) dlg.close(); go('journal-' + encodeURIComponent(ref)); }
     if (a === 'mem') addMemory(ref, (await getText?.()) || '');
@@ -986,6 +986,7 @@ function wireVerseTools(box, ref, getText) {
     $$(`.rverse[data-ref="${CSS.escape(ref)}"]`).forEach(x => x.classList.toggle('noted', !!v)); checkBadges(); }, 400); };
   addXrefs(box, ref); addDictChips(box, () => { const v = getText?.(); return typeof v === 'string' ? v : ''; });
 }
+function verseSpanNums(spec) { const out = []; for (const part of String(spec).split(',')) { const [a, z] = part.split('-').map(Number); if (a) for (let n = a; n <= (z && z >= a && z - a < 200 ? z : a); n++) out.push(n); } return out; }
 function readHash(ref) { const p = conc.books ? parseRef(ref) : null; if (p) return `${p.book.code}.${p.ch}${/:\d/.test(ref) ? '.' + p.v1 : ''}`; const m = String(ref).match(/^(.+?)\s+(\d+)(?::(\d+))?/); return m ? `${m[1].replace(/\s+/g, '_')}.${m[2]}${m[3] ? '.' + m[3] : ''}` : ''; }
 
 /* ---------- Bible reader ---------- */
@@ -1009,7 +1010,7 @@ async function viewRead(arg) {
   try { await loadConc(); } catch { main.innerHTML = `<section class="band"><div class="wrap"><p class="empty">The Bible data could not be loaded.</p></div></section>`; return; }
   const books = conc.starts; let [code, ch, hv] = String(arg || MY.last || 'Jhn.1').split('.');
   let b = conc.byCode[code] || parseRef(String(code).replace(/_/g, ' ') + ' ' + (+ch || 1))?.book || conc.byCode.Jhn;
-  ch = Math.min(Math.max(+ch || 1, 1), b.counts.length); hv = +hv || 0;
+  ch = Math.min(Math.max(+ch || 1, 1), b.counts.length); hv = /^\d/.test(hv || '') ? hv : 0;
   MY.last = `${b.code}.${ch}`; saveMy(); document.title = `${b.name} ${ch} — Bible — Just One More Lord`;
   const prev = ch > 1 ? `${b.code}.${ch - 1}` : (b.i > 0 ? `${books[b.i - 1].code}.${books[b.i - 1].counts.length}` : null);
   const next = ch < b.counts.length ? `${b.code}.${ch + 1}` : (b.i < books.length - 1 ? `${books[b.i + 1].code}.1` : null);
@@ -1022,7 +1023,7 @@ async function viewRead(arg) {
       <button class="btn ghost sm" id="rws" aria-pressed="${localStorage.getItem('jom:ws') === '1'}">Word study</button>
       <span class="grow"></span><button class="btn ghost sm" ${prev ? `data-go="read-${prev}"` : 'disabled'} aria-label="Previous chapter">←</button><button class="btn ghost sm" ${next ? `data-go="read-${next}"` : 'disabled'} aria-label="Next chapter">→</button></div>
     <div class="readlayout"><article class="reader"><p class="kicker" id="rsrc">World English Bible</p><h1>${esc(b.name)} <span class="neon-txt">${ch}</span></h1>
-      ${writtenLine(b.i)}<p class="small muted">Tap any verse for its Hebrew or Greek words, related verses, to highlight it, save it or add a note.</p>${ttsBar(next)}<div id="rtext"><p class="muted"><span class="spin"></span>Loading the chapter…</p></div>
+      ${writtenLine(b.i)}<p class="small muted">Tap verses to select them, then highlight, copy or share them on WhatsApp, Facebook or TikTok. Tap <b>Study</b> for the Hebrew or Greek, notes and more.</p>${ttsBar(next)}<div id="rtext"><p class="muted"><span class="spin"></span>Loading the chapter…</p></div>
       <div class="linkrow"><button class="btn ghost sm" ${prev ? `data-go="read-${prev}"` : 'disabled'}>← Previous</button><button class="btn sm" ${next ? `data-go="read-${next}"` : 'disabled'}>Next chapter →</button></div></article>
       <aside class="readside"><details class="gracepanel" open><summary><h2 style="display:inline">Grace lens</h2></summary><div id="rgrace"></div></details><details class="cmtpanel"><summary><h2 style="display:inline">Commentary</h2></summary><div class="linkrow">${commPicker()}</div><div id="rcmt"></div></details><h2>Places in this chapter</h2><div class="mapbox" id="rmap" style="height:320px"></div><div class="chips" id="rplaces"></div></aside></div></div></section>`;
   $('#rgrace').innerHTML = graceHTML(b, ch); fillGraceChapter(); $('#rgl').onclick = () => { const g = $('.gracepanel'); g.open = true; g.scrollIntoView({ behavior: 'smooth', block: 'start' }); }; if (localStorage.getItem('jom:gopen') === '0') $('.gracepanel').open = false; $('.gracepanel').addEventListener('toggle', e => localStorage.setItem('jom:gopen', e.target.open ? '1' : '0'));
@@ -1033,18 +1034,117 @@ async function viewRead(arg) {
   $('#rsrc').textContent = (TRANS.find(t => t[0] === ct.src) || [, 'World English Bible'])[1];
   if (ct.src === 'gloss') $('#rsrc').textContent = 'Word-for-word English (offline) · from the Hebrew/Greek';
   $('#rtext').innerHTML = ct.verses.map(x => `<span class="rverse${MY.verses[ref(x.v)] ? ' saved' : ''}${MY.notes[ref(x.v)] ? ' noted' : ''}" data-ref="${esc(ref(x.v))}" data-hl="${MY.hl[ref(x.v)] || ''}" id="v${x.v}" tabindex="0" role="button"><sup>${x.v}</sup>${esc(x.t)} </span>`).join('');
-  $('#rtext').onclick = e => { const v = e.target.closest('.rverse'); if (v) openVerse(v.dataset.ref); };
+  Object.assign($('#rtext').dataset, { book: b.name, code: b.code, ch, tr: ct.src === 'gloss' ? '' : String(ct.src).toUpperCase() }); hideSel();
   wireTTS(); track('readCh', `${b.name} ${ch}`);
   { const det = $('.cmtpanel'); const load = async () => { $('#rcmt').innerHTML = '<p class="small muted"><span class="spin"></span>Loading…</p>'; $('#rcmt').innerHTML = await commentaryHTML(b.i, ch); }; det.addEventListener('toggle', () => { if (det.open && !$('#rcmt').dataset.l) { $('#rcmt').dataset.l = 1; load(); } }); $('#commSel', det).onchange = e => { localStorage.setItem('jom:comm', e.target.value); load(); }; }
   if (localStorage.getItem('jom:ws') === '1') { $('#rsrc').textContent = `Word study · ${b.i < 39 ? 'Hebrew' : 'Greek'} with literal English`; $('.ttsbar')?.remove(); $('#rtext').innerHTML = await wordStudyHTML(b, ch); $('#rtext').onclick = null; }
   $('#rtext').onkeydown = e => { if ((e.key === 'Enter' || e.key === ' ') && e.target.classList.contains('rverse')) { e.preventDefault(); openVerse(e.target.dataset.ref); } };
-  if (hv) { const el = $('#v' + hv); if (el) { el.classList.add('flash'); el.scrollIntoView({ block: 'center' }); } }
+  if (hv) { const els = verseSpanNums(hv).map(n => $('#v' + n)).filter(Boolean); els.forEach(el => el.classList.add('flash')); els[0]?.scrollIntoView({ block: 'center' }); }
   const key = `${b.name} ${ch}`; const fromRefs = PLACES.filter(p => (p.v || []).some(v => chapterKey(v[0]) === key || chapterKey(v[0]).replace(/^Psalm /, 'Psalms ') === key)).map(p => p.id);
   const ids = [...new Set([...fromRefs, ...placesInText(ct.verses.map(x => x.t).join(' '))])].slice(0, 30); const ps = ids.map(i => byId[i]).filter(Boolean);
   $('#rplaces').innerHTML = ps.length ? ps.map(p => `<button class="chip" data-go="place-${p.id}">${esc(p.n)}</button>`).join('') : '<p class="muted small">No mapped places are named in this chapter.</p>';
   if (ps.length) makeMap($('#rmap'), { markers: ps.map(p => ({ lat: p.lat, lon: p.lon, label: p.n, sub: p.mn, kind: 'place', go: 'place-' + p.id })), maxZoom: 9 }); else $('#rmap').remove();
   markPlanProgress(`${b.name} ${ch}`);
 }
+
+/* ---------- select verses (or letter lines) and share them, like the Bible app ----------
+   Tap verses to select them → a bar slides up: highlight, Copy, WhatsApp, Facebook, TikTok, More, Picture, Study.
+   Drag-selecting words inside the Bible text or the love letter works too. Every share carries a link back to the app. */
+const SHICON = {
+  copy: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2" fill="none" stroke="currentColor" stroke-width="1.9"/><path d="M5 15V6a2 2 0 0 1 2-2h9" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>',
+  wa: '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#25D366" d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2z"/><path fill="#fff" d="M17.3 14.4c-.3-.1-1.6-.8-1.9-.9-.2-.1-.4-.1-.6.1l-.9 1c-.1.2-.3.2-.6.1a8 8 0 0 1-4-3.5c-.3-.5.3-.5.8-1.6.1-.2 0-.3 0-.5l-.8-2c-.2-.5-.4-.4-.6-.4h-.5c-.2 0-.5.1-.7.3-.3.3-1 1-1 2.3s1 2.7 1.1 2.9c.2.2 2 3 4.7 4.1 1.8.7 2.5.8 3.3.7.5-.1 1.6-.7 1.8-1.3.2-.6.2-1.2.2-1.3-.1-.1-.3-.2-.5-.3z"/></svg>',
+  fb: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="#1877F2"/><path fill="#fff" d="M13.4 22v-7.3h2.4l.4-2.9h-2.8V10c0-.8.2-1.4 1.4-1.4h1.5V6.1a20 20 0 0 0-2.2-.1c-2.2 0-3.7 1.3-3.7 3.8v2H8v2.9h2.4V22z"/></svg>',
+  tt: '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#25F4EE" d="M15.2 2.5h-3v12.6a2.6 2.6 0 1 1-2.6-2.6c.3 0 .5 0 .8.1V9.5a5.6 5.6 0 1 0 4.8 5.6V8.6a7 7 0 0 0 4.1 1.3v-3a4.1 4.1 0 0 1-4.1-4.4z" transform="translate(-.8 -.6)"/><path fill="#FE2C55" d="M15.2 2.5h-3v12.6a2.6 2.6 0 1 1-2.6-2.6c.3 0 .5 0 .8.1V9.5a5.6 5.6 0 1 0 4.8 5.6V8.6a7 7 0 0 0 4.1 1.3v-3a4.1 4.1 0 0 1-4.1-4.4z" transform="translate(.8 .6)"/><path fill="#fff" d="M15.2 2.5h-3v12.6a2.6 2.6 0 1 1-2.6-2.6c.3 0 .5 0 .8.1V9.5a5.6 5.6 0 1 0 4.8 5.6V8.6a7 7 0 0 0 4.1 1.3v-3a4.1 4.1 0 0 1-4.1-4.4z"/></svg>',
+  pic: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="1.9"/><circle cx="9" cy="10" r="2" fill="currentColor"/><path d="M4 18l5-5 4 4 3-3 4 4" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/></svg>',
+  study: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h6a2 2 0 0 1 2 2v12a2 2 0 0 0-2-2H4zM20 5h-6a2 2 0 0 0-2 2v12a2 2 0 0 1 2-2h6z" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/></svg>'
+};
+const SEL = { mode: '', label: '', msg: '', hash: '', refs: [], first: '' };
+function shareMsg(quote, label, hash, intro) {
+  return `${intro ? intro + '\n\n' : ''}${quote}${label ? '\n— ' + label : ''}\n\nRead more on Just One More Lord 👉 ${SITE}${hash ? '#' + hash : ''}`;
+}
+function selBar() {
+  let b = $('#selbar'); if (b) return b;
+  b = document.createElement('div'); b.id = 'selbar'; b.className = 'selbar noprint'; b.setAttribute('role', 'toolbar'); b.setAttribute('aria-label', 'Share what you selected');
+  b.innerHTML = `<div class="selhead"><b id="sellbl"></b><button class="selx" data-s="close" aria-label="Close">×</button></div>
+    <div class="hlrow selhl" role="group" aria-label="Highlight colour">${HLC.map(([c, l]) => `<button class="hl-dot hl-${c}" data-shl="${c}" aria-label="Highlight ${l}"></button>`).join('')}<button class="hl-dot hl-none" data-shl="" aria-label="Remove highlight">×</button></div>
+    <div class="selbtns"><button data-s="copy">${SHICON.copy}<span>Copy</span></button><button data-s="wa">${SHICON.wa}<span>WhatsApp</span></button><button data-s="fb">${SHICON.fb}<span>Facebook</span></button><button data-s="tt">${SHICON.tt}<span>TikTok</span></button><button data-s="more">${ICON.share}<span>More</span></button><button data-s="pic" class="vonly">${SHICON.pic}<span>Picture</span></button><button data-s="study" class="vonly">${SHICON.study}<span>Study</span></button></div>`;
+  b.addEventListener('mousedown', e => { if (e.target.closest('button')) e.preventDefault(); }); // keep a drag-selection alive while tapping the bar
+  b.onclick = e => { const h = e.target.closest('[data-shl]'); if (h) return selHighlight(h.dataset.shl); const a = e.target.closest('[data-s]')?.dataset.s; if (a) sendShare(a, SEL); };
+  document.body.append(b); return b;
+}
+function showSel(o) {
+  Object.assign(SEL, { refs: [], first: '' }, o); const b = selBar();
+  $('#sellbl', b).textContent = SEL.label || 'Share';
+  b.classList.toggle('verses', SEL.mode === 'verse'); b.classList.add('on'); document.body.classList.add('selon');
+}
+function hideSel(clear = true) {
+  $('#selbar')?.classList.remove('on'); document.body.classList.remove('selon');
+  if (clear) { $$('.rverse.sel, .lline.sel').forEach(x => x.classList.remove('sel')); SEL.mode = ''; }
+}
+function selHighlight(c) {
+  for (const r of SEL.refs) { if (c) MY.hl[r] = c; else delete MY.hl[r]; $$(`.rverse[data-ref="${CSS.escape(r)}"]`).forEach(v => v.dataset.hl = c || ''); }
+  saveMy(); toast(c ? 'Highlighted' : 'Highlight removed'); hideSel();
+}
+function copyText(t) {
+  if (navigator.clipboard?.writeText) return navigator.clipboard.writeText(t).then(() => true, () => legacyCopy(t));
+  return Promise.resolve(legacyCopy(t));
+}
+function legacyCopy(t) { const ta = document.createElement('textarea'); ta.value = t; ta.setAttribute('readonly', ''); ta.style.cssText = 'position:fixed;top:0;opacity:0'; document.body.append(ta); ta.select(); let ok = false; try { ok = document.execCommand('copy'); } catch {} ta.remove(); return ok; }
+/* a = copy | wa | fb | tt | more | pic | study ; s = { msg, label, hash, first } */
+async function sendShare(a, s) {
+  const url = SITE + (s.hash ? '#' + s.hash : ''), msg = s.msg;
+  if (a === 'close') return hideSel();
+  if (a === 'copy') { copyText(msg).then(ok => toast(ok ? 'Copied with the link — paste it anywhere' : 'Could not copy on this phone')); }
+  if (a === 'wa') window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank', 'noopener');
+  if (a === 'fb') { // Facebook does not allow apps to fill in your post, so the words are copied for you to paste
+    copyText(msg); toast('Copied! Paste it into your Facebook post'); window.open('https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(url), '_blank', 'noopener'); }
+  if (a === 'tt') { // TikTok has no web share link: copy the words, then open TikTok to paste them as a text post or caption
+    copyText(msg); toast('Copied! In TikTok tap + → Text, then paste'); setTimeout(() => window.open('https://www.tiktok.com/', '_blank', 'noopener'), 900); }
+  if (a === 'more') { if (navigator.share) { try { await navigator.share({ title: s.label || 'Just One More Lord', text: msg }); } catch (e) { if (e.name !== 'AbortError') copyText(msg).then(() => toast('Copied with the link — paste it anywhere')); } }
+    else copyText(msg).then(() => toast('Copied with the link — paste it anywhere')); }
+  if (a === 'pic' && s.first) go('versepic-' + encodeURIComponent(s.first));
+  if (a === 'study' && s.first) openVerse(s.first);
+  if (s === SEL && a !== 'more') hideSel(a !== 'copy');
+}
+/* "John 3:16-18" / "John 3:16, 18" from verse numbers */
+function verseSpan(nums) { const n = [...new Set(nums)].sort((a, b) => a - b), out = []; for (let i = 0; i < n.length; i++) { let j = i; while (j + 1 < n.length && n[j + 1] === n[j] + 1) j++; out.push(j > i ? `${n[i]}-${n[j]}` : `${n[i]}`); i = j; } return out; }
+function readerSelection(vs, partial) {
+  const rt = $('#rtext'); if (!rt || !vs.length) return null; const { book, ch, tr } = rt.dataset;
+  const nums = vs.map(v => +v.id.slice(1)).filter(Boolean); const span = verseSpan(nums);
+  const label = `${book} ${ch}:${span.join(', ')}${tr ? ' (' + tr + ')' : ''}`;
+  const text = partial || vs.sort((a, b) => +a.id.slice(1) - +b.id.slice(1)).map(v => { const c = v.cloneNode(true); $$('sup', c).forEach(x => x.remove()); return c.textContent.trim(); }).join(' ');
+  const hash = `read-${rt.dataset.code}.${ch}.${span.join(',')}`;
+  return { mode: 'verse', label, hash, refs: vs.map(v => v.dataset.ref), first: vs[0].dataset.ref, msg: shareMsg(`“${partial ? '…' + text.trim() + '…' : text}”`, label, hash) };
+}
+function letterSelection(ls, partial) {
+  const lines = partial ? [partial.trim()] : ls.sort((a, b) => a.dataset.i - b.dataset.i).map(l => { const [t, r] = LOVE.letter[+l.dataset.i] || []; return t ? t + (r ? ` (${r})` : '') : ''; }).filter(Boolean);
+  if (!lines.length) return null;
+  return { mode: 'letter', label: 'A love letter from your Father', hash: 'love-letter', msg: shareMsg(lines.join('\n'), '', 'love-letter', '💌 A love letter from your Father') };
+}
+function refreshSel() {
+  const vs = $$('#rtext .rverse.sel'), ls = $$('.letter .lline.sel');
+  const o = vs.length ? readerSelection(vs) : ls.length ? letterSelection(ls) : null;
+  if (o) showSel(o); else hideSel();
+}
+document.addEventListener('click', e => {
+  if (e.target.closest('#selbar, button, a, input, select, textarea')) return;
+  const v = e.target.closest('#rtext .rverse'), l = e.target.closest('.letter .lline');
+  if (!v && !l) return; if (String(getSelection()).trim().length > 1) return; // they are drag-selecting words
+  e.stopPropagation(); (v || l).classList.toggle('sel'); refreshSel();
+}, true);
+/* drag-select words → share exactly those words */
+let selT; document.addEventListener('selectionchange', () => { clearTimeout(selT); selT = setTimeout(() => {
+  const s = getSelection(), t = String(s).replace(/\s+/g, ' ').trim(); if (t.length < 3 || !s.rangeCount) return;
+  const r = s.getRangeAt(0), host = (n => n?.nodeType === 1 ? n : n?.parentElement)(r.commonAncestorContainer);
+  const inRead = host?.closest('#rtext'), inLetter = host?.closest('.letter'); if (!inRead && !inLetter) return;
+  if (inRead) { const vs = $$('#rtext .rverse').filter(v => r.intersectsNode(v)); const o = readerSelection(vs, t); if (o) showSel(o); }
+  else { const o = letterSelection([], t); if (o) showSel(o); }
+}, 400); });
+window.addEventListener('hashchange', () => hideSel());
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && $('#selbar.on')) hideSel(); });
+/* a row of share buttons for whole pages (used by the love letter) */
+function shareRow(id) { return `<div class="sharerow" id="${id}"><span class="kicker">Share it</span><div class="selbtns"><button data-s="wa">${SHICON.wa}<span>WhatsApp</span></button><button data-s="fb">${SHICON.fb}<span>Facebook</span></button><button data-s="tt">${SHICON.tt}<span>TikTok</span></button><button data-s="copy">${SHICON.copy}<span>Copy</span></button><button data-s="more">${ICON.share}<span>More</span></button></div></div>`; }
+function wireShareRow(id, get) { const r = document.getElementById(id); if (r) r.onclick = e => { const a = e.target.closest('[data-s]')?.dataset.s; if (a) sendShare(a, get()); }; }
 
 /* ---------- My Library ---------- */
 function viewLibrary() {
@@ -3567,11 +3667,13 @@ function viewLetter() {
   setNav('love'); document.title = 'A love letter from your Father — Just One More Lord';
   main.innerHTML = `<section class="band"><div class="wrap quizwrap"><div class="crumbs"><button data-go="love">Share the love</button> › A love letter from the Father</div><p class="kicker">1 John 3:1 · see what great love the Father has given us</p><h1>A love letter from your <span class="neon-txt">Father</span></h1>
     <p class="lead">Every line comes from Scripture. Read it slowly, as if God were speaking to you, because he is. Then send it to someone who needs it.</p>
-    <article class="letter">${LOVE.letter.map(([t, r]) => `<p>${esc(t)}${r ? ` <button class="lref" data-verse="${esc(r.split(';')[0])}">${esc(r)}</button>` : ''}</p>`).join('')}</article>
-    <div class="linkrow"><button class="btn" id="ltsp">▶ Read it to me</button><button class="btn ghost" id="ltsh">${ICON.share} Send it to someone</button><button class="btn ghost" data-go="blessing">Send a blessing card</button></div>
+    <p class="small muted">Tap any lines to select them and share just those, or share the whole letter below.</p>
+    <article class="letter">${LOVE.letter.map(([t, r], i) => `<p class="lline" data-i="${i}">${esc(t)}${r ? ` <button class="lref" data-verse="${esc(r.split(';')[0])}">${esc(r)}</button>` : ''}</p>`).join('')}</article>
+    ${shareRow('ltrow')}
+    <div class="linkrow"><button class="btn" id="ltsp">▶ Read it to me</button><button class="btn ghost" data-go="blessing">Send a blessing card</button></div>
     <p class="small muted" style="margin-top:14px">Written for this app from the verses shown; tap any reference to read the verse in full.</p></div></section>`;
   $('#ltsp').onclick = e => speakList(LOVE.letter.map(([t]) => t), e.target);
-  $('#ltsh').onclick = () => shareIt({ title: 'A love letter from your Father', text: LOVE.letter.map(([t, r]) => t + (r ? ` (${r})` : '')).join('\n') + '\n\n', hash: 'love-letter' });
+  wireShareRow('ltrow', () => letterSelection($$('.letter .lline')));
 }
 
 /* send a blessing: verse card picture + message */

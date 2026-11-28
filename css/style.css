@@ -1052,3 +1052,20 @@ html.gated .nav,html.gated .search,html.gated .foot,html.gated #meBtn,html.gated
 .gatehead h1{font-size:clamp(32px,6vw,48px)}.gatelist{list-style:none;padding:0;display:grid;gap:6px;text-align:left;max-width:420px;margin:12px auto 18px}
 .gatelist li{padding:8px 12px;border-radius:12px;background:rgba(5,20,28,.5);border:1px solid var(--line)}
 .gateband .authform{max-width:460px;margin:0 auto}.gateband>.wrap>p.small{text-align:center}
+/* select & share bar (tap verses / love-letter lines) */
+.rverse.sel,.lline.sel{text-decoration:underline dotted var(--gold2);text-decoration-thickness:2px;text-underline-offset:5px;background:rgba(0,209,255,.12)}
+.lline{cursor:pointer;border-radius:8px;padding:2px 4px;margin-left:-4px;transition:background .2s}
+.selbar{position:fixed;left:50%;bottom:calc(10px + env(safe-area-inset-bottom));z-index:250;width:min(560px,calc(100vw - 16px));transform:translate(-50%,calc(100% + 40px));transition:transform .25s ease;padding:10px 12px 12px;border-radius:20px;background:rgba(5,20,28,.97);border:1px solid rgba(0,209,255,.55);box-shadow:0 0 22px rgba(0,209,255,.3),0 0 34px rgba(255,199,44,.14),0 10px 30px rgba(0,0,0,.5);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+.selbar.on{transform:translate(-50%,0)}
+.selhead{display:flex;align-items:center;gap:10px;margin-bottom:6px}.selhead b{flex:1;color:#ffe08a;font-size:calc(15px * var(--fs,1));overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.selx{width:36px;height:36px;border-radius:50%;border:1px solid var(--line);background:none;color:#ffc72c;font-size:22px;line-height:1}
+.selhl{display:none;margin:0 0 8px}.selbar.verses .selhl{display:flex}
+.selbar .vonly{display:none}.selbar.verses .vonly{display:flex}
+.selbtns{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none}.selbtns::-webkit-scrollbar{display:none}
+.selbtns button{flex:1 1 0;min-width:46px;min-height:56px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:6px 4px;border:0;border-radius:12px;background:none;color:var(--ink);font-size:calc(11.5px * var(--fs,1));font-weight:600}
+.selbtns button:hover,.selbtns button:active{background:rgba(0,209,255,.12)}.selbtns svg{width:26px;height:26px;color:var(--gold2)}
+.sharerow{margin:16px 0;padding:10px 12px;border-radius:16px;border:1px solid rgba(255,199,44,.4);background:var(--glass,rgba(255,255,255,.03));box-shadow:0 0 16px rgba(255,199,44,.12)}
+.sharerow .kicker{display:block;margin:0 0 4px 4px}
+body.selon .helpfab,body.selon .toast{bottom:calc(190px + env(safe-area-inset-bottom))}
+:root[data-theme=light] .selbar{background:rgba(237,244,248,.97);box-shadow:0 0 22px rgba(0,209,255,.2),0 10px 30px rgba(0,0,0,.15)}
+:root[data-theme=light] .selhead b{color:#8a5d00}:root[data-theme=light] .selbtns button{color:#1a1a1a}
