@@ -329,4 +329,13 @@ end $$;
 revoke all on function public.add_friend_id(uuid) from public, anon;
 grant execute on function public.add_friend_id(uuid) to authenticated;
 
-select 'messages switched on' as result;
+-- 21) Who is an admin (so the app can show an "Admin" badge next to their name). Returns only the admins' ids.
+create or replace function public.app_admin_ids() returns uuid[]
+language sql stable security definer set search_path = public as $$
+  select coalesce(array_agg(user_id), '{}') from app_admins;
+$$;
+revoke all on function public.app_admin_ids() from public;
+grant execute on function public.app_admin_ids() to anon, authenticated;
+
+-- Check: these are ALL the admins. Only your own email should be listed. To remove someone: delete from public.app_admins where user_id = (select id from auth.users where email = 'their@email');
+select u.email as admin_email from public.app_admins a join auth.users u on u.id = a.user_id;

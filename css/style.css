@@ -1138,3 +1138,7 @@ body.chatmode .cmsgs{max-height:none;min-height:0;flex:1}
 body.chatmode .composer{position:static;padding-bottom:calc(10px + env(safe-area-inset-bottom))}
 @media(max-width:600px){body.chatmode .top .nav,body.chatmode .top .search{display:none}body.chatmode .chatwrap{height:calc(100dvh - 92px)}}
 :root[data-theme=light] .crow textarea{background:#fff;color:#1a1a1a}
+.admintag{display:inline-block;margin-left:6px;padding:1px 8px;border-radius:999px;background:linear-gradient(90deg,#ffc72c,#ffe08a);color:#1a1408;font:800 calc(11px * var(--fs,1))/1.6 "Sora",sans-serif;vertical-align:middle;letter-spacing:.02em;box-shadow:0 0 10px rgba(255,199,44,.5);white-space:nowrap}
+.admintag.big{font-size:calc(13px * var(--fs,1));padding:3px 12px;margin:0}
+.umut .admintag{margin:0}
+.ritem .admintag,.umut .admintag{display:inline-block!important;width:auto;color:#1a1408!important;font-size:calc(11px * var(--fs,1))!important;max-width:none}
