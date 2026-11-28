@@ -166,4 +166,40 @@ grant execute on function public.send_message(uuid, text, text), public.my_chats
   public.hide_chat(uuid), public.block_user(uuid, boolean), public.report_message(uuid, text), public.admin_message_reports(),
   public.admin_report_done(uuid), public.claim_push(text) to authenticated;
 
+-- 12) A member's profile page: photo, bio, church, friends count, mutual friends, last online.
+--     Visible if they are in the members list or you are friends. Prayer focus only for friends.
+create or replace function public.member_profile(p_id uuid) returns json
+language sql stable security definer set search_path = public, auth as $$
+  select json_build_object(
+    'id', p.id, 'name', coalesce(nullif(trim(p.name), ''), 'Member'), 'avatar_url', p.avatar_url,
+    'church', p.church, 'country', p.country, 'bio', p.bio, 'joined', u.created_at,
+    'last_seen', case when p.show_online or p.id = auth.uid() then p.last_seen end,
+    'hides_online', not p.show_online,
+    'friends', (select count(*) from friendships f where f.status = 'accepted' and p.id in (f.requester, f.addressee)),
+    'is_me', p.id = auth.uid(),
+    'is_friend', jom_are_friends(auth.uid(), p.id),
+    'blocked_by_me', exists (select 1 from user_blocks b where b.blocker = auth.uid() and b.blocked = p.id),
+    'shares_notes', p.share_notes,
+    'prayer_focus', case when p.id = auth.uid() or jom_are_friends(auth.uid(), p.id) then p.prayer_focus end,
+    'mutual', coalesce((select json_agg(json_build_object('id', q.id, 'name', coalesce(q.name, 'Friend'), 'avatar_url', q.avatar_url) order by q.name)
+        from profiles q
+        where q.id <> auth.uid() and q.id <> p.id and jom_are_friends(auth.uid(), q.id) and jom_are_friends(p.id, q.id)), '[]'::json))
+  from profiles p join auth.users u on u.id = p.id
+  where auth.uid() is not null and p.id = p_id
+    and (p.is_public or p.id = auth.uid() or jom_are_friends(auth.uid(), p.id))
+    and not exists (select 1 from user_blocks b where b.blocker = p.id and b.blocked = auth.uid());
+$$;
+revoke all on function public.member_profile(uuid) from public, anon;
+grant execute on function public.member_profile(uuid) to authenticated;
+
+-- 13) New members: keep the country chosen at sign-up on their profile
+create or replace function public.jom_new_user() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  insert into public.profiles (id, name, country, is_public)
+  values (new.id, nullif(trim(new.raw_user_meta_data ->> 'name'), ''), nullif(left(trim(new.raw_user_meta_data ->> 'country'), 60), ''), true)
+  on conflict (id) do nothing;
+  return new;
+end $$;
+
 select 'messages switched on' as result;

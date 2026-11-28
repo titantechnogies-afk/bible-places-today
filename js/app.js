@@ -2099,7 +2099,7 @@ function mergeMy(remote) { if (!remote || typeof remote !== 'object') return;
   if (Array.isArray(remote.prayers)) MY.prayers = [...(MY.prayers || []), ...remote.prayers.filter(p => !(MY.prayers || []).some(x => x.id === p.id))];
   ['name', 'quizPerfect', 'last'].forEach(k => { if (remote[k] && !MY[k]) MY[k] = remote[k]; });
   try { localStorage.setItem('jom:my', JSON.stringify(MY)); } catch {} }
-async function pullProfile() { if (!sbOn() || !signedIn()) return null; try { const rows = await sbFetch(`/rest/v1/profiles?id=eq.${AUTH.user.id}&select=*`); const r = rows?.[0]; if (r) { AUTH.profile = { name: r.name, church: r.church, country: r.country, bio: r.bio, public: r.is_public, avatar: r.avatar_url || null, code: r.friend_code || null, online: r.show_online !== false, focus: r.prayer_focus || '', shareNotes: !!r.share_notes }; $('#meBtn')?.remove(); profileBtn(); saveAuth(); mergeMy(r.data); } await pushProfile(); return r; } catch (e) { console.warn(e); return null; } }
+async function pullProfile() { if (!sbOn() || !signedIn()) return null; try { const rows = await sbFetch(`/rest/v1/profiles?id=eq.${AUTH.user.id}&select=*`); const r = rows?.[0]; if (r) { AUTH.profile = { name: r.name, church: r.church, country: r.country || AUTH.profile?.country || AUTH.user?.user_metadata?.country || null, bio: r.bio, public: r.is_public, avatar: r.avatar_url || null, code: r.friend_code || null, online: r.show_online !== false, focus: r.prayer_focus || '', shareNotes: !!r.share_notes }; $('#meBtn')?.remove(); profileBtn(); saveAuth(); mergeMy(r.data); } await pushProfile(); setTimeout(askCountry, 2500); return r; } catch (e) { console.warn(e); return null; } }
 let pushT = null, pushing = false;
 async function pushProfile() { if (!sbOn() || !signedIn() || pushing) return; pushing = true;
   try { const pr = AUTH.profile || {}; await sbFetch('/rest/v1/profiles', { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=minimal' }, body: JSON.stringify({ id: AUTH.user.id, name: pr.name || MY.name || null, church: pr.church || null, country: pr.country || null, bio: pr.bio || null, is_public: pr.public !== false, data: MY, updated_at: new Date().toISOString() }) }); AUTH.synced = Date.now(); saveAuth(); }
@@ -2108,6 +2108,21 @@ const _saveMy = saveMy;
 saveMy = () => { _saveMy(); if (sbOn() && signedIn()) { clearTimeout(pushT); pushT = setTimeout(pushProfile, 4000); } };
 function profileBtn() { const t = $('.tools'); if (!t || $('#meBtn')) return; const n = (AUTH.profile?.name || MY.name || '').trim();
   t.insertAdjacentHTML('afterbegin', `<button class="tbtn me" id="meBtn" data-go="profile" title="My profile" aria-label="My profile">${AUTH.profile?.avatar ? `<img class="meimg" src="${esc(AUTH.profile.avatar)}" alt="">` : n ? esc(n[0].toUpperCase()) : '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="12" cy="8" r="4" fill="none" stroke="currentColor" stroke-width="2"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>'}</button>`); }
+/* ---------- country (compulsory): picker for sign-up, profile and a one-time prompt for members without one ---------- */
+const COUNTRY_CODES = 'ZA AF AL DZ AD AO AG AR AM AU AT AZ BS BH BD BB BY BE BZ BJ BT BO BA BW BR BN BG BF BI CV KH CM CA CF TD CL CN CO KM CG CD CR CI HR CU CY CZ DK DJ DM DO EC EG SV GQ ER EE SZ ET FJ FI FR GA GM GE DE GH GR GD GT GN GW GY HT HN HK HU IS IN ID IR IQ IE IL IT JM JP JO KZ KE KI KW KG LA LV LB LS LR LY LI LT LU MO MG MW MY MV ML MT MH MR MU MX FM MD MC MN ME MA MZ MM NA NR NP NL NZ NI NE NG KP MK NO OM PK PW PS PA PG PY PE PH PL PT PR QA RO RU RW KN LC VC WS SM ST SA SN RS SC SL SG SK SI SB SO KR SS ES LK SD SR SE CH SY TW TJ TZ TH TL TG TO TT TN TR TM TV UG UA AE GB US UY UZ VU VA VE VN YE ZM ZW'.split(' ');
+const COUNTRIES = (() => { let dn; try { dn = new Intl.DisplayNames(['en'], { type: 'region' }); } catch {} const n = c => (dn && dn.of(c)) || c;
+  const [za, ...rest] = COUNTRY_CODES; return [n(za), ...rest.map(n).sort((a, b) => a.localeCompare(b))]; })();
+function countrySelect(id, cur = '') { const list = cur && !COUNTRIES.includes(cur) ? [cur, ...COUNTRIES] : COUNTRIES;
+  return `<select id="${id}" required autocomplete="country-name"><option value="">Choose your country…</option>${list.map(c => `<option${c === cur ? ' selected' : ''}>${esc(c)}</option>`).join('')}</select>`; }
+async function askCountry() {
+  if (!signedIn() || (AUTH.profile || {}).country || dlg.open || document.documentElement.classList.contains('gated')) return;
+  const meta = AUTH.user?.user_metadata?.country; if (meta) { AUTH.profile = { ...AUTH.profile, country: meta }; saveAuth(); pushProfile(); return; }
+  const b = openDlg(`<p class="kicker">One more thing</p><h2>Which country are you in?</h2><p class="muted">This helps friends find you and shows on your profile.</p>
+    <form id="ctyf" class="authform"><label>Country${countrySelect('ctys')}</label><button class="btn" type="submit">Save</button></form>`, 'Your country');
+  $('#ctyf', b).onsubmit = async e => { e.preventDefault(); const c = $('#ctys', b).value; if (!c) return; AUTH.profile = { ...AUTH.profile, country: c }; saveAuth(); try { await pushProfile(); } catch {} if (dlg.open) dlg.close(); toast('Thank you! 🌍'); };
+  dlg.addEventListener('close', () => { if (!(AUTH.profile || {}).country) setTimeout(askCountry, 60000); }, { once: true });
+}
+
 function viewProfile(gate) {
   setNav(''); document.title = gate ? 'Welcome — Just One More Lord' : 'My profile — Just One More Lord';
   if (!sbOn()) { main.innerHTML = `<section class="band"><div class="wrap quizwrap"><p class="kicker">Accounts</p><h1>Profiles are almost ready</h1><p class="lead">Sign-up needs the site owner to connect a free Supabase account (see <code>SETUP.md</code>). Until then, everything you save is kept on this phone — use <button class="inl" data-go="library">My library</button> → Download backup to move it.</p></div></section>`; return; }
@@ -2117,16 +2132,16 @@ function viewProfile(gate) {
         <p class="lead">${mode === 'in' ? 'Welcome back! Sign in to continue.' : 'Create your free account to open the app. It takes 30 seconds.'}</p>
         <ul class="gatelist"><li>📖 The Bible with listening, notes and Hebrew &amp; Greek</li><li>✝ The gospel of grace and who you are in Christ</li><li>🗺 Maps, photos and discoveries from the Bible lands</li><li>🤝 Friends, prayer and church family</li></ul></div>` : `<p class="kicker">Free account</p><h1>${mode === 'in' ? 'Sign in' : 'Create your profile'}</h1><p class="lead">Keep your saved places, verses, notes, prayers, plans, streaks and badges safe — and on every device you use.</p>`}
       <form class="authform" id="af"><label>Email<input type="email" id="ae" required autocomplete="email"></label><label>Password<input type="password" id="ap" required minlength="8" autocomplete="${mode === 'in' ? 'current-password' : 'new-password'}" placeholder="At least 8 characters"></label>
-      ${mode === 'up' ? '<label>Your name<input type="text" id="an" maxlength="40" autocomplete="given-name"></label>' : ''}<button class="btn" type="submit">${mode === 'in' ? 'Sign in' : 'Create account'}</button><p class="small" id="amsg" aria-live="polite"></p></form>
+      ${mode === 'up' ? `<label>Your name<input type="text" id="an" maxlength="40" autocomplete="given-name"></label><label>Country${countrySelect('acty')}</label>` : ''}<button class="btn" type="submit">${mode === 'in' ? 'Sign in' : 'Create account'}</button><p class="small" id="amsg" aria-live="polite"></p></form>
       ${SB.google ? '<button class="btn ghost" id="agoogle">Continue with Google</button>' : ''}
       <p class="small">${mode === 'in' ? 'New here? <button class="inl" id="asw">Create a free account</button>' : 'Already have an account? <button class="inl" id="asw">Sign in</button>'} · <button class="inl" id="amagic">Email me a sign-in link</button></p>
       <p class="small muted">By creating an account you agree to the <a href="privacy.html" target="_blank">privacy policy</a>. Your data is never sold.</p>
       ${gate ? '<div class="panel helpcta" style="margin-top:18px"><b>🙏 Need help or prayer right now?</b><span>You can send us a private message without an account.</span><button class="btn sm" data-go="help">Message us</button></div>' : ''}</div></section>`;
       $('#asw').onclick = () => { mode = mode === 'in' ? 'up' : 'in'; draw(); };
       const msg = (t, bad) => { const m = $('#amsg'); m.textContent = t; m.className = 'small ' + (bad ? 'warnt' : 'okt'); };
-      $('#af').onsubmit = async e => { e.preventDefault(); const email = $('#ae').value.trim(), password = $('#ap').value; msg('Please wait…');
-        try { if (mode === 'up') { const j = await sbFetch('/auth/v1/signup?redirect_to=' + encodeURIComponent(SITE), { method: 'POST', body: JSON.stringify({ email, password, data: { name: $('#an')?.value.trim() || '' } }) }, false);
-            if (!setSession(j)) { msg('Check your email and tap the confirmation link to finish creating your account.'); return; } MY.name = MY.name || $('#an')?.value.trim(); AUTH.profile = { name: MY.name }; }
+      $('#af').onsubmit = async e => { e.preventDefault(); const email = $('#ae').value.trim(), password = $('#ap').value; if (mode === 'up' && !$('#acty')?.value) { msg('Please choose your country.', true); $('#acty')?.focus(); return; } msg('Please wait…');
+        try { if (mode === 'up') { const j = await sbFetch('/auth/v1/signup?redirect_to=' + encodeURIComponent(SITE), { method: 'POST', body: JSON.stringify({ email, password, data: { name: $('#an')?.value.trim() || '', country: $('#acty')?.value || '' } }) }, false);
+            if (!setSession(j)) { msg('Check your email and tap the confirmation link to finish creating your account.'); return; } MY.name = MY.name || $('#an')?.value.trim(); AUTH.profile = { name: MY.name, country: $('#acty')?.value || '' }; }
           else setSession(await sbFetch('/auth/v1/token?grant_type=password', { method: 'POST', body: JSON.stringify({ email, password }) }, false));
           await pullProfile(); toast('Welcome!'); $('#meBtn')?.remove(); profileBtn(); afterAuth(gate); }
         catch (er) { msg(/invalid login/i.test(er.message) ? 'Wrong email or password.' : er.message, true); } };
@@ -2138,8 +2153,8 @@ function viewProfile(gate) {
   const pr = AUTH.profile || {}; const u = AUTH.user || {};
   main.innerHTML = `<section class="band"><div class="wrap"><div class="sh"><div><p class="kicker">Signed in as ${esc(u.email || '')}</p><h1>${esc(pr.name || 'My profile')}</h1><p>Your library is saved to your account and syncs to every device where you sign in.</p></div></div>
     <div class="commgrid"><form class="panel authform" id="pf"><h2>Profile</h2><label>Name<input id="pn" maxlength="40" value="${esc(pr.name || MY.name || '')}"></label><label>Church (optional)<input id="pc" maxlength="80" value="${esc(pr.church || '')}"></label>
-      <label>Country (optional)<input id="pco" maxlength="60" value="${esc(pr.country || '')}"></label><label>About me (optional)<textarea id="pb" rows="3" maxlength="300">${esc(pr.bio || '')}</textarea></label>
-      <label class="tog"><input type="checkbox" id="ppub" ${pr.public !== false ? 'checked' : ''}> Show me in the members list so people can add me as a friend</label><button class="btn" type="submit">Save profile</button></form>
+      <label>Country${countrySelect('pco', pr.country || '')}</label><label>About me (optional)<textarea id="pb" rows="3" maxlength="300">${esc(pr.bio || '')}</textarea></label>
+      <label class="tog"><input type="checkbox" id="ppub" ${pr.public !== false ? 'checked' : ''}> Show me in the members list so people can add me as a friend</label><div class="linkrow"><button class="btn" type="submit">Save profile</button><button class="btn ghost" type="button" data-go="user-${u.id}">👁 See my profile</button></div></form>
       <div class="panel"><h2>Sync</h2><p class="small muted">Last synced: ${AUTH.synced ? new Date(AUTH.synced).toLocaleString() : 'not yet'}</p><div class="linkrow"><button class="btn sm" id="psync">Sync now</button><button class="btn ghost sm" data-go="library">My library</button></div>
         <h2 style="margin-top:18px">Account</h2><div class="linkrow"><button class="btn ghost sm" id="pout">Sign out</button><button class="btn ghost sm" id="pdel">Delete my data</button></div>
         <p class="small muted">Deleting removes your profile and synced library from our database. To remove the login itself, email the address in the <a href="privacy.html" target="_blank">privacy policy</a>.</p></div></div>
@@ -3050,7 +3065,7 @@ async function viewFriends() {
     const inc = rows.filter(r => r.status === 'pending' && r.incoming), out = rows.filter(r => r.status === 'pending' && !r.incoming), acc = rows.filter(r => r.status === 'accepted').sort((a, b) => (isOnline(b.last_seen) - isOnline(a.last_seen)) || String(b.last_seen || '').localeCompare(String(a.last_seen || '')));
     const on = acc.filter(r => isOnline(r.last_seen)).length;
     $('#flist').innerHTML = `${inc.length ? `<h2 class="libh">Friend requests</h2><div class="rlist">${inc.map(r => `<div class="ritem fr">${avatarHTML(r.avatar_url, r.name, 44)}<div><b>${esc(r.name)}</b><span>${esc(r.church || 'wants to be your friend')}</span></div><span class="linkrow"><button class="btn sm" data-acc="${r.id}">Accept</button><button class="btn ghost sm" data-dec="${r.id}">Decline</button></span></div>`).join('')}</div>` : ''}
-      <h2 class="libh">My friends (${acc.length}) · <span class="onl">${on} online</span></h2>${acc.length ? `<div class="rlist">${acc.map(r => `<div class="ritem fr">${avatarHTML(r.avatar_url, r.name, 48, isOnline(r.last_seen))}<div><b>${esc(r.name)}</b><span>${esc(r.last_seen ? agoTxt(r.last_seen) : 'status hidden')}${r.church ? ' · ' + esc(r.church) : ''}</span>${r.prayer_focus ? `<span class="pfoc">🙏 ${esc(r.prayer_focus)}</span>` : ''}</div><span class="linkrow frbtns"><button class="btn sm" data-go="chat-${r.id}">💬 Message</button><button class="btn ghost sm" data-go="friend-notes-${r.id}">📖 Notes</button><button class="inl small" data-rm="${r.id}" aria-label="Remove ${esc(r.name)}">remove</button></span></div>`).join('')}</div>` : '<p class="empty">No friends yet — share your code or add theirs above.</p>'}
+      <h2 class="libh">My friends (${acc.length}) · <span class="onl">${on} online</span></h2>${acc.length ? `<div class="rlist">${acc.map(r => `<div class="ritem fr"><button class="uopen" data-go="user-${r.id}" aria-label="Open ${esc(r.name)}'s profile">${avatarHTML(r.avatar_url, r.name, 48, isOnline(r.last_seen))}</button><div class="uopen" data-go="user-${r.id}" role="link" tabindex="0"><b>${esc(r.name)}</b><span>${esc(r.last_seen ? agoTxt(r.last_seen) : 'status hidden')}${r.church ? ' · ' + esc(r.church) : ''}</span>${r.prayer_focus ? `<span class="pfoc">🙏 ${esc(r.prayer_focus)}</span>` : ''}</div><span class="linkrow frbtns"><button class="btn sm" data-go="chat-${r.id}">💬 Message</button><button class="btn ghost sm" data-go="friend-notes-${r.id}">📖 Notes</button><button class="inl small" data-rm="${r.id}" aria-label="Remove ${esc(r.name)}">remove</button></span></div>`).join('')}</div>` : '<p class="empty">No friends yet — share your code or add theirs above.</p>'}
       ${out.length ? `<h2 class="libh">Waiting for them to accept</h2><div class="chips">${out.map(r => `<span class="chip">${esc(r.name)}</span>`).join('')}</div>` : ''}`; };
   $('#flist').onclick = async e => { const a = e.target.closest('[data-acc],[data-dec],[data-rm]'); if (!a) return; try {
       if (a.dataset.acc) { await rpc('respond_friend', { p_other: a.dataset.acc, p_accept: true }); toast('Friend added'); }
@@ -3988,7 +4003,7 @@ async function viewMembers() {
   $('#minv').onclick = () => shareIt({ title: 'Just One More Lord', text: 'Join me on Just One More Lord, a free grace-based Bible app. Open this link to be friends:', hash: friendInviteHash() });
   const load = async q => { let rows; try { rows = await rpc('members_list', { p_search: q || '' }); } catch (er) { $('#mlist').innerHTML = `<p class="empty">${esc(needSQL(er))}</p>`; return; }
     const btn = r => r.friend_status === 'friends' ? `<span class="linkrow frbtns"><button class="btn sm" data-go="chat-${r.id}">💬 Message</button><button class="btn ghost sm" data-go="friend-notes-${r.id}">📖 Notes</button></span>` : r.friend_status === 'sent' || r.friend_status === 'received' ? `<button class="btn sm" data-addid="${r.id}">➕ Add friend</button>` : `<button class="btn sm" data-addid="${r.id}">➕ Add friend</button>`;
-    $('#mlist').innerHTML = rows.length ? `<p class="small muted">${rows.length} ${rows.length === 1 ? 'member' : 'members'}${q ? ' found' : ' listed'}</p><div class="rlist">${rows.map(r => `<div class="ritem fr">${avatarHTML(r.avatar_url, r.name, 48)}<div><b>${esc(r.name)}</b><span>${[r.church, r.country].filter(Boolean).map(esc).join(' · ') || 'Member'} · joined ${new Date(r.joined).toLocaleDateString('en-ZA', { day: 'numeric', month: 'short', year: 'numeric' })}</span></div>${btn(r)}</div>`).join('')}</div>`
+    $('#mlist').innerHTML = rows.length ? `<p class="small muted">${rows.length} ${rows.length === 1 ? 'member' : 'members'}${q ? ' found' : ' listed'}</p><div class="rlist">${rows.map(r => `<div class="ritem fr"><button class="uopen" data-go="user-${r.id}" aria-label="Open ${esc(r.name)}'s profile">${avatarHTML(r.avatar_url, r.name, 48)}</button><div class="uopen" data-go="user-${r.id}" role="link" tabindex="0"><b>${esc(r.name)}</b><span>${[r.church, r.country].filter(Boolean).map(esc).join(' · ') || 'Member'} · joined ${new Date(r.joined).toLocaleDateString('en-ZA', { day: 'numeric', month: 'short', year: 'numeric' })}</span></div>${btn(r)}</div>`).join('')}</div>`
       : `<p class="empty">${q ? 'No one found with that name.' : 'No members are listed yet. Invite people and ask them to tick "Show me in the members list".'}</p>`;
     $$('[data-addid]').forEach(b => b.onclick = async () => { b.disabled = true; try { const n = await rpc('add_friend_id', { p_other: b.dataset.addid }); toast(`You and ${n} are now friends 🎉`); load($('#msq').value.trim()); } catch (er) { b.disabled = false; toast(needSQL(er)); } }); };
   $('#msf').onsubmit = e => { e.preventDefault(); load($('#msq').value.trim()); };
@@ -4043,7 +4058,7 @@ async function viewChat(other) {
   try { chats = chats.length ? chats : await rpc('my_chats'); blocked = !!chats.find(c => c.other === other)?.blocked_by_me; } catch {}
   document.title = `${info.name} — Messages — Just One More Lord`;
   main.innerHTML = `<section class="band chatband"><div class="wrap quizwrap chatwrap">
-    <div class="chathead"><button class="btn ghost sm" data-go="messages" aria-label="Back to messages">←</button>${avatarHTML(info.avatar_url, info.name, 44, info.last_seen ? isOnline(info.last_seen) : null)}<div class="grow"><b>${esc(info.name)}</b><small>${esc(info.last_seen ? agoTxt(info.last_seen) : 'Friend')}</small></div>
+    <div class="chathead"><button class="btn ghost sm" data-go="messages" aria-label="Back to messages">←</button><button class="uopen" data-go="user-${other}" aria-label="Open ${esc(info.name)}'s profile">${avatarHTML(info.avatar_url, info.name, 44, info.last_seen ? isOnline(info.last_seen) : null)}</button><div class="grow uopen" data-go="user-${other}" role="link" tabindex="0"><b>${esc(info.name)}</b><small>${esc(info.last_seen ? lastOnlineTxt(info.last_seen) : 'Tap to see their profile')}</small></div>
       <details class="chatmenu"><summary class="btn ghost sm" aria-label="More options">⋯</summary><div class="panel"><button class="inl" id="cblk">${blocked ? 'Unblock' : 'Block'} ${esc(info.name)}</button><button class="inl" id="chide">Clear this chat on my phone</button>${isFriend ? `<button class="inl" data-go="friend-notes-${other}">📖 Their shared notes</button>` : ''}</div></details></div>
     <div id="cmsgs" class="cmsgs" aria-live="polite"><p class="muted"><span class="spin"></span>Loading…</p></div>
     ${blocked ? `<p class="notice">You blocked ${esc(info.name)}. Unblock them in the ⋯ menu to message again.</p>` : !isFriend ? `<p class="notice">You are not friends any more, so you cannot send messages. <button class="inl" data-go="members">Add them again</button></p>` : `
@@ -4103,6 +4118,45 @@ async function loadMsgReports(box) {
   let rows; try { rows = await rpc('admin_message_reports'); } catch { box.innerHTML = ''; return; }
   box.innerHTML = `<h2 style="margin-top:28px">Reported messages</h2>${rows.length ? rows.map(r => `<article class="panel hmsg"><p class="small muted">${new Date(r.created_at).toLocaleString('en-ZA')} · <b>${esc(r.status)}</b></p><p><b>${esc(r.reporter_name)}</b> reported a message from <b>${esc(r.reported_name)}</b>${r.reason ? `: “${esc(r.reason)}”` : ''}</p><p class="hmtext">${esc(r.body || '(message deleted)')}</p>${r.status === 'new' ? `<button class="btn ghost sm" data-rdone="${r.id}">Mark as dealt with</button>` : ''}</article>`).join('') : '<p class="empty">No reported messages.</p>'}`;
   box.onclick = async e => { const d = e.target.closest('[data-rdone]'); if (!d) return; try { await rpc('admin_report_done', { p_id: d.dataset.rdone }); loadMsgReports(box); } catch (er) { toast(er.message); } };
+}
+
+/* ---------- a member's profile page (#user-<id>): photo, bio, friends count, mutual friends, last online ---------- */
+function lastOnlineTxt(t, hides) {
+  if (hides || !t) return hides ? 'Keeps their online status private' : 'Not online yet';
+  if (isOnline(t)) return '🟢 Online now';
+  const d = new Date(t), now = new Date(), tm = d.toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit' }), mins = Math.round((now - d) / 6e4);
+  if (mins < 60) return `Last online ${mins} min ago`;
+  if (d.toDateString() === now.toDateString()) return `Last online today at ${tm}`;
+  const y = new Date(now); y.setDate(now.getDate() - 1); if (d.toDateString() === y.toDateString()) return `Last online yesterday at ${tm}`;
+  return `Last online ${d.toLocaleDateString('en-ZA', { day: 'numeric', month: 'long', year: d.getFullYear() === now.getFullYear() ? undefined : 'numeric' })}`;
+}
+async function viewUser(id) {
+  setNav('community'); if (!sbOn() || !signedIn()) return signInFirst('Profiles');
+  if (!/^[0-9a-f-]{36}$/i.test(id)) return go('members');
+  main.innerHTML = `<section class="band"><div class="wrap quizwrap"><p class="muted"><span class="spin"></span>Opening profile…</p></div></section>`;
+  let u; try { u = await rpc('member_profile', { p_id: id }); } catch (e) { main.innerHTML = `<section class="band"><div class="wrap quizwrap"><p class="empty">${esc(needMsgSQL(e))}</p></div></section>`; return; }
+  if (!u) { main.innerHTML = `<section class="band"><div class="wrap quizwrap"><h1>Profile not available</h1><p class="lead">This person is not in the members list, or their profile is private.</p><button class="btn" data-go="members">👥 People who have joined</button></div></section>`; return; }
+  document.title = `${u.name} — Just One More Lord`;
+  const on = !u.hides_online && isOnline(u.last_seen), when = new Date(u.joined).toLocaleDateString('en-ZA', { month: 'long', year: 'numeric' });
+  const actions = u.is_me ? `<button class="btn" data-go="profile">✏️ Edit my profile</button>`
+    : u.is_friend ? `<button class="btn" data-go="chat-${u.id}">💬 Message</button>${u.shares_notes ? `<button class="btn ghost" data-go="friend-notes-${u.id}">📖 Notes</button>` : ''}`
+    : `<button class="btn" id="uadd">➕ Add friend</button>`;
+  main.innerHTML = `<section class="band"><div class="wrap quizwrap uprof">
+    <div class="crumbs"><button data-go="${u.is_friend ? 'friends' : 'members'}">${u.is_friend ? 'My friends' : 'People who have joined'}</button> › ${esc(u.name)}</div>
+    <div class="uhead"><button class="ubig${on ? ' on' : ''}" id="uphoto" aria-label="${u.avatar_url ? 'View profile picture' : 'Profile picture'}">${u.avatar_url ? `<img src="${esc(u.avatar_url)}" alt="${esc(u.name)}">` : `<b>${esc(String(u.name).trim()[0]?.toUpperCase() || '?')}</b>`}</button>
+      <h1>${esc(u.name)}${u.is_me ? ' <small class="muted">(you)</small>' : ''}</h1>
+      <p class="useen${on ? ' on' : ''}">${esc(lastOnlineTxt(u.last_seen, u.hides_online))}</p>
+      ${u.church || u.country ? `<p class="muted">${[u.church && '⛪ ' + u.church, u.country && '📍 ' + u.country].filter(Boolean).map(esc).join(' · ')}</p>` : ''}</div>
+    <div class="statrow ustats"><div><b>${u.friends}</b><span>${u.friends === 1 ? 'friend' : 'friends'}</span></div>${u.is_me ? '' : `<div><b>${u.mutual.length}</b><span>mutual</span></div>`}<div><b class="small">${esc(when)}</b><span>joined</span></div></div>
+    <div class="linkrow ubtns">${actions}</div>
+    ${u.blocked_by_me ? `<p class="notice">You blocked ${esc(u.name)}. <button class="inl" id="uunblock">Unblock</button></p>` : ''}
+    <div class="panel"><h2>About</h2>${u.bio ? `<p class="ubio">${msgText(u.bio)}</p>` : `<p class="muted">${u.is_me ? 'You have not written anything about yourself yet. <button class="inl" data-go="profile">Add a bio</button>' : `${esc(u.name)} has not written a bio yet.`}</p>`}
+      ${u.prayer_focus ? `<p class="pfoc">🙏 Praying about: ${esc(u.prayer_focus)}</p>` : ''}</div>
+    ${u.mutual.length ? `<div class="panel"><h2>Mutual friends (${u.mutual.length})</h2><div class="umut">${u.mutual.map(m => `<button data-go="user-${m.id}">${avatarHTML(m.avatar_url, m.name, 52)}<span>${esc(m.name)}</span></button>`).join('')}</div></div>` : ''}
+  </div></section>`;
+  $('#uphoto').onclick = () => { if (u.avatar_url) openDlg(`<img class="uzoom" src="${esc(u.avatar_url)}" alt="${esc(u.name)}"><h2 style="text-align:center">${esc(u.name)}</h2>`, 'Profile picture'); };
+  $('#uadd') && ($('#uadd').onclick = async e => { e.target.disabled = true; try { const n = await rpc('add_friend_id', { p_other: u.id }); toast(`You and ${n} are now friends 🎉`); viewUser(id); } catch (er) { e.target.disabled = false; toast(needSQL(er)); } });
+  $('#uunblock') && ($('#uunblock').onclick = async () => { try { await rpc('block_user', { p_other: u.id, p_block: false }); toast('Unblocked'); viewUser(id); } catch (er) { toast(needMsgSQL(er)); } });
 }
 
 async function viewFriendNotes(id) {
@@ -4227,6 +4281,7 @@ async function render() {
     else if (h === 'friends') { await viewFriends(); if (signedIn() && $('#flist')) { $('#flist').insertAdjacentHTML('beforebegin', `<div class="linkrow" style="margin:14px 0"><button class="btn" data-go="members">👥 Find people who have joined</button></div>${shareFlagsHTML()}`); wireShareFlags(main); } }
     else if (h === 'members') await viewMembers();
     else if (h === 'messages') await viewMessages();
+    else if (h.startsWith('user-')) await viewUser(h.slice(5));
     else if (h.startsWith('chat-')) await viewChat(h.slice(5));
     else if (h.startsWith('friend-notes-')) await viewFriendNotes(h.slice(13));
     else if (h === 'testimonies') await viewTestimonies();
@@ -4275,3 +4330,4 @@ if ('IntersectionObserver' in window && !matchMedia('(prefers-reduced-motion: re
 }
 isLive(); render();
 }
+document.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.matches?.('[role=link][data-go]')) { e.preventDefault(); e.target.click(); } });
