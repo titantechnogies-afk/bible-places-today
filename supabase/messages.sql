@@ -300,4 +300,13 @@ revoke all on function public.delete_my_account(), public.accept_terms(), public
 grant execute on function public.delete_my_account(), public.accept_terms(), public.report_user(uuid, text), public.admin_user_reports(),
   public.admin_user_report_done(uuid), public.admin_suspend_user(uuid, boolean), public.admin_clear_profile(uuid), public.members_list(text) to authenticated;
 
+-- 19) Invite links (…/join/?i=CODE): show the inviter's first name on the welcome screen, even before sign-up
+create or replace function public.invite_name(p_code text) returns text
+language sql stable security definer set search_path = public as $$
+  select split_part(coalesce(nullif(trim(name), ''), 'A friend'), ' ', 1) from profiles
+  where friend_code = upper(trim(p_code)) and not suspended limit 1;
+$$;
+revoke all on function public.invite_name(text) from public;
+grant execute on function public.invite_name(text) to anon, authenticated;
+
 select 'messages switched on' as result;

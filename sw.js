@@ -19,7 +19,8 @@ self.addEventListener('fetch', e => {
   const req = e.request; if (req.method !== 'GET') return;
   const u = new URL(req.url);
   if (u.origin === location.origin) {
-    if (req.mode === 'navigate' && /\.html$/.test(u.pathname) && !/\/index\.html$/.test(u.pathname)) return e.respondWith(networkFirst(V + '-shell', req)); // privacy, terms and share pages open as themselves
+    const root = new URL('./', self.registration.scope).pathname;
+    if (req.mode === 'navigate' && u.pathname !== root && !/\/index\.html$/.test(u.pathname)) return e.respondWith(networkFirst(V + '-shell', req)); // privacy, terms, join and share pages open as themselves
     if (req.mode === 'navigate') return e.respondWith(networkFirst(V + '-shell', new Request('index.html', { cache: 'no-cache' })).then(r => r.ok ? r : caches.match('index.html')));
     if (u.pathname.includes('/data/concordance/') || u.pathname.includes('/data/xrefs/') || /\/data\/(people|topics|dict|sites|web|gracech)\//.test(u.pathname)) return e.respondWith(cacheFirst(BIBLE, req));
     if (/\.(js|css|html|webmanifest)$/.test(u.pathname) || u.pathname.endsWith('/')) return e.respondWith(networkFirst(V + '-shell', req));

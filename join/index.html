@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Join me on Just One More Lord — a free grace-based Bible app</title>
+<meta name="description" content="Free, no ads. The Bible with listening, Hebrew &amp; Greek, the gospel of grace, maps of every Bible place, prayer and friends. Tap to join.">
+<meta name="theme-color" content="#020a10">
+<link rel="icon" type="image/png" sizes="32x32" href="../icons/app-favicon-32.png">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Just One More Lord">
+<meta property="og:title" content="Join me on Just One More Lord 🙏">
+<meta property="og:description" content="A free, grace-based Bible app: the Bible with listening, Hebrew & Greek, the finished work of Jesus, maps of every Bible place, prayer and friends. No ads. Tap to join.">
+<meta property="og:image" content="https://titantechnogies-afk.github.io/bible-places-today/icons/og.jpg">
+<meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
+<meta property="og:url" content="https://titantechnogies-afk.github.io/bible-places-today/join/">
+<meta name="twitter:card" content="summary_large_image">
+<style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#020a10;color:#eefbff;font:18px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif;text-align:center}a{color:#00d1ff;font-weight:700}img{width:120px;height:auto}</style>
+<script>
+// Remember who invited them (friend code), so they become friends automatically after signing up, then open the app.
+(function () {
+  var q = new URLSearchParams(location.search), code = (q.get('i') || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6);
+  try { if (code.length === 6) localStorage.setItem('jom:pendfriend', code); } catch (e) {}
+  location.replace('../' + (code.length === 6 ? '#addfriend-' + code : '#home'));
+})();
+</script>
+</head><body><main><img src="../img/logo.png" alt="Just One More Lord"><p>Opening Just One More Lord…</p><p><a href="../">Tap here if it does not open</a></p></main></body></html>

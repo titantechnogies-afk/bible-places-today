@@ -1116,3 +1116,10 @@ body.selon .helpfab,body.selon .toast{bottom:calc(190px + env(safe-area-inset-bo
 .btn.danger{background:#ff4d6d;border-color:#ff4d6d;color:#fff}.btn.danger:disabled{opacity:.45}.btn.ghost.danger{background:transparent;color:#ff8fa3;border-color:rgba(255,77,109,.6)}
 .uflag{text-align:center;margin:18px 0 6px}.uflag .inl{color:var(--mute)}
 .notice.warn{border-color:rgba(255,77,109,.5)}
+/* share the app */
+.invbox{border-color:rgba(255,199,44,.45);box-shadow:0 0 18px rgba(255,199,44,.12)}
+.invurl{margin:6px 0 12px;padding:12px 14px;border-radius:12px;background:rgba(0,209,255,.08);border:1px dashed rgba(0,209,255,.55);font:700 calc(15px * var(--fs,1)) "Sora",sans-serif;color:var(--gold2);overflow-wrap:anywhere;user-select:all}
+.invtxt{white-space:pre-wrap;font:inherit;font-size:calc(15px * var(--fs,1));margin:10px 0;padding:12px 14px;border-radius:12px;background:rgba(5,20,28,.6);border:1px solid var(--line);max-height:240px;overflow:auto}
+.uprof h2 svg,.panel h2 svg{width:24px;height:24px;vertical-align:-4px;margin-right:6px}
+.invsteps{padding-left:20px}.invsteps li{margin:4px 0}.invqr{max-width:300px;margin:0 auto;background:#fff;padding:12px;border-radius:14px}.invqr svg{width:100%;height:auto;display:block}
+:root[data-theme=light] .invtxt{background:#fff}
