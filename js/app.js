@@ -3879,7 +3879,7 @@ function helpFormHTML(pre = []) {
         <p style="margin:12px 0 4px"><b>What would you like help or prayer for?</b> <span class="small muted">(tap any)</span></p><div class="chips" id="fht">${HELP_TOPICS.map(t => `<button type="button" class="chip" data-t="${esc(t)}" aria-pressed="${pre.includes(t)}">${esc(t)}</button>`).join('')}</div>
         <label for="fhm" style="margin-top:12px"><b>Your message</b></label><textarea id="fhm" rows="5" required maxlength="2000" placeholder="Tell us as much or as little as you like."></textarea>
         <input type="text" id="fhw" tabindex="-1" autocomplete="off" class="hp" aria-hidden="true">
-        <label class="tog" style="margin-top:10px"><input type="checkbox" id="fhok" required> I'm happy for the Just One More Lord team to contact me.</label>
+        <label class="tog" style="margin-top:10px"><input type="checkbox" id="fhok" required> I'm happy for the One More Lord Ministry Team to contact me.</label>
         <div class="linkrow"><button class="btn" type="submit" id="fhs">Send my message</button></div><p id="fhr" role="status" class="small"></p></form></section>`;
 }
 function wireHelpForm() {
@@ -3890,7 +3890,7 @@ function wireHelpForm() {
     if (body.contact.length < 3 || body.message.length < 2) { r.textContent = 'Please add how we can reach you and a short message.'; return; }
     $('#fhs').disabled = true; r.textContent = 'Sending…';
     try { await sbFetch('/rest/v1/help_requests', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify(body) }, signedIn());
-      $('#fhf').innerHTML = `<div class="sentok"><h3>🙏 Thank you. Your message has been sent.</h3><p>We have received it, we are praying for you, and we will get back to you. You are not alone, and you are deeply loved by God.</p><p>While you wait, read <button class="inl" data-go="identity">who you are in Christ</button> or the <button class="inl" data-go="love-letter">love letter from the Father</button>.</p></div>`;
+      $('#fhf').innerHTML = `<div class="sentok"><h3>🙏 Thank you. Your message has been sent.</h3><p>The One More Lord Ministry Team has received it, we are praying for you, and we will get back to you${signedIn() ? ' — look for our reply in <button class="inl" data-go="team">Messages → One More Lord Ministry Team</button>' : ''}. You are not alone, and you are deeply loved by God.</p><p>While you wait, read <button class="inl" data-go="identity">who you are in Christ</button> or the <button class="inl" data-go="love-letter">love letter from the Father</button>.</p></div>`;
     } catch (err) { $('#fhs').disabled = false; r.textContent = /does not exist|Could not find|schema cache|404|401|403/i.test(err.message + ' ' + err.status) ? 'Messages are not switched on yet. Please try again soon.' : 'Sorry, your message could not be sent. Please check your internet connection and try again.'; }
   };
 }
@@ -3903,7 +3903,7 @@ function viewHelp(pre) {
   wireHelpForm();
 }
 /* floating "Need prayer?" button on every page */
-function helpFab() { let f = document.getElementById('helpfab'); const h = location.hash.slice(1) || 'home', hide = /^(help|freedom|help-inbox|embed-|present-|gospel-1min|chat-|messages)/.test(h) || document.documentElement.classList.contains('embed') || document.documentElement.classList.contains('gated');
+function helpFab() { let f = document.getElementById('helpfab'); const h = location.hash.slice(1) || 'home', hide = /^(help|freedom|help-inbox|embed-|present-|gospel-1min|chat-|messages|team)/.test(h) || document.documentElement.classList.contains('embed') || document.documentElement.classList.contains('gated');
   if (!f) { f = document.createElement('button'); f.id = 'helpfab'; f.className = 'helpfab'; f.innerHTML = '<span aria-hidden="true">🙏</span> Need prayer?'; f.setAttribute('aria-label', 'Need help or prayer? Message us'); f.onclick = () => go('help'); document.body.append(f); }
   f.hidden = hide; }
 /* the admin inbox for help messages (only readable by app admins; see supabase/help.sql) */
@@ -3925,6 +3925,7 @@ async function viewHelpInbox() {
         <label class="small" for="hn-${m.id}">Private note</label><textarea id="hn-${m.id}" rows="2" maxlength="1000">${esc(m.note || '')}</textarea>
         <div class="linkrow"><button class="btn sm" data-st="contacted">Mark contacted</button><button class="btn ghost sm" data-st="closed">Close</button><button class="btn ghost sm" data-st="new">Back to new</button><button class="btn ghost sm" data-del>Delete</button></div></article>`).join('') : '<p class="empty">No messages here.</p>'}`;
     $$('#hif [data-f]').forEach(b => b.onclick = () => { filter = b.dataset.f; load(); });
+    $$('#hib .hmsg').forEach(a => { const row = rows.find(x => x.id === a.dataset.id); if (row) adminHelpThread(a, row); });
     $$('#hib .hmsg').forEach(a => { const id = a.dataset.id;
       $$('[data-st]', a).forEach(b => b.onclick = async () => { try { await sbFetch(`/rest/v1/help_requests?id=eq.${id}`, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ status: b.dataset.st, note: $('#hn-' + id).value.trim() || null }) }); toast('Saved'); load(); } catch (e) { toast('Could not save: ' + e.message); } });
       $('[data-del]', a).onclick = async () => { if (!confirm('Delete this message for good?')) return; try { await sbFetch(`/rest/v1/help_requests?id=eq.${id}`, { method: 'DELETE' }); load(); } catch (e) { toast('Could not delete: ' + e.message); } }; });
@@ -4029,7 +4030,7 @@ function msgBtn() { const t = $('.tools'); if (!t || $('#msgBtn') || !sbOn() || 
 function msgBadge() { const b = $('#msgBtn'); if (!b) return; const n = MSG.unread; b.querySelector('.bcount').textContent = n > 9 ? '9+' : n || ''; b.classList.toggle('has', n > 0); b.setAttribute('aria-label', `Messages${n ? ', ' + n + ' unread' : ''}`); }
 async function msgPoll() {
   if (!sbOn() || !signedIn() || document.hidden) return; msgBtn();
-  try { const n = await rpc('unread_messages'); if (n > MSG.unread && !location.hash.startsWith('#chat-') && location.hash !== '#messages') toast('💬 You have a new message'); MSG.unread = n || 0; msgBadge(); } catch {}
+  try { let n = await rpc('unread_messages'); try { n += (await rpc('my_help_unread')) || 0; } catch {} if (n > MSG.unread && !location.hash.startsWith('#chat-') && location.hash !== '#messages') toast('💬 You have a new message'); MSG.unread = n || 0; msgBadge(); } catch {}
   if (!MSG.claimed) { MSG.claimed = true; try { const s = await (await navigator.serviceWorker?.getRegistration())?.pushManager.getSubscription(); if (s) await rpc('claim_push', { p_endpoint: s.endpoint }); } catch {} }
 }
 function msgStart() { clearInterval(MSG.timer); setTimeout(msgPoll, 3000); MSG.timer = setInterval(msgPoll, 45000); }
@@ -4051,9 +4052,11 @@ async function viewMessages() {
     <div id="mchats" style="margin-top:14px"><p class="muted"><span class="spin"></span>Loading…</p></div></div></section>`;
   $('#mnew').onclick = () => pickFriend('Who do you want to message?', f => go('chat-' + f.id));
   let rows; try { rows = await rpc('my_chats'); } catch (e) { $('#mchats').innerHTML = `<p class="empty">${esc(needMsgSQL(e))}</p>`; return; }
-  MSG.unread = rows.reduce((n, r) => n + (r.unread || 0), 0); msgBadge();
-  $('#mchats').innerHTML = rows.length ? `<div class="rlist">${rows.map(r => `<button class="ritem fr chatrow${r.unread ? ' unread' : ''}" data-go="chat-${r.other}">${avatarHTML(r.avatar_url, r.name, 50, r.last_seen ? isOnline(r.last_seen) : null)}<div><b>${esc(r.name)}${adminTag(r.other)}</b><span>${r.last_mine ? 'You: ' : ''}${r.last_ref ? '📖 ' + esc(r.last_ref) + ' · ' : ''}${esc(String(r.last_body).replace(/\s+/g, ' ').slice(0, 70))}</span></div><span class="chatmeta"><small>${msgTime(r.last_at)}</small>${r.unread ? `<b class="ubadge">${r.unread}</b>` : ''}</span></button>`).join('')}</div>`
-    : '<p class="empty">No messages yet. Tap “New message” to write to a friend.</p>';
+  let tu = 0; try { tu = (await rpc('my_help_unread')) || 0; } catch {}
+  MSG.unread = rows.reduce((n, r) => n + (r.unread || 0), 0) + tu; msgBadge();
+  const teamRow = `<button class="ritem fr chatrow teamrow${tu ? ' unread' : ''}" data-go="team">${teamAv(50)}<div><b>${TEAM} <span class="admintag">✔ Official</span></b><span>${tu ? 'New reply from the team' : 'Help & prayer — we pray for you and reply here'}</span></div><span class="chatmeta">${tu ? `<b class="ubadge">${tu}</b>` : ''}</span></button>`;
+  $('#mchats').innerHTML = `<div class="rlist">${teamRow}</div>` + (rows.length ? `<div class="rlist" style="margin-top:8px">${rows.map(r => `<button class="ritem fr chatrow${r.unread ? ' unread' : ''}" data-go="chat-${r.other}">${avatarHTML(r.avatar_url, r.name, 50, r.last_seen ? isOnline(r.last_seen) : null)}<div><b>${esc(r.name)}${adminTag(r.other)}</b><span>${r.last_mine ? 'You: ' : ''}${r.last_ref ? '📖 ' + esc(r.last_ref) + ' · ' : ''}${esc(String(r.last_body).replace(/\s+/g, ' ').slice(0, 70))}</span></div><span class="chatmeta"><small>${msgTime(r.last_at)}</small>${r.unread ? `<b class="ubadge">${r.unread}</b>` : ''}</span></button>`).join('')}</div>`
+    : '<p class="empty">No messages with friends yet. Tap “New message” to write to a friend.</p>');
 }
 
 /* one conversation */
@@ -4275,6 +4278,52 @@ const adminTag = id => ADMIN_IDS.includes(id) ? ' <span class="admintag" title="
 async function loadAdminIds() { if (!sbOn()) return; try { const ids = await sbFetch('/rest/v1/rpc/app_admin_ids', { method: 'POST', body: '{}' }, signedIn()); if (Array.isArray(ids)) { const changed = JSON.stringify(ids) !== JSON.stringify(ADMIN_IDS); ADMIN_IDS = ids; try { localStorage.setItem('jom:admins', JSON.stringify(ids)); } catch {} if (changed && /^#(friends|messages|chat-|user-|members|profile)/.test(location.hash)) render(); } } catch {} }
 setTimeout(loadAdminIds, 1500);
 
+/* ---------- help & prayer conversations with the One More Lord Ministry Team ---------- */
+const TEAM = 'One More Lord Ministry Team';
+const teamAv = (size = 44) => `<span class="av teamav" style="--av:${size}px"><img src="img/logo-sm.png" alt=""></span>`;
+async function viewTeam() {
+  setNav('community'); document.title = `${TEAM} — Just One More Lord`; if (!sbOn() || !signedIn()) return signInFirst('Messages');
+  document.body.classList.add('chatmode'); window.addEventListener('hashchange', () => document.body.classList.remove('chatmode'), { once: true });
+  main.innerHTML = `<section class="band chatband"><div class="wrap quizwrap chatwrap">
+    <div class="chathead"><button class="btn ghost sm" data-go="messages" aria-label="Back to messages">←</button>${teamAv(44)}<div class="grow"><b>${TEAM} <span class="admintag">✔ Official</span></b><small>We pray for you and reply personally</small></div></div>
+    <div id="tmsgs" class="cmsgs"><p class="muted"><span class="spin"></span>Loading…</p></div>
+    <form class="composer" id="tform" hidden><div class="crow"><label class="sr" for="ttext">Message</label><textarea id="ttext" rows="1" maxlength="2000" placeholder="Write to the ministry team…"></textarea><button class="btn sm" id="tsend" aria-label="Send">➤</button></div></form></div></section>`;
+  let threads = [];
+  const draw = () => { const box = $('#tmsgs'); if (!box) return;
+    if (!threads.length) { box.innerHTML = `<p class="empty">When you ask for help or prayer, your conversation with our ministry team appears here.</p><div class="linkrow" style="justify-content:center"><button class="btn" data-go="help">🙏 Ask for help or prayer</button></div>`; return; }
+    box.innerHTML = threads.map(t => `<p class="cday">${new Date(t.created_at).toLocaleDateString('en-ZA', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
+      <div class="bub me"><p>${t.topics?.length ? `<b>${t.topics.map(esc).join(' · ')}</b><br>` : ''}${msgText(t.message)}</p><small>${msgTime(t.created_at)} · Sent to the team</small></div>
+      ${t.replies.map(r => r.from_team ? `<div class="bub them team"><b class="teamname">${TEAM}</b><p>${msgText(r.body)}</p><small>${msgTime(r.created_at)}</small></div>` : `<div class="bub me"><p>${msgText(r.body)}</p><small>${msgTime(r.created_at)}</small></div>`).join('')}
+      ${t.replies.some(r => r.from_team) ? '' : '<p class="small muted tcwait">🙏 We have your message and we are praying for you. The team will reply here.</p>'}`).join('');
+    box.scrollTop = box.scrollHeight; };
+  const load = async () => { try { threads = await rpc('my_help_threads'); } catch (e) { $('#tmsgs').innerHTML = `<p class="empty">${esc(needMsgSQL(e))}</p>`; return; } draw(); $('#tform').hidden = !threads.length; msgPoll(); };
+  await load(); clearInterval(MSG.chatTimer); MSG.chatTimer = setInterval(() => { if (!document.hidden && document.activeElement?.id !== 'ttext') load(); }, 20000);
+  const ta = $('#ttext'), f = $('#tform');
+  ta.oninput = () => { ta.style.height = 'auto'; ta.style.height = Math.min(ta.scrollHeight, 140) + 'px'; };
+  $('#tsend').addEventListener('pointerdown', e => e.preventDefault());
+  f.onsubmit = async e => { e.preventDefault(); const b = ta.value.trim(); if (!b || !threads.length) return; $('#tsend').disabled = true;
+    try { await rpc('help_user_reply', { p_request: threads[threads.length - 1].id, p_body: b }); ta.value = ''; ta.oninput(); await load(); } catch (er) { toast(needMsgSQL(er)); } finally { $('#tsend').disabled = false; ta.focus(); } };
+}
+/* admins: the conversation under each help message, with a reply box that sends as the ministry team */
+async function adminHelpThread(art, m) {
+  const box = document.createElement('div'); box.className = 'hthread'; art.querySelector('.linkrow')?.before(box);
+  const first = (m.name || '').trim().split(' ')[0];
+  const sig = `\n\nWith love,\n${TEAM} 🙏`, hello = `Hi${first ? ' ' + first : ''}, this is the ${TEAM}. We received your message and we are praying for you.`;
+  const d = String(m.contact || '').replace(/[^\d+]/g, ''), wa = d.length >= 9 ? 'https://wa.me/' + d.replace(/^0/, '27').replace(/^\+/, '') + '?text=' + encodeURIComponent(hello + sig) : '';
+  const mail = /@/.test(m.contact || '') ? `mailto:${m.contact}?subject=${encodeURIComponent('From the ' + TEAM)}&body=${encodeURIComponent(hello + sig)}` : '';
+  const outside = `${wa ? `<a class="btn ghost sm" href="${esc(wa)}" target="_blank" rel="noopener">WhatsApp as the team</a>` : ''}${mail ? `<a class="btn ghost sm" href="${esc(mail)}">Email as the team</a>` : ''}`;
+  if (!m.user_id) { box.innerHTML = `<p class="small muted">They were not signed in, so reply outside the app. The message is already written and signed by the ${TEAM}:</p><div class="linkrow">${outside || '<span class="small">No WhatsApp number or email given.</span>'}</div>`; return; }
+  const draw = rows => { box.innerHTML = `<p class="kicker">Conversation</p>${rows.map(r => `<div class="hm ${r.from_team ? 'team' : 'them'}"><b>${r.from_team ? '🙏 ' + TEAM : esc(m.name || 'They')}</b> <small class="muted">${msgTime(r.created_at)}${r.from_team ? (r.read_at ? ' · ✓✓ Read' : ' · ✓ Sent') : ''}</small><p>${msgText(r.body)}</p></div>`).join('') || '<p class="small muted">No replies yet.</p>'}
+    <label class="small" for="hr-${m.id}"><b>Reply in the app as “${TEAM}”</b> — your own name is never shown</label><textarea id="hr-${m.id}" rows="3" maxlength="2000" placeholder="Write a reply…">${rows.some(r => r.from_team) ? '' : esc(hello + ' ')}</textarea>
+    <div class="linkrow"><button class="btn sm" data-hr>Send as the team</button>${outside}</div>`;
+    $('[data-hr]', box).onclick = async e => { const t = $('#hr-' + m.id).value.trim(); if (!t) return; e.target.disabled = true;
+      try { const nid = await rpc('help_team_reply', { p_request: m.id, p_body: t });
+        fetch(SB.url.replace(/\/$/, '') + '/functions/v1/friend-message', { method: 'POST', headers: { apikey: SB.anonKey, Authorization: 'Bearer ' + AUTH.access, 'Content-Type': 'application/json' }, body: JSON.stringify({ help_reply: nid }) }).catch(() => {});
+        toast(`Sent as the ${TEAM}`); load(); } catch (er) { e.target.disabled = false; toast(needMsgSQL(er)); } }; };
+  const load = async () => { try { draw(await rpc('admin_help_thread', { p_request: m.id })); } catch (e) { box.innerHTML = `<p class="small muted">${esc(needMsgSQL(e))}</p><div class="linkrow">${outside}</div>`; } };
+  load();
+}
+
 async function viewFriendNotes(id) {
   setNav('community'); document.title = 'Friend\'s notes — Just One More Lord'; if (!sbOn() || !signedIn()) return signInFirst('friends\' notes');
   main.innerHTML = `<section class="band"><div class="wrap quizwrap"><div class="crumbs"><button data-go="friends">Friends</button> › Notes</div><div id="fnb"><p class="muted"><span class="spin"></span>Loading…</p></div></div></section>`;
@@ -4399,6 +4448,7 @@ async function render() {
     else if (h === 'friends') { await viewFriends(); if (signedIn() && $('#flist')) { $('#flist').insertAdjacentHTML('beforebegin', `<div class="linkrow" style="margin:14px 0"><button class="btn" data-go="invite">🔗 Share my invite link</button></div>${shareFlagsHTML()}`); wireShareFlags(main); } }
     else if (h === 'members') await viewMembers();
     else if (h === 'messages') await viewMessages();
+    else if (h === 'team') await viewTeam();
     else if (h === 'invite') viewInvite();
     else if (h.startsWith('user-')) await viewUser(h.slice(5));
     else if (h.startsWith('chat-')) await viewChat(h.slice(5));
@@ -4454,7 +4504,7 @@ if ('IntersectionObserver' in window && !matchMedia('(prefers-reduced-motion: re
   btn.onclick = () => open(sheet.hidden); $('#menuX').onclick = () => open(false);
   sheet.addEventListener('click', e => { if (e.target === sheet || e.target.closest('[data-go]')) open(false); });
   document.addEventListener('keydown', e => { if (e.key === 'Escape' && !sheet.hidden) open(false); });
-  const mark = () => { const h = (location.hash.slice(1) || 'home').split('-')[0]; const map = { read: 'read', parallel: 'read', gospel: 'gospel', grace: 'gospel', messages: 'messages', chat: 'messages', home: 'home', '': 'home' };
+  const mark = () => { const h = (location.hash.slice(1) || 'home').split('-')[0]; const map = { read: 'read', parallel: 'read', gospel: 'gospel', grace: 'gospel', messages: 'messages', chat: 'messages', team: 'messages', home: 'home', '': 'home' };
     $$('#tabbar [data-tab]').forEach(b => b.classList.toggle('on', b.dataset.tab === map[h])); open(false); };
   window.addEventListener('hashchange', mark); mark();
   setInterval(() => { const t = $('#tabMsg'); if (t) { const n = typeof MSG === 'object' ? MSG.unread : 0; t.textContent = n ? (n > 9 ? '9+' : n) : ''; } }, 2000);

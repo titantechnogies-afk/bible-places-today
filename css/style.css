@@ -1173,3 +1173,12 @@ body.chatmode .composer{position:static;padding-bottom:calc(10px + env(safe-area
 @media(max-width:360px){.menugrid{grid-template-columns:repeat(3,1fr)}}
 :root[data-theme=light] .tabbar{background:rgba(237,244,248,.97)}:root[data-theme=light] .tabbar button.on{color:#000;text-shadow:none}:root[data-theme=light] .menuin{background:#f3f8fb}
 @media(max-width:820px){#msgBtn{display:none!important}}
+/* ministry team conversations */
+.teamav{background:#020a10!important;border:2px solid rgba(255,199,44,.7);overflow:hidden}.teamav img{width:100%;height:100%;object-fit:contain;padding:3px}
+.teamrow{border-color:rgba(255,199,44,.55)!important;background:linear-gradient(135deg,rgba(255,199,44,.1),rgba(0,209,255,.06))!important}
+.bub.team{border-color:rgba(255,199,44,.55);background:linear-gradient(135deg,rgba(255,199,44,.12),var(--card2))}.teamname{display:block;color:#ffe08a;font-size:calc(13px * var(--fs,1));margin-bottom:2px}
+.tcwait{text-align:center;margin:6px 0 10px}
+.hthread{margin:12px 0;padding:12px;border-radius:14px;border:1px solid rgba(255,199,44,.35);background:rgba(255,199,44,.04)}
+.hthread .hm{margin:0 0 10px;padding:8px 12px;border-radius:12px;background:var(--card2)}.hthread .hm.team{background:rgba(255,199,44,.1);border:1px solid rgba(255,199,44,.35)}.hthread .hm p{margin:4px 0 0}
+.hthread textarea{width:100%;margin:6px 0}
+:root[data-theme=light] .teamname{color:#8a5d00}

@@ -11,6 +11,7 @@ It is safe to run again; it never deletes users or data.
 1. Supabase → your project → **SQL Editor** → *New query* → paste everything from **`supabase/messages.sql`** → **Run**. The result says `messages switched on`.
 2. Phone notifications for new messages (optional): Supabase → **Edge Functions** → *Deploy a new function* → name it **`friend-message`** → paste **`supabase/functions/friend-message/index.ts`** → Deploy. Leave **Verify JWT ON**. It uses the same secrets as `daily-verse`, so nothing else is needed.
 3. Reported messages and reported profiles show at the bottom of **My profile → Help messages** (admins only). From there you can hide a member, remove their photo and bio, or open their profile.
+5. **Help & prayer replies**: on Help messages, type your reply and tap **Send as the team**. The person sees it in Messages from **One More Lord Ministry Team** (your name is never shown). For the phone notification, redeploy the `friend-message` function with the latest file.
 4. The same file switches on **Delete my account**, the **terms of use** agreement and **member profile pages**. Run it again whenever it is updated — it is safe to repeat.
 
 # Just One More Lord — setup checklist

@@ -337,5 +337,68 @@ $$;
 revoke all on function public.app_admin_ids() from public;
 grant execute on function public.app_admin_ids() to anon, authenticated;
 
+-- 22) Help & prayer conversations: replies come from "One More Lord Ministry Team", never from an admin's own name
+create table if not exists public.help_messages (
+  id uuid primary key default gen_random_uuid(),
+  request uuid not null references public.help_requests(id) on delete cascade,
+  from_team boolean not null,
+  body text not null check (char_length(body) between 1 and 2000),
+  created_at timestamptz not null default now(),
+  read_at timestamptz,
+  pushed boolean not null default false
+);
+create index if not exists help_messages_req on public.help_messages (request, created_at);
+alter table public.help_messages enable row level security;
+revoke all on public.help_messages from anon, authenticated;
+
+-- the team replies (admins only)
+create or replace function public.help_team_reply(p_request uuid, p_body text) returns uuid
+language plpgsql security definer set search_path = public as $$
+declare nid uuid; b text := trim(coalesce(p_body, ''));
+begin
+  if not public.is_app_admin() then raise exception 'Admins only'; end if;
+  if b = '' then raise exception 'Write a reply first'; end if;
+  insert into help_messages (request, from_team, body) values (p_request, true, left(b, 2000)) returning id into nid;
+  update help_requests set status = 'contacted' where id = p_request and status = 'new';
+  return nid;
+end $$;
+-- the conversation, for the admins
+create or replace function public.admin_help_thread(p_request uuid) returns table (id uuid, from_team boolean, body text, created_at timestamptz, read_at timestamptz)
+language sql stable security definer set search_path = public as $$
+  select m.id, m.from_team, m.body, m.created_at, m.read_at from help_messages m where m.request = p_request and public.is_app_admin() order by m.created_at;
+$$;
+-- the person who asked: their requests and the team's replies (marks replies as read)
+create or replace function public.my_help_threads() returns json
+language plpgsql security definer set search_path = public as $$
+declare out json;
+begin
+  if auth.uid() is null then return '[]'::json; end if;
+  select coalesce(json_agg(json_build_object('id', r.id, 'created_at', r.created_at, 'message', r.message, 'topics', r.topics,
+      'replies', coalesce((select json_agg(json_build_object('id', m.id, 'from_team', m.from_team, 'body', m.body, 'created_at', m.created_at) order by m.created_at) from help_messages m where m.request = r.id), '[]'::json))
+    order by r.created_at), '[]'::json) into out
+  from help_requests r where r.user_id = auth.uid();
+  update help_messages m set read_at = now() from help_requests r where m.request = r.id and r.user_id = auth.uid() and m.from_team and m.read_at is null;
+  return out;
+end $$;
+create or replace function public.my_help_unread() returns int
+language sql stable security definer set search_path = public as $$
+  select count(*)::int from help_messages m join help_requests r on r.id = m.request where r.user_id = auth.uid() and m.from_team and m.read_at is null;
+$$;
+-- the person writes back (goes to the admins' Help messages, marked new again)
+create or replace function public.help_user_reply(p_request uuid, p_body text) returns uuid
+language plpgsql security definer set search_path = public as $$
+declare nid uuid; b text := trim(coalesce(p_body, ''));
+begin
+  if auth.uid() is null then raise exception 'Please sign in first'; end if;
+  if not exists (select 1 from help_requests where id = p_request and user_id = auth.uid()) then raise exception 'Conversation not found'; end if;
+  if b = '' then raise exception 'Write a message first'; end if;
+  if (select count(*) from help_messages m join help_requests r on r.id = m.request where r.user_id = auth.uid() and not m.from_team and m.created_at > now() - interval '1 minute') >= 10 then raise exception 'Slow down a little — try again in a minute.'; end if;
+  insert into help_messages (request, from_team, body) values (p_request, false, left(b, 2000)) returning id into nid;
+  update help_requests set status = 'new' where id = p_request;
+  return nid;
+end $$;
+revoke all on function public.help_team_reply(uuid, text), public.admin_help_thread(uuid), public.my_help_threads(), public.my_help_unread(), public.help_user_reply(uuid, text) from public, anon;
+grant execute on function public.help_team_reply(uuid, text), public.admin_help_thread(uuid), public.my_help_threads(), public.my_help_unread(), public.help_user_reply(uuid, text) to authenticated;
+
 -- Check: these are ALL the admins. Only your own email should be listed. To remove someone: delete from public.app_admins where user_id = (select id from auth.users where email = 'their@email');
 select u.email as admin_email from public.app_admins a join auth.users u on u.id = a.user_id;
