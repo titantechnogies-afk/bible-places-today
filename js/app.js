@@ -3903,7 +3903,7 @@ function viewHelp(pre) {
   wireHelpForm();
 }
 /* floating "Need prayer?" button on every page */
-function helpFab() { let f = document.getElementById('helpfab'); const h = location.hash.slice(1) || 'home', hide = /^(help|freedom|help-inbox|embed-|present-|gospel-1min)/.test(h) || document.documentElement.classList.contains('embed') || document.documentElement.classList.contains('gated');
+function helpFab() { let f = document.getElementById('helpfab'); const h = location.hash.slice(1) || 'home', hide = /^(help|freedom|help-inbox|embed-|present-|gospel-1min|chat-|messages)/.test(h) || document.documentElement.classList.contains('embed') || document.documentElement.classList.contains('gated');
   if (!f) { f = document.createElement('button'); f.id = 'helpfab'; f.className = 'helpfab'; f.innerHTML = '<span aria-hidden="true">🙏</span> Need prayer?'; f.setAttribute('aria-label', 'Need help or prayer? Message us'); f.onclick = () => go('help'); document.body.append(f); }
   f.hidden = hide; }
 /* the admin inbox for help messages (only readable by app admins; see supabase/help.sql) */
@@ -4060,6 +4060,7 @@ async function viewMessages() {
 async function viewChat(other) {
   setNav('community'); if (!sbOn() || !signedIn()) return signInFirst('Messages');
   if (!/^[0-9a-f-]{36}$/i.test(other)) return go('messages');
+  document.body.classList.add('chatmode'); window.addEventListener('hashchange', () => document.body.classList.remove('chatmode'), { once: true });
   let fr = []; try { fr = await rpc('my_friends'); } catch {}
   let info = fr.find(f => f.id === other); let chats = [];
   if (!info) { try { chats = await rpc('my_chats'); } catch {} const c = chats.find(c => c.other === other); info = c ? { id: other, name: c.name, avatar_url: c.avatar_url, last_seen: c.last_seen, status: c.is_friend ? 'accepted' : 'gone' } : { id: other, name: 'Member', status: 'gone' }; }
@@ -4093,10 +4094,13 @@ async function viewChat(other) {
   const setVerse = (r, t) => { vref = r; vtext = t || ''; $('#cverse').hidden = !r; $('#cvref').textContent = r; };
   if (pending?.to === other) { if (pending.ref) setVerse(pending.ref, pending.body); else ta.value = pending.body || ''; }
   ta.oninput = () => { ta.style.height = 'auto'; ta.style.height = Math.min(ta.scrollHeight, 140) + 'px'; }; ta.oninput();
+  const keepVisible = () => setTimeout(() => { if (document.activeElement === ta) { f.scrollIntoView({ block: 'end' }); const box = $('#cmsgs'); if (box) box.scrollTop = box.scrollHeight; } }, 250);
+  ta.addEventListener('focus', keepVisible); window.visualViewport?.addEventListener('resize', keepVisible);
   ta.onkeydown = e => { if (e.key === 'Enter' && !e.shiftKey && matchMedia('(pointer:fine)').matches) { e.preventDefault(); f.requestSubmit(); } };
   $('#cvx').onclick = () => setVerse('', '');
   $('#cvbtn').onclick = async () => { const r = (prompt('Which verse? For example: John 3:16 or Psalm 23:1-3') || '').trim(); if (!r) return;
     let t = ''; try { const v = await bibleText(r); t = v.verses.map(x => x.t).join(' ') || v.text || ''; } catch {} setVerse(r, t); if (!t) toast('Verse added — the text will show when they open it'); };
+  $('#csend').addEventListener('pointerdown', e => e.preventDefault()); $('#cvbtn').addEventListener('pointerdown', e => { if (document.activeElement === ta) e.preventDefault(); });
   f.onsubmit = async e => { e.preventDefault(); const note = ta.value.trim(); if (!note && !vref) return;
     const body = vref ? [vtext ? `“${vtext.trim()}”` : '', note].filter(Boolean).join('\n\n') || vref : note;
     $('#csend').disabled = true; try { await sendMsg(other, body, vref || null); ta.value = ''; ta.oninput(); setVerse('', ''); await load(); $('#cmsgs').scrollTop = 1e9; }
