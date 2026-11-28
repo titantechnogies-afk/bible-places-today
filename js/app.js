@@ -1056,6 +1056,7 @@ const SHICON = {
   fb: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="#1877F2"/><path fill="#fff" d="M13.4 22v-7.3h2.4l.4-2.9h-2.8V10c0-.8.2-1.4 1.4-1.4h1.5V6.1a20 20 0 0 0-2.2-.1c-2.2 0-3.7 1.3-3.7 3.8v2H8v2.9h2.4V22z"/></svg>',
   tt: '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#25F4EE" d="M15.2 2.5h-3v12.6a2.6 2.6 0 1 1-2.6-2.6c.3 0 .5 0 .8.1V9.5a5.6 5.6 0 1 0 4.8 5.6V8.6a7 7 0 0 0 4.1 1.3v-3a4.1 4.1 0 0 1-4.1-4.4z" transform="translate(-.8 -.6)"/><path fill="#FE2C55" d="M15.2 2.5h-3v12.6a2.6 2.6 0 1 1-2.6-2.6c.3 0 .5 0 .8.1V9.5a5.6 5.6 0 1 0 4.8 5.6V8.6a7 7 0 0 0 4.1 1.3v-3a4.1 4.1 0 0 1-4.1-4.4z" transform="translate(.8 .6)"/><path fill="#fff" d="M15.2 2.5h-3v12.6a2.6 2.6 0 1 1-2.6-2.6c.3 0 .5 0 .8.1V9.5a5.6 5.6 0 1 0 4.8 5.6V8.6a7 7 0 0 0 4.1 1.3v-3a4.1 4.1 0 0 1-4.1-4.4z"/></svg>',
   pic: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="1.9"/><circle cx="9" cy="10" r="2" fill="currentColor"/><path d="M4 18l5-5 4 4 3-3 4 4" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/></svg>',
+  friend: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/><path d="M12 13.2s-3-1.8-3-3.6a1.6 1.6 0 0 1 3-.8 1.6 1.6 0 0 1 3 .8c0 1.8-3 3.6-3 3.6z" fill="#ff7aa8"/></svg>',
   study: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h6a2 2 0 0 1 2 2v12a2 2 0 0 0-2-2H4zM20 5h-6a2 2 0 0 0-2 2v12a2 2 0 0 1 2-2h6z" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/></svg>'
 };
 const SEL = { mode: '', label: '', msg: '', hash: '', refs: [], first: '' };
@@ -1067,7 +1068,7 @@ function selBar() {
   b = document.createElement('div'); b.id = 'selbar'; b.className = 'selbar noprint'; b.setAttribute('role', 'toolbar'); b.setAttribute('aria-label', 'Share what you selected');
   b.innerHTML = `<div class="selhead"><b id="sellbl"></b><button class="selx" data-s="close" aria-label="Close">×</button></div>
     <div class="hlrow selhl" role="group" aria-label="Highlight colour">${HLC.map(([c, l]) => `<button class="hl-dot hl-${c}" data-shl="${c}" aria-label="Highlight ${l}"></button>`).join('')}<button class="hl-dot hl-none" data-shl="" aria-label="Remove highlight">×</button></div>
-    <div class="selbtns"><button data-s="copy">${SHICON.copy}<span>Copy</span></button><button data-s="wa">${SHICON.wa}<span>WhatsApp</span></button><button data-s="fb">${SHICON.fb}<span>Facebook</span></button><button data-s="tt">${SHICON.tt}<span>TikTok</span></button><button data-s="more">${ICON.share}<span>More</span></button><button data-s="pic" class="vonly">${SHICON.pic}<span>Picture</span></button><button data-s="study" class="vonly">${SHICON.study}<span>Study</span></button></div>`;
+    <div class="selbtns"><button data-s="copy">${SHICON.copy}<span>Copy</span></button><button data-s="wa">${SHICON.wa}<span>WhatsApp</span></button><button data-s="fb">${SHICON.fb}<span>Facebook</span></button><button data-s="tt">${SHICON.tt}<span>TikTok</span></button><button data-s="friend">${SHICON.friend}<span>Friend</span></button><button data-s="more">${ICON.share}<span>More</span></button><button data-s="pic" class="vonly">${SHICON.pic}<span>Picture</span></button><button data-s="study" class="vonly">${SHICON.study}<span>Study</span></button></div>`;
   b.addEventListener('mousedown', e => { if (e.target.closest('button')) e.preventDefault(); }); // keep a drag-selection alive while tapping the bar
   b.onclick = e => { const h = e.target.closest('[data-shl]'); if (h) return selHighlight(h.dataset.shl); const a = e.target.closest('[data-s]')?.dataset.s; if (a) sendShare(a, SEL); };
   document.body.append(b); return b;
@@ -1104,6 +1105,7 @@ async function sendShare(a, s) {
     else copyText(msg).then(() => toast('Copied with the link — paste it anywhere')); }
   if (a === 'pic' && s.first) go('versepic-' + encodeURIComponent(s.first));
   if (a === 'study' && s.first) openVerse(s.first);
+  if (a === 'friend') shareToFriend(s);
   if (s === SEL && a !== 'more') hideSel(a !== 'copy');
 }
 /* "John 3:16-18" / "John 3:16, 18" from verse numbers */
@@ -1143,7 +1145,7 @@ let selT; document.addEventListener('selectionchange', () => { clearTimeout(selT
 window.addEventListener('hashchange', () => hideSel());
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && $('#selbar.on')) hideSel(); });
 /* a row of share buttons for whole pages (used by the love letter) */
-function shareRow(id) { return `<div class="sharerow" id="${id}"><span class="kicker">Share it</span><div class="selbtns"><button data-s="wa">${SHICON.wa}<span>WhatsApp</span></button><button data-s="fb">${SHICON.fb}<span>Facebook</span></button><button data-s="tt">${SHICON.tt}<span>TikTok</span></button><button data-s="copy">${SHICON.copy}<span>Copy</span></button><button data-s="more">${ICON.share}<span>More</span></button></div></div>`; }
+function shareRow(id) { return `<div class="sharerow" id="${id}"><span class="kicker">Share it</span><div class="selbtns"><button data-s="wa">${SHICON.wa}<span>WhatsApp</span></button><button data-s="fb">${SHICON.fb}<span>Facebook</span></button><button data-s="tt">${SHICON.tt}<span>TikTok</span></button><button data-s="copy">${SHICON.copy}<span>Copy</span></button><button data-s="friend">${SHICON.friend}<span>Friend</span></button><button data-s="more">${ICON.share}<span>More</span></button></div></div>`; }
 function wireShareRow(id, get) { const r = document.getElementById(id); if (r) r.onclick = e => { const a = e.target.closest('[data-s]')?.dataset.s; if (a) sendShare(a, get()); }; }
 
 /* ---------- My Library ---------- */
@@ -1468,7 +1470,7 @@ async function viewFly(id) {
 function homeMore() {
   const host = $('#feat')?.closest('.band'); if (!host || $('.moretiles')) return;
   const T = [['read', 'Read the Bible', 'Every chapter, with its places on a map and the Hebrew & Greek behind each verse.'], ['timeline', 'Bible timeline', 'Empires, kings, prophets and events from Abraham to Revelation.'], ['family', 'Family tree', 'The line from Adam to Jesus, with the twelve tribes and more.'],
-    ['members', 'People who have joined', 'Find members, add them as friends and see each other\'s shared notes.'], ['help', 'Need help or prayer?', 'Send our team a private message. We will pray for you and get back to you.'], ['freedom', 'Jesus is the ONE step', 'Freedom from drugs, alcohol, violence and addiction, with a private help message.'], ['love', 'Share the love', 'The gospel in 1 minute, blessings to send, a love letter from the Father and more.'], ['church-family', 'Our church family', 'Baptisms, men\'s groups, Sundays and outreach.'], ['install', 'Add the app to your Home Screen', 'Step-by-step pictures for iPhone and Android.'], ['guide', 'How to use the app', 'A one-minute tour: getting around, reading the Bible and where to find everything.'], ['identity', 'Who you are in Christ', 'Your new creation identity broken down: spirit, soul and body, 12 truths and daily declarations.'], ['receive', 'Receive Jesus & the Holy Spirit', 'A simple prayer, what just happened, and your next steps.'], ['miracles', 'Miracles of Jesus', 'All the miracles on the map, with what each shows about the Father\'s heart.'], ['parables', 'Parables of Jesus', 'Every parable explained through grace, with a question to think about.'], ['names', 'Names of God', 'El Shaddai, Jehovah Jireh, Abba and more, with the Hebrew and Greek.'], ['measures', 'Bible money & measures', 'A denarius in rand, a cubit in centimetres, and every unit in today\'s terms.'], ['grace-minute', 'Grace minute', 'One minute a day: a verse, the finished work, a reflection and a prayer.'], ['grace', 'Grace lens', 'Every passage in the light of the finished work of Jesus and the love of God.'], ['journal', 'Bible journal', 'Draw, write and add stickers on any verse.'], ['wrapped', 'My year in the Word', 'Your chapters, streaks and favourite verses this year — share it.'], ['friends', 'Friends', 'See who is online and pray for each other.'], ['testimonies', 'Testimonies', 'Answered prayers and healings.'], ['churches', 'Church finder', 'Find a grace-teaching church near you.'], ['concordance', 'Strong\'s Concordance', 'Every Hebrew and Greek word, its meaning and every place it appears.'], ['fly-' + (JOURNEYS.find(j => j.id === 'apostles') || JOURNEYS[0])?.id, '3D fly-overs', 'Fly over the real terrain of the journeys of Abraham, Moses, Jesus and Paul.'], ['kingdoms', 'Kingdom maps', 'See the borders change from David to the Romans.'], ['distance', 'How far was it?', 'Distances and walking days between Bible places.'], ['kids', 'Kids\' corner', 'Stories, a fun quiz and pictures to colour.'], ['plans', 'Reading plans', 'John in 21 days, Acts with Paul, Psalms of hope and journey plans.'], ['quiz', 'Quiz', 'Test yourself and challenge a friend.'], ['near', 'Near me', 'Find Bible places close to where you are.'], ['library', 'My library', 'Your saved places, verses, highlights and notes.'], ['books', 'Books of the Bible', 'An introduction to all 66 books: author, date, themes and outline.'], ['tabernacle', 'Tabernacle & Temple', 'Tap each part and see how it points to Jesus.'], ['jerusalem', 'Jerusalem through time', 'The city from David to Jesus on the map.'], ['learn', 'Learn Hebrew & Greek', 'Alphabets, the 100 most common words and flashcards.'], ['family-devotion', 'Family devotion', 'A 10-minute story, questions and prayer for the whole family.'], ['fasting', 'Fasting', 'Track a fast with Scripture and prayer reminders.'], ['battle', 'Quiz battles', 'Same questions, beat your friend\'s score.'], ['study', 'Study tools', 'Commentaries, topical Bible, dictionary, prophecy and the four Gospels side by side.'], ['daily', 'Daily challenge', 'One Bible question a day — keep your streak going.'], ['versepic', 'Verse pictures', 'Make a verse picture on a photo of a real Bible place.'], ['groups', 'Church groups', 'Read the same plan and pray together as a church.'], ['places', 'Every Bible place', 'All 1,300 Bible places on one map, plus the events map.'], ['people', 'People of the Bible', 'Look up anyone in the Bible: family, age, map, journeys and every verse.'], ['chronology', 'From Adam to today', 'Lifespans from Adam to Jesus and the age of mankind in the Bible.'], ['memory', 'Scripture memory', 'Learn verses by heart with a few minutes\' practice a day.'], ['devotionals', 'Devotionals', 'Short reflections and prayers from the Bible lands.'], ['feasts', 'Feasts & holy days', 'Passover, Pentecost, Tabernacles and Easter — dates for the year ahead.'], ['teachings', 'Teachings', 'Andrew Wommack, Richard Olivier, Dan Mohler, Creflo Dollar and Grace Lubega from their official channels.'], ['prayer', 'Prayer', 'A private prayer journal and a shared prayer wall.'], ['community', 'Friends & community', 'Invite friends, read plans together and join the conversation.'], ['embed', 'For churches', 'Put any Bible place or journey on your church or school website.'], ['devnotes', 'Developer notes', 'What\'s new, what\'s next, and a place for your feedback.']];
+    ['messages', 'Messages', 'Private messages with your friends: encouragement, prayer and verses.'], ['members', 'People who have joined', 'Find members, add them as friends and see each other\'s shared notes.'], ['help', 'Need help or prayer?', 'Send our team a private message. We will pray for you and get back to you.'], ['freedom', 'Jesus is the ONE step', 'Freedom from drugs, alcohol, violence and addiction, with a private help message.'], ['love', 'Share the love', 'The gospel in 1 minute, blessings to send, a love letter from the Father and more.'], ['church-family', 'Our church family', 'Baptisms, men\'s groups, Sundays and outreach.'], ['install', 'Add the app to your Home Screen', 'Step-by-step pictures for iPhone and Android.'], ['guide', 'How to use the app', 'A one-minute tour: getting around, reading the Bible and where to find everything.'], ['identity', 'Who you are in Christ', 'Your new creation identity broken down: spirit, soul and body, 12 truths and daily declarations.'], ['receive', 'Receive Jesus & the Holy Spirit', 'A simple prayer, what just happened, and your next steps.'], ['miracles', 'Miracles of Jesus', 'All the miracles on the map, with what each shows about the Father\'s heart.'], ['parables', 'Parables of Jesus', 'Every parable explained through grace, with a question to think about.'], ['names', 'Names of God', 'El Shaddai, Jehovah Jireh, Abba and more, with the Hebrew and Greek.'], ['measures', 'Bible money & measures', 'A denarius in rand, a cubit in centimetres, and every unit in today\'s terms.'], ['grace-minute', 'Grace minute', 'One minute a day: a verse, the finished work, a reflection and a prayer.'], ['grace', 'Grace lens', 'Every passage in the light of the finished work of Jesus and the love of God.'], ['journal', 'Bible journal', 'Draw, write and add stickers on any verse.'], ['wrapped', 'My year in the Word', 'Your chapters, streaks and favourite verses this year — share it.'], ['friends', 'Friends', 'See who is online and pray for each other.'], ['testimonies', 'Testimonies', 'Answered prayers and healings.'], ['churches', 'Church finder', 'Find a grace-teaching church near you.'], ['concordance', 'Strong\'s Concordance', 'Every Hebrew and Greek word, its meaning and every place it appears.'], ['fly-' + (JOURNEYS.find(j => j.id === 'apostles') || JOURNEYS[0])?.id, '3D fly-overs', 'Fly over the real terrain of the journeys of Abraham, Moses, Jesus and Paul.'], ['kingdoms', 'Kingdom maps', 'See the borders change from David to the Romans.'], ['distance', 'How far was it?', 'Distances and walking days between Bible places.'], ['kids', 'Kids\' corner', 'Stories, a fun quiz and pictures to colour.'], ['plans', 'Reading plans', 'John in 21 days, Acts with Paul, Psalms of hope and journey plans.'], ['quiz', 'Quiz', 'Test yourself and challenge a friend.'], ['near', 'Near me', 'Find Bible places close to where you are.'], ['library', 'My library', 'Your saved places, verses, highlights and notes.'], ['books', 'Books of the Bible', 'An introduction to all 66 books: author, date, themes and outline.'], ['tabernacle', 'Tabernacle & Temple', 'Tap each part and see how it points to Jesus.'], ['jerusalem', 'Jerusalem through time', 'The city from David to Jesus on the map.'], ['learn', 'Learn Hebrew & Greek', 'Alphabets, the 100 most common words and flashcards.'], ['family-devotion', 'Family devotion', 'A 10-minute story, questions and prayer for the whole family.'], ['fasting', 'Fasting', 'Track a fast with Scripture and prayer reminders.'], ['battle', 'Quiz battles', 'Same questions, beat your friend\'s score.'], ['study', 'Study tools', 'Commentaries, topical Bible, dictionary, prophecy and the four Gospels side by side.'], ['daily', 'Daily challenge', 'One Bible question a day — keep your streak going.'], ['versepic', 'Verse pictures', 'Make a verse picture on a photo of a real Bible place.'], ['groups', 'Church groups', 'Read the same plan and pray together as a church.'], ['places', 'Every Bible place', 'All 1,300 Bible places on one map, plus the events map.'], ['people', 'People of the Bible', 'Look up anyone in the Bible: family, age, map, journeys and every verse.'], ['chronology', 'From Adam to today', 'Lifespans from Adam to Jesus and the age of mankind in the Bible.'], ['memory', 'Scripture memory', 'Learn verses by heart with a few minutes\' practice a day.'], ['devotionals', 'Devotionals', 'Short reflections and prayers from the Bible lands.'], ['feasts', 'Feasts & holy days', 'Passover, Pentecost, Tabernacles and Easter — dates for the year ahead.'], ['teachings', 'Teachings', 'Andrew Wommack, Richard Olivier, Dan Mohler, Creflo Dollar and Grace Lubega from their official channels.'], ['prayer', 'Prayer', 'A private prayer journal and a shared prayer wall.'], ['community', 'Friends & community', 'Invite friends, read plans together and join the conversation.'], ['embed', 'For churches', 'Put any Bible place or journey on your church or school website.'], ['devnotes', 'Developer notes', 'What\'s new, what\'s next, and a place for your feedback.']];
   host.insertAdjacentHTML('afterend', `<section class="band moretiles"><div class="wrap"><div class="sh"><div><h2>More ways to explore</h2><p>Tools for personal study, families, churches and travellers — free, and they work on your phone.</p></div></div>
     <div class="tiles">${T.map(([h, t, d]) => `<button class="tile" data-go="${h}"><b>${t}</b><span>${d}</span></button>`).join('')}</div></div></section>`);
 }
@@ -2085,7 +2087,7 @@ function handleAuthRedirect() { // magic-link / confirmation / Google sign-in co
   const q = new URLSearchParams(h); if (q.get('error_description')) { history.replaceState(null, '', location.pathname + '#profile'); setTimeout(() => toast(q.get('error_description')), 500); return true; }
   setSession({ access_token: q.get('access_token'), refresh_token: q.get('refresh_token'), expires_in: +q.get('expires_in') || 3600 });
   history.replaceState(null, '', location.pathname + '#home');
-  sbFetch('/auth/v1/user').then(u => { AUTH.user = u; saveAuth(); document.documentElement.classList.remove('gated'); render(); pullProfile().then(() => { toast('Welcome! You are signed in 🎉'); $('#meBtn')?.remove(); profileBtn(); }); }).catch(() => {});
+  sbFetch('/auth/v1/user').then(u => { AUTH.user = u; saveAuth(); document.documentElement.classList.remove('gated'); render(); pullProfile().then(() => { toast('Welcome! You are signed in 🎉'); $('#meBtn')?.remove(); profileBtn(); msgBtn(); msgPoll(); }); }).catch(() => {});
   return true;
 }
 /* sync: the whole library (MY) is stored in your own profile row, merged with what is on this phone */
@@ -2819,7 +2821,7 @@ async function viewNotifications() {
   main.querySelector('.rlist').onclick = e => { const b = e.target.closest('[data-nid]'); if (!b) return; const x = L.find(y => y.id === b.dataset.nid); if (!x) return; x.r = 1; saveMy(); bellUpdate(); if (x.go) go(x.go); else viewNotifications(); };
 }
 navigator.serviceWorker?.addEventListener('message', e => { const g = e.data && e.data.go; if (g && location.hash !== g) location.hash = g; else if (g) render(); });
-bellBtn(); setTimeout(dailyChecks, 2500); setTimeout(pushResync, 4000); document.addEventListener('visibilitychange', () => { if (!document.hidden) dailyChecks(); });
+bellBtn(); setTimeout(msgStart, 0); setTimeout(dailyChecks, 2500); setTimeout(pushResync, 4000); document.addEventListener('visibilitychange', () => { if (!document.hidden) dailyChecks(); });
 
 /* ---------- site-owner tool: make phone-notification keys in the browser (the private key never leaves this device) ---------- */
 async function viewPushKeys() {
@@ -3048,7 +3050,7 @@ async function viewFriends() {
     const inc = rows.filter(r => r.status === 'pending' && r.incoming), out = rows.filter(r => r.status === 'pending' && !r.incoming), acc = rows.filter(r => r.status === 'accepted').sort((a, b) => (isOnline(b.last_seen) - isOnline(a.last_seen)) || String(b.last_seen || '').localeCompare(String(a.last_seen || '')));
     const on = acc.filter(r => isOnline(r.last_seen)).length;
     $('#flist').innerHTML = `${inc.length ? `<h2 class="libh">Friend requests</h2><div class="rlist">${inc.map(r => `<div class="ritem fr">${avatarHTML(r.avatar_url, r.name, 44)}<div><b>${esc(r.name)}</b><span>${esc(r.church || 'wants to be your friend')}</span></div><span class="linkrow"><button class="btn sm" data-acc="${r.id}">Accept</button><button class="btn ghost sm" data-dec="${r.id}">Decline</button></span></div>`).join('')}</div>` : ''}
-      <h2 class="libh">My friends (${acc.length}) · <span class="onl">${on} online</span></h2>${acc.length ? `<div class="rlist">${acc.map(r => `<div class="ritem fr">${avatarHTML(r.avatar_url, r.name, 48, isOnline(r.last_seen))}<div><b>${esc(r.name)}</b><span>${esc(r.last_seen ? agoTxt(r.last_seen) : 'status hidden')}${r.church ? ' · ' + esc(r.church) : ''}</span>${r.prayer_focus ? `<span class="pfoc">🙏 ${esc(r.prayer_focus)}</span>` : ''}</div><span class="linkrow frbtns"><button class="btn ghost sm" data-go="friend-notes-${r.id}">📖 Notes</button><button class="inl small" data-rm="${r.id}" aria-label="Remove ${esc(r.name)}">remove</button></span></div>`).join('')}</div>` : '<p class="empty">No friends yet — share your code or add theirs above.</p>'}
+      <h2 class="libh">My friends (${acc.length}) · <span class="onl">${on} online</span></h2>${acc.length ? `<div class="rlist">${acc.map(r => `<div class="ritem fr">${avatarHTML(r.avatar_url, r.name, 48, isOnline(r.last_seen))}<div><b>${esc(r.name)}</b><span>${esc(r.last_seen ? agoTxt(r.last_seen) : 'status hidden')}${r.church ? ' · ' + esc(r.church) : ''}</span>${r.prayer_focus ? `<span class="pfoc">🙏 ${esc(r.prayer_focus)}</span>` : ''}</div><span class="linkrow frbtns"><button class="btn sm" data-go="chat-${r.id}">💬 Message</button><button class="btn ghost sm" data-go="friend-notes-${r.id}">📖 Notes</button><button class="inl small" data-rm="${r.id}" aria-label="Remove ${esc(r.name)}">remove</button></span></div>`).join('')}</div>` : '<p class="empty">No friends yet — share your code or add theirs above.</p>'}
       ${out.length ? `<h2 class="libh">Waiting for them to accept</h2><div class="chips">${out.map(r => `<span class="chip">${esc(r.name)}</span>`).join('')}</div>` : ''}`; };
   $('#flist').onclick = async e => { const a = e.target.closest('[data-acc],[data-dec],[data-rm]'); if (!a) return; try {
       if (a.dataset.acc) { await rpc('respond_friend', { p_other: a.dataset.acc, p_accept: true }); toast('Friend added'); }
@@ -3891,6 +3893,7 @@ async function viewHelpInbox() {
   main.innerHTML = `<section class="band"><div class="wrap quizwrap"><p class="kicker">Private</p><h1>Help messages</h1><div id="hib"><p class="muted">Loading…</p></div></div></section>`;
   if (!(typeof signedIn === 'function' && signedIn())) { $('#hib').innerHTML = `<p>Please sign in with your admin account first.</p><button class="btn" data-go="profile">Sign in</button>`; return; }
   if (!(await isAppAdmin())) { $('#hib').innerHTML = `<p>This page is only for the app's admins.</p>`; return; }
+  $('#hib').insertAdjacentHTML('afterend', '<div id="hrep"></div>'); loadMsgReports($('#hrep'));
   let filter = 'new';
   const load = async () => { let rows = [];
     try { rows = await sbFetch(`/rest/v1/help_requests?select=*&order=created_at.desc&limit=200${filter ? '&status=eq.' + filter : ''}`); } catch (e) { $('#hib').innerHTML = `<p class="notice warn">Could not load messages (${esc(e.message)}).</p>`; return; }
@@ -3984,13 +3987,124 @@ async function viewMembers() {
   $('#mshow') && ($('#mshow').onclick = async () => { try { await setMyFlags({ public: true }); toast('You are now in the members list'); viewMembers(); } catch (er) { toast(needSQL(er)); } });
   $('#minv').onclick = () => shareIt({ title: 'Just One More Lord', text: 'Join me on Just One More Lord, a free grace-based Bible app. Open this link to be friends:', hash: friendInviteHash() });
   const load = async q => { let rows; try { rows = await rpc('members_list', { p_search: q || '' }); } catch (er) { $('#mlist').innerHTML = `<p class="empty">${esc(needSQL(er))}</p>`; return; }
-    const btn = r => r.friend_status === 'friends' ? `<button class="btn ghost sm" data-go="friend-notes-${r.id}">✓ Friends · 📖 Notes</button>` : r.friend_status === 'sent' || r.friend_status === 'received' ? `<button class="btn sm" data-addid="${r.id}">➕ Add friend</button>` : `<button class="btn sm" data-addid="${r.id}">➕ Add friend</button>`;
+    const btn = r => r.friend_status === 'friends' ? `<span class="linkrow frbtns"><button class="btn sm" data-go="chat-${r.id}">💬 Message</button><button class="btn ghost sm" data-go="friend-notes-${r.id}">📖 Notes</button></span>` : r.friend_status === 'sent' || r.friend_status === 'received' ? `<button class="btn sm" data-addid="${r.id}">➕ Add friend</button>` : `<button class="btn sm" data-addid="${r.id}">➕ Add friend</button>`;
     $('#mlist').innerHTML = rows.length ? `<p class="small muted">${rows.length} ${rows.length === 1 ? 'member' : 'members'}${q ? ' found' : ' listed'}</p><div class="rlist">${rows.map(r => `<div class="ritem fr">${avatarHTML(r.avatar_url, r.name, 48)}<div><b>${esc(r.name)}</b><span>${[r.church, r.country].filter(Boolean).map(esc).join(' · ') || 'Member'} · joined ${new Date(r.joined).toLocaleDateString('en-ZA', { day: 'numeric', month: 'short', year: 'numeric' })}</span></div>${btn(r)}</div>`).join('')}</div>`
       : `<p class="empty">${q ? 'No one found with that name.' : 'No members are listed yet. Invite people and ask them to tick "Show me in the members list".'}</p>`;
     $$('[data-addid]').forEach(b => b.onclick = async () => { b.disabled = true; try { const n = await rpc('add_friend_id', { p_other: b.dataset.addid }); toast(`You and ${n} are now friends 🎉`); load($('#msq').value.trim()); } catch (er) { b.disabled = false; toast(needSQL(er)); } }); };
   $('#msf').onsubmit = e => { e.preventDefault(); load($('#msq').value.trim()); };
   load('');
 }
+/* ---------- private messages between friends (needs supabase/messages.sql; phone alerts need the friend-message function) ---------- */
+const needMsgSQL = e => /does not exist|Could not find|schema cache|404/i.test(e?.message || '') ? 'Messages are not switched on yet: the site owner needs to run supabase/messages.sql in Supabase.' : (e?.message || 'Something went wrong');
+const MSG = { unread: 0, timer: null, chatTimer: null, claimed: false };
+const msgTime = t => { const d = new Date(t), now = new Date(); const same = d.toDateString() === now.toDateString();
+  return same ? d.toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit' }) : d.toLocaleDateString('en-ZA', { day: 'numeric', month: 'short' }) + (now - d < 6048e5 ? ' ' + d.toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit' }) : ''); };
+const msgText = t => esc(t).replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" rel="noopener">$1</a>').replace(/\n/g, '<br>');
+function msgBtn() { const t = $('.tools'); if (!t || $('#msgBtn') || !sbOn() || !signedIn()) return;
+  t.insertAdjacentHTML('afterbegin', `<button class="tbtn bell" id="msgBtn" data-go="messages" title="Messages" aria-label="Messages"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg><span class="bcount"></span></button>`); msgBadge(); }
+function msgBadge() { const b = $('#msgBtn'); if (!b) return; const n = MSG.unread; b.querySelector('.bcount').textContent = n > 9 ? '9+' : n || ''; b.classList.toggle('has', n > 0); b.setAttribute('aria-label', `Messages${n ? ', ' + n + ' unread' : ''}`); }
+async function msgPoll() {
+  if (!sbOn() || !signedIn() || document.hidden) return; msgBtn();
+  try { const n = await rpc('unread_messages'); if (n > MSG.unread && !location.hash.startsWith('#chat-') && location.hash !== '#messages') toast('💬 You have a new message'); MSG.unread = n || 0; msgBadge(); } catch {}
+  if (!MSG.claimed) { MSG.claimed = true; try { const s = await (await navigator.serviceWorker?.getRegistration())?.pushManager.getSubscription(); if (s) await rpc('claim_push', { p_endpoint: s.endpoint }); } catch {} }
+}
+function msgStart() { clearInterval(MSG.timer); setTimeout(msgPoll, 3000); MSG.timer = setInterval(msgPoll, 45000); }
+document.addEventListener('visibilitychange', () => { if (!document.hidden) msgPoll(); });
+window.addEventListener('hashchange', () => { clearInterval(MSG.chatTimer); });
+async function sendMsg(to, body, ref = null) {
+  const id = await rpc('send_message', { p_to: to, p_body: body, p_ref: ref });
+  // phone notification for the friend (optional server function; ignore if it is not set up)
+  fetch(SB.url.replace(/\/$/, '') + '/functions/v1/friend-message', { method: 'POST', headers: { apikey: SB.anonKey, Authorization: 'Bearer ' + AUTH.access, 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) }).catch(() => {});
+  return id;
+}
+
+/* the list of conversations */
+async function viewMessages() {
+  setNav('community'); document.title = 'Messages — Just One More Lord'; if (!sbOn() || !signedIn()) return signInFirst('Messages');
+  main.innerHTML = `<section class="band"><div class="wrap quizwrap"><p class="kicker">Hebrews 3:13 · encourage one another every day</p><h1>Messages</h1>
+    <p class="small muted">Private messages with your friends. Send a word of encouragement, a prayer or a verse.</p>
+    <div class="linkrow"><button class="btn" id="mnew">✏️ New message</button><button class="btn ghost" data-go="members">👥 Find friends</button></div>
+    <div id="mchats" style="margin-top:14px"><p class="muted"><span class="spin"></span>Loading…</p></div></div></section>`;
+  $('#mnew').onclick = () => pickFriend('Who do you want to message?', f => go('chat-' + f.id));
+  let rows; try { rows = await rpc('my_chats'); } catch (e) { $('#mchats').innerHTML = `<p class="empty">${esc(needMsgSQL(e))}</p>`; return; }
+  MSG.unread = rows.reduce((n, r) => n + (r.unread || 0), 0); msgBadge();
+  $('#mchats').innerHTML = rows.length ? `<div class="rlist">${rows.map(r => `<button class="ritem fr chatrow${r.unread ? ' unread' : ''}" data-go="chat-${r.other}">${avatarHTML(r.avatar_url, r.name, 50, r.last_seen ? isOnline(r.last_seen) : null)}<div><b>${esc(r.name)}</b><span>${r.last_mine ? 'You: ' : ''}${r.last_ref ? '📖 ' + esc(r.last_ref) + ' · ' : ''}${esc(String(r.last_body).replace(/\s+/g, ' ').slice(0, 70))}</span></div><span class="chatmeta"><small>${msgTime(r.last_at)}</small>${r.unread ? `<b class="ubadge">${r.unread}</b>` : ''}</span></button>`).join('')}</div>`
+    : '<p class="empty">No messages yet. Tap “New message” to write to a friend.</p>';
+}
+
+/* one conversation */
+async function viewChat(other) {
+  setNav('community'); if (!sbOn() || !signedIn()) return signInFirst('Messages');
+  if (!/^[0-9a-f-]{36}$/i.test(other)) return go('messages');
+  let fr = []; try { fr = await rpc('my_friends'); } catch {}
+  let info = fr.find(f => f.id === other); let chats = [];
+  if (!info) { try { chats = await rpc('my_chats'); } catch {} const c = chats.find(c => c.other === other); info = c ? { id: other, name: c.name, avatar_url: c.avatar_url, last_seen: c.last_seen, status: c.is_friend ? 'accepted' : 'gone' } : { id: other, name: 'Member', status: 'gone' }; }
+  const isFriend = info.status === 'accepted'; let blocked = false;
+  try { chats = chats.length ? chats : await rpc('my_chats'); blocked = !!chats.find(c => c.other === other)?.blocked_by_me; } catch {}
+  document.title = `${info.name} — Messages — Just One More Lord`;
+  main.innerHTML = `<section class="band chatband"><div class="wrap quizwrap chatwrap">
+    <div class="chathead"><button class="btn ghost sm" data-go="messages" aria-label="Back to messages">←</button>${avatarHTML(info.avatar_url, info.name, 44, info.last_seen ? isOnline(info.last_seen) : null)}<div class="grow"><b>${esc(info.name)}</b><small>${esc(info.last_seen ? agoTxt(info.last_seen) : 'Friend')}</small></div>
+      <details class="chatmenu"><summary class="btn ghost sm" aria-label="More options">⋯</summary><div class="panel"><button class="inl" id="cblk">${blocked ? 'Unblock' : 'Block'} ${esc(info.name)}</button><button class="inl" id="chide">Clear this chat on my phone</button>${isFriend ? `<button class="inl" data-go="friend-notes-${other}">📖 Their shared notes</button>` : ''}</div></details></div>
+    <div id="cmsgs" class="cmsgs" aria-live="polite"><p class="muted"><span class="spin"></span>Loading…</p></div>
+    ${blocked ? `<p class="notice">You blocked ${esc(info.name)}. Unblock them in the ⋯ menu to message again.</p>` : !isFriend ? `<p class="notice">You are not friends any more, so you cannot send messages. <button class="inl" data-go="members">Add them again</button></p>` : `
+    <form class="composer" id="cform"><div class="cverse" id="cverse" hidden><span>📖 <b id="cvref"></b></span><button type="button" class="inl" id="cvx" aria-label="Remove verse">×</button></div>
+      <div class="crow"><button type="button" class="btn ghost sm" id="cvbtn" title="Add a verse" aria-label="Add a verse">📖</button><label class="sr" for="ctext">Message</label><textarea id="ctext" rows="1" maxlength="2000" placeholder="Write a message…"></textarea><button class="btn sm" id="csend" aria-label="Send">➤</button></div></form>`}
+  </div></section>`;
+  let msgs = [], vref = '', vtext = '';
+  const draw = () => { const box = $('#cmsgs'); if (!box) return; const atEnd = box.scrollHeight - box.scrollTop - box.clientHeight < 80;
+    box.innerHTML = msgs.length ? msgs.map((m, i) => { const day = new Date(m.created_at).toDateString(), prev = i && new Date(msgs[i - 1].created_at).toDateString();
+      return `${day !== prev ? `<p class="cday">${new Date(m.created_at).toLocaleDateString('en-ZA', { weekday: 'long', day: 'numeric', month: 'long' })}</p>` : ''}<div class="bub ${m.mine ? 'me' : 'them'}" data-id="${m.id}">${m.verse_ref ? `<button class="vcard" data-verse="${esc(m.verse_ref)}">📖 ${esc(m.verse_ref)}</button>` : ''}<p>${msgText(m.body)}</p><small>${msgTime(m.created_at)}${m.mine ? (m.read_at ? ' · ✓✓ Read' : ' · ✓ Sent') : ` · <button class="inl rep" data-rep="${m.id}">Report</button>`}</small></div>`; }).join('')
+      : `<p class="empty">Say hello to ${esc(info.name)} 👋 — or tap 📖 to send a verse.</p>`;
+    if (atEnd || !draw.done) box.scrollTop = box.scrollHeight; draw.done = true; };
+  const load = async () => { if (!$('#cmsgs')) { clearInterval(MSG.chatTimer); return; } try { msgs = await rpc('chat_with', { p_other: other }); draw(); } catch (e) { $('#cmsgs').innerHTML = `<p class="empty">${esc(needMsgSQL(e))}</p>`; clearInterval(MSG.chatTimer); }
+    try { MSG.unread = await rpc('unread_messages'); msgBadge(); } catch {} };
+  await load(); clearInterval(MSG.chatTimer); MSG.chatTimer = setInterval(() => { if (!document.hidden) load(); }, 8000);
+  $('#cmsgs').onclick = async e => { const r = e.target.closest('[data-rep]'); if (!r) return; const why = prompt('Report this message to the app team? Tell us what is wrong (optional):'); if (why === null) return;
+    try { await rpc('report_message', { p_msg: r.dataset.rep, p_reason: why }); toast('Thank you. The app team will look at it.'); } catch (er) { toast(needMsgSQL(er)); } };
+  $('#cblk').onclick = async () => { if (!blocked && !confirm(`Block ${info.name}? They will not be able to message you, and you will not be able to message them.`)) return;
+    try { await rpc('block_user', { p_other: other, p_block: !blocked }); toast(blocked ? 'Unblocked' : 'Blocked'); viewChat(other); } catch (er) { toast(needMsgSQL(er)); } };
+  $('#chide').onclick = async () => { if (!confirm('Clear this chat from your messages? It stays on their phone.')) return; try { await rpc('hide_chat', { p_other: other }); go('messages'); } catch (er) { toast(needMsgSQL(er)); } };
+  const f = $('#cform'); if (!f) return; const ta = $('#ctext');
+  const pending = (() => { try { const p = JSON.parse(sessionStorage.getItem('jom:msgdraft') || 'null'); sessionStorage.removeItem('jom:msgdraft'); return p; } catch { return null; } })();
+  const setVerse = (r, t) => { vref = r; vtext = t || ''; $('#cverse').hidden = !r; $('#cvref').textContent = r; };
+  if (pending?.to === other) { if (pending.ref) setVerse(pending.ref, pending.body); else ta.value = pending.body || ''; }
+  ta.oninput = () => { ta.style.height = 'auto'; ta.style.height = Math.min(ta.scrollHeight, 140) + 'px'; }; ta.oninput();
+  ta.onkeydown = e => { if (e.key === 'Enter' && !e.shiftKey && matchMedia('(pointer:fine)').matches) { e.preventDefault(); f.requestSubmit(); } };
+  $('#cvx').onclick = () => setVerse('', '');
+  $('#cvbtn').onclick = async () => { const r = (prompt('Which verse? For example: John 3:16 or Psalm 23:1-3') || '').trim(); if (!r) return;
+    let t = ''; try { const v = await bibleText(r); t = v.verses.map(x => x.t).join(' ') || v.text || ''; } catch {} setVerse(r, t); if (!t) toast('Verse added — the text will show when they open it'); };
+  f.onsubmit = async e => { e.preventDefault(); const note = ta.value.trim(); if (!note && !vref) return;
+    const body = vref ? [vtext ? `“${vtext.trim()}”` : '', note].filter(Boolean).join('\n\n') || vref : note;
+    $('#csend').disabled = true; try { await sendMsg(other, body, vref || null); ta.value = ''; ta.oninput(); setVerse('', ''); await load(); $('#cmsgs').scrollTop = 1e9; }
+    catch (er) { toast(needMsgSQL(er)); } finally { $('#csend').disabled = false; ta.focus(); } };
+  if (!pending) setTimeout(() => ta.focus(), 50);
+}
+
+/* choose a friend (used by "New message" and the share bar's "Friend" button) */
+async function pickFriend(title, cb) {
+  if (!sbOn() || !signedIn()) { toast('Sign in first to message friends'); go('profile'); return; }
+  const b = openDlg(`<h2>${esc(title)}</h2><div id="pfl"><p class="muted"><span class="spin"></span>Loading friends…</p></div>`, 'Choose a friend');
+  let rows; try { rows = (await rpc('my_friends')).filter(r => r.status === 'accepted').sort((a, c) => String(a.name).localeCompare(String(c.name))); } catch (e) { $('#pfl', b).innerHTML = `<p class="empty">${esc(needSQL(e))}</p>`; return; }
+  $('#pfl', b).innerHTML = rows.length ? `<input id="pfq" type="search" placeholder="Search friends…" aria-label="Search friends" style="width:100%;margin-bottom:10px"><div class="rlist" id="pfr">${rows.map(r => `<button class="ritem fr" data-pf="${r.id}" data-n="${esc(String(r.name).toLowerCase())}">${avatarHTML(r.avatar_url, r.name, 42, r.last_seen ? isOnline(r.last_seen) : null)}<div><b>${esc(r.name)}</b><span>${esc(r.church || (r.last_seen ? agoTxt(r.last_seen) : 'Friend'))}</span></div></button>`).join('')}</div>`
+    : `<p class="empty">You have no friends in the app yet.</p><button class="btn" data-go="members">👥 Find people who have joined</button>`;
+  $('#pfq', b)?.addEventListener('input', e => { const q = e.target.value.toLowerCase(); $$('[data-pf]', b).forEach(x => x.hidden = !x.dataset.n.includes(q)); });
+  $('#pfr', b)?.addEventListener('click', e => { const x = e.target.closest('[data-pf]'); if (!x) return; const fr = rows.find(r => r.id === x.dataset.pf); if (dlg.open) dlg.close(); cb(fr); });
+}
+/* share bar → send to a friend inside the app */
+function shareToFriend(s) {
+  const body = String(s.msg || '').replace(/\n\nRead (more on Just One More Lord|it on)[^\n]*$/, '').trim();
+  const ref = s.mode === 'verse' || s.mode === 'one' ? String(s.label || '').replace(/\s*\([A-Z0-9]+\)$/, '').slice(0, 80) : null;
+  const text = ref ? body.replace(/\n— [^\n]*$/, '').trim().replace(/^“|”$/g, '') : body;
+  pickFriend('Send to a friend', fr => { try { sessionStorage.setItem('jom:msgdraft', JSON.stringify({ to: fr.id, body: text, ref })); } catch {} go('chat-' + fr.id); });
+}
+
+/* admins: reported messages (shown under Help messages) */
+async function loadMsgReports(box) {
+  let rows; try { rows = await rpc('admin_message_reports'); } catch { box.innerHTML = ''; return; }
+  box.innerHTML = `<h2 style="margin-top:28px">Reported messages</h2>${rows.length ? rows.map(r => `<article class="panel hmsg"><p class="small muted">${new Date(r.created_at).toLocaleString('en-ZA')} · <b>${esc(r.status)}</b></p><p><b>${esc(r.reporter_name)}</b> reported a message from <b>${esc(r.reported_name)}</b>${r.reason ? `: “${esc(r.reason)}”` : ''}</p><p class="hmtext">${esc(r.body || '(message deleted)')}</p>${r.status === 'new' ? `<button class="btn ghost sm" data-rdone="${r.id}">Mark as dealt with</button>` : ''}</article>`).join('') : '<p class="empty">No reported messages.</p>'}`;
+  box.onclick = async e => { const d = e.target.closest('[data-rdone]'); if (!d) return; try { await rpc('admin_report_done', { p_id: d.dataset.rdone }); loadMsgReports(box); } catch (er) { toast(er.message); } };
+}
+
 async function viewFriendNotes(id) {
   setNav('community'); document.title = 'Friend\'s notes — Just One More Lord'; if (!sbOn() || !signedIn()) return signInFirst('friends\' notes');
   main.innerHTML = `<section class="band"><div class="wrap quizwrap"><div class="crumbs"><button data-go="friends">Friends</button> › Notes</div><div id="fnb"><p class="muted"><span class="spin"></span>Loading…</p></div></div></section>`;
@@ -4112,6 +4226,8 @@ async function render() {
     else if (h === 'grace-minute') await viewGraceMinute();
     else if (h === 'friends') { await viewFriends(); if (signedIn() && $('#flist')) { $('#flist').insertAdjacentHTML('beforebegin', `<div class="linkrow" style="margin:14px 0"><button class="btn" data-go="members">👥 Find people who have joined</button></div>${shareFlagsHTML()}`); wireShareFlags(main); } }
     else if (h === 'members') await viewMembers();
+    else if (h === 'messages') await viewMessages();
+    else if (h.startsWith('chat-')) await viewChat(h.slice(5));
     else if (h.startsWith('friend-notes-')) await viewFriendNotes(h.slice(13));
     else if (h === 'testimonies') await viewTestimonies();
     else if (h === 'churches') await viewChurches();

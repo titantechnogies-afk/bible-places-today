@@ -7,6 +7,11 @@ prayer partners, the member count and the private "Need help or prayer?" message
 4. The last result should say `admins_found: 1`. In the app, **My profile** now shows **Help messages**.
 It is safe to run again; it never deletes users or data.
 
+## 💬 Switch on messages between friends (free)
+1. Supabase → your project → **SQL Editor** → *New query* → paste everything from **`supabase/messages.sql`** → **Run**. The result says `messages switched on`.
+2. Phone notifications for new messages (optional): Supabase → **Edge Functions** → *Deploy a new function* → name it **`friend-message`** → paste **`supabase/functions/friend-message/index.ts`** → Deploy. Leave **Verify JWT ON**. It uses the same secrets as `daily-verse`, so nothing else is needed.
+3. Reported messages show at the bottom of **My profile → Help messages** (admins only).
+
 # Just One More Lord — setup checklist
 
 Everything in the app is built. The steps below switch on the parts that need **your own accounts** (they must be in your name). Each step is free unless it says otherwise. After each step, send the codes to Claude and they will be added for you — or paste them into `js/config.js` yourself.
