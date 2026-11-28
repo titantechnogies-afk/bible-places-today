@@ -3836,7 +3836,7 @@ async function memberCount() {
   try { const v = await sbFetch('/rest/v1/rpc/member_count', { method: 'POST', body: '{}' }, false); if (!v || typeof v.members !== 'number') return null; try { sessionStorage.setItem('jom:members', JSON.stringify({ t: Date.now(), v })); } catch {} return v; } catch { return null; }
 }
 async function membersBadge(el, where = 'afterend') {
-  if (!el) return; const v = await memberCount(); if (!v || !v.members || !el.isConnected) return;
+  if (!el) return; const v = await memberCount(); if (!v || !v.members || !el.isConnected || el.parentElement?.querySelector(':scope > p.members')) return; // never show the count twice
   el.insertAdjacentHTML(where, `<p class="members"><span aria-hidden="true">🙌</span><b>${v.members.toLocaleString('en-ZA')}</b> ${v.members === 1 ? 'person has' : 'people have'} joined${v.week ? ` · <b>${v.week.toLocaleString('en-ZA')}</b> this week` : ''} · <button class="inl" data-go="${signedIn() ? 'members' : 'profile'}">${signedIn() ? 'See who has joined' : 'Join free'}</button></p>`);
 }
 /* ---------- Freedom: Jesus is the ONE step (addiction, drugs, alcohol, violence…) + private help messages ---------- */
@@ -4302,7 +4302,7 @@ async function render() {
     const gated = needsAccount(h); document.documentElement.classList.toggle('gated', gated);
     if (gated) { try { sessionStorage.setItem('jom:after', h); } catch {} viewProfile(true); }
     else if (sbOn() && signedIn() && !termsOk() && /^(messages|chat-|members|friends|user-|friend-notes-)/.test(h)) viewTermsGate(h);
-    else if (h === 'home' || h === '') { await viewHome(); homeVotd(); homeMore(); maybeGuide(); membersBadge($('.hero .bigsearch'), 'afterend'); $('.hero .in')?.insertAdjacentHTML('beforeend', '<button class="sharecta" data-go="invite"><span>🔗</span><b>Share the app</b><small>Invite friends on Facebook, TikTok &amp; WhatsApp</small></button>'); }
+    else if (h === 'home' || h === '') { await viewHome(); homeVotd(); homeMore(); maybeGuide(); membersBadge($('.hero .bigsearch'), 'afterend'); $('.hero .in:not(:has(.sharecta))')?.insertAdjacentHTML('beforeend', '<button class="sharecta" data-go="invite"><span>🔗</span><b>Share the app</b><small>Invite friends on Facebook, TikTok &amp; WhatsApp</small></button>'); }
     else if (h === 'guide') { await viewHome(); homeVotd(); homeMore(); showGuide(0); }
     else if (h.startsWith('place-')) { await viewPlace(h.slice(6)); enhancePlace(h.slice(6)); if (byId[h.slice(6)]) { addDevotional(h.slice(6)); thenAndNow(byId[h.slice(6)]); pano360(byId[h.slice(6)]); placeComments(h.slice(6)); } }
     else if (h.startsWith('disc-')) { const d = discById[h.slice(5)]; d ? await viewPlace(d.place, d.id) : viewNotFound(); }
